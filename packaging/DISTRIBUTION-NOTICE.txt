@@ -1,0 +1,13 @@
+Minecraft Recipe Editor — evaluation alpha
+
+This unsigned development package is NOT READY for stable release.
+The project owner has not selected a distribution license for the desktop application.
+Do not publish this package as a licensed public release until that decision and the
+remaining product, reliability and third-party source/notice obligations are reviewed.
+
+Third-party dependencies remain under their respective licenses. Extracted dependency
+license/notice files and an artifact inventory accompany this package in legal/.
+The bundled Eclipse Temurin Java runtime includes its own legal/ directory; retain it.
+The original neutral grid icon was created in this repository; it uses no third-party logo.
+No Minecraft, Forge game libraries, GT, KubeJS, CraftTweaker or user modpack are bundled
+with the Desktop Application. Companion is a separate artifact using Minecraft Java 17.

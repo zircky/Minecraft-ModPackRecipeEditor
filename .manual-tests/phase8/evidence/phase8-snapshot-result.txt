@@ -1,0 +1,9 @@
+Analysis of actual previously captured Minecraft snapshot; Minecraft was NOT launched in this test.
+Snapshot=72f7d4b1-0fbd-45f9-a907-651491aeb02e
+MC=1.20.1 loader=FORGE mods={minecraft=1.20.1, rhino=2001.2.3-build.6, configuration=2.2.0, forge=47.4.10, mre_companion=0.1.0, architectury=9.2.14, kubejs=2001.6.4-build.120, ldlib=1.0.40.b, gtceu=7.1.4}
+Captured recipes=35194 analyzed variants=36081
+Nodes=58345 edges=157097 unknownDependencies=true
+duplicates complete=true metrics={equivalentRatioGroups=0, similarGroups=9, sameIdGroups=887, runtimeRepresentationGroups=4, sharedOutputGroups=6319, recipes=36081, exactGroups=0} diagnostics=903
+conflicts complete=false metrics={confirmedMatcherOverlaps=68, comparisons=100000, potentialOverlaps=1, sameIdRepresentationGroups=887} diagnostics=960
+cycles complete=true metrics={edges=157097, nodes=58345, potentialDeadlocks=10, cycles=211, potentialResourceLoops=0, components=19959} diagnostics=220
+Elapsed ms=24433

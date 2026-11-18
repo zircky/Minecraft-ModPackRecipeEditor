@@ -1,0 +1,4 @@
+Actual Forge runtime: Environment[sessionId=c1d4dae3-912f-4b97-abd2-d4bcf9cd7fa7, sourceInstance=L:\My Add\RecipeEditor\minecraft-companions\forge-1.20.1\run, minecraftVersion=1.20.1, loader=FORGE, loaderVersion=47.4.10, companionVersion=0.1.0, generation=1, collectedAt=2026-11-17T18:11:06.704836700Z]
+Registries=16825, tags=5335, recipes=35194, mods=6
+GT adapter recipes=26112
+TCP/auth/sync/snapshot/re-sync/disconnect/reconnect verified. GTCEu present=true

@@ -1,0 +1,16 @@
+> Task :verifyArchitecture FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':verifyArchitecture'.
+> Production module dependency cycle at :recipe-engine: [:app, :companion-client, :recipe-engine, :core]
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 2s
+1 actionable task: 1 executed

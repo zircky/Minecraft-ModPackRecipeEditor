@@ -1,0 +1,85 @@
+> Task :app:processResources UP-TO-DATE
+> Task :app:processTestFixturesResources NO-SOURCE
+> Task :companion-client:processResources NO-SOURCE
+> Task :core:compileJava UP-TO-DATE
+> Task :app:processTestResources NO-SOURCE
+> Task :companion-server:processResources NO-SOURCE
+> Task :core:processResources NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :core:jar UP-TO-DATE
+> Task :companion-protocol:compileJava UP-TO-DATE
+> Task :desktop-ui:processResources UP-TO-DATE
+> Task :companion-protocol:processResources NO-SOURCE
+> Task :companion-protocol:classes UP-TO-DATE
+> Task :companion-protocol:jar UP-TO-DATE
+> Task :exporters:processResources NO-SOURCE
+> Task :companion-server:compileJava UP-TO-DATE
+> Task :companion-server:classes UP-TO-DATE
+> Task :integrations:processResources NO-SOURCE
+> Task :modpack-parser:compileJava UP-TO-DATE
+> Task :registry:compileJava UP-TO-DATE
+> Task :recipe-engine:processResources NO-SOURCE
+> Task :registry:processResources NO-SOURCE
+> Task :registry:classes UP-TO-DATE
+> Task :recipe-analyzer:processResources NO-SOURCE
+> Task :modpack-parser:processResources NO-SOURCE
+> Task :modpack-parser:classes UP-TO-DATE
+> Task :modpack-parser:jar UP-TO-DATE
+> Task :companion-client:processTestResources NO-SOURCE
+> Task :registry:jar UP-TO-DATE
+
+> Task :verifyArchitecture
+Production architecture verified: 12 modules, no cycles.
+
+> Task :companion-server:jar UP-TO-DATE
+> Task :recipe-engine:compileJava UP-TO-DATE
+> Task :recipe-engine:classes UP-TO-DATE
+> Task :recipe-engine:jar UP-TO-DATE
+> Task :integrations:compileJava UP-TO-DATE
+> Task :integrations:classes UP-TO-DATE
+> Task :companion-client:compileJava UP-TO-DATE
+> Task :companion-client:classes UP-TO-DATE
+> Task :exporters:compileJava UP-TO-DATE
+> Task :integrations:jar UP-TO-DATE
+> Task :exporters:classes UP-TO-DATE
+> Task :exporters:jar UP-TO-DATE
+> Task :recipe-analyzer:compileJava UP-TO-DATE
+> Task :companion-client:jar UP-TO-DATE
+> Task :recipe-analyzer:classes UP-TO-DATE
+> Task :recipe-analyzer:jar UP-TO-DATE
+> Task :desktop-ui:compileJava UP-TO-DATE
+> Task :desktop-ui:classes UP-TO-DATE
+> Task :desktop-ui:jar UP-TO-DATE
+> Task :app:compileJava UP-TO-DATE
+> Task :app:classes UP-TO-DATE
+> Task :app:jar UP-TO-DATE
+> Task :app:compileTestFixturesJava UP-TO-DATE
+> Task :app:testFixturesClasses UP-TO-DATE
+> Task :app:testFixturesJar UP-TO-DATE
+> Task :app:compileTestJava
+> Task :app:testClasses
+> Task :companion-client:compileTestJava
+> Task :companion-client:testClasses
+> Task :app:test
+> Task :companion-client:integrationTest
+
+> Task :app:integrationTest
+
+ProjectLifecycleIntegrationTest > importEditReopenAnalyzeAndExportWithoutChangingJar(ExportFormat) > [1] DATAPACK FAILED
+    org.opentest4j.AssertionFailedError at ProjectLifecycleIntegrationTest.java:101
+
+18 tests completed, 1 failed
+
+> Task :app:integrationTest FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:integrationTest'.
+> There were failing tests. See the report at: file:///L:/My%20Add/RecipeEditor/app/build/reports/tests/integrationTest/index.html
+
+* Try:
+> Run with --scan to generate a Build Scan (powered by Develocity).
+
+BUILD FAILED in 16s
+34 actionable tasks: 6 executed, 28 up-to-date

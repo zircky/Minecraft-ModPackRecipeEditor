@@ -1,0 +1,64 @@
+Phase 8 — Step 1–3: created and modified files
+
+MODIFIED recipe-analyzer\build.gradle.kts
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\api\AnalysisContext.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\api\AnalysisDiagnostic.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\api\AnalysisEnvironment.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\api\AnalysisResult.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\api\AnalysisSettings.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\api\AnalyzerRegistry.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\api\DefaultAnalyzers.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\api\DiagnosticCollector.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\api\RecipeAnalyzer.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\conflict\DuplicateRecipeDetector.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\conflict\GregTechConflictStrategy.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\conflict\IngredientOverlap.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\conflict\RecipeConflictAnalyzer.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\conflict\RecipeConflictStrategy.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\conflict\VanillaConflictStrategy.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\graph\AnalysisTagResolver.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\graph\DependencyEdge.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\graph\DependencyNode.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\graph\DependencyNodeType.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\graph\GraphFragment.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\graph\NodeKey.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\graph\RecipeCycleDetector.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\graph\RecipeDependencyGraph.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\graph\RecipeGraphBuilder.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\graph\RecipeGraphIndex.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\graph\ReverseDependencyIndex.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\graph\TagResolution.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\model\AnalysisDataset.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\model\CanonicalJson.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\model\DependencyAdapterConflictException.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\model\DependencyIngredient.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\model\EffectiveAnalysisInput.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\model\GregTechDependencyAdapter.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\model\IngredientDependencies.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\model\RecipeDependencyAdapter.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\model\RecipeFacts.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\model\RecipeFactsMapper.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\model\RecipePort.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\model\RuntimeDependencyBridge.java
+CREATED  recipe-analyzer\src\main\java\dev\recipeeditor\recipeanalyzer\model\StandardDependencyAdapter.java
+CREATED  recipe-analyzer\src\test\java\dev\recipeeditor\recipeanalyzer\AnalysisFixtures.java
+CREATED  recipe-analyzer\src\test\java\dev\recipeeditor\recipeanalyzer\AnalysisFrameworkTest.java
+CREATED  recipe-analyzer\src\test\java\dev\recipeeditor\recipeanalyzer\AnalyzerSnapshotIntegrationTest.java
+CREATED  recipe-analyzer\src\test\java\dev\recipeeditor\recipeanalyzer\AnalyzerStressTest.java
+CREATED  recipe-analyzer\src\test\java\dev\recipeeditor\recipeanalyzer\DuplicateRecipeDetectorTest.java
+CREATED  recipe-analyzer\src\test\java\dev\recipeeditor\recipeanalyzer\RecipeConflictAnalyzerTest.java
+CREATED  recipe-analyzer\src\test\java\dev\recipeeditor\recipeanalyzer\RecipeCycleDetectorTest.java
+CREATED  recipe-analyzer\src\test\java\dev\recipeeditor\recipeanalyzer\RecipeDependencyGraphTest.java
+CREATED  recipe-analyzer\src\test\java\dev\recipeeditor\recipeanalyzer\RuntimeAnalysisTest.java
+MODIFIED README.md
+CREATED  PHASE8_REPORT.md
+CREATED  PHASE8_FILES.txt
+
+Verification evidence (not production files):
+.manual-tests\phase8\evidence\app-run.log
+.manual-tests\phase8\evidence\clean-build.log
+.manual-tests\phase8\evidence\final-test-counts.txt
+.manual-tests\phase8\evidence\phase8-snapshot-result.txt
+.manual-tests\phase8\evidence\phase8-stress-result.txt
+.manual-tests\phase8\evidence\test-summary.txt
+.manual-tests\phase8\evidence\test.log

@@ -1,0 +1,4 @@
+SYNTHETIC load fixture, not an actual 600-mod Minecraft instance.
+Recipes=60000 mod identities=600 nodes=120001 edges=120000
+Elapsed ms=4908
+Used heap at end (not peak)=598736896 bytes

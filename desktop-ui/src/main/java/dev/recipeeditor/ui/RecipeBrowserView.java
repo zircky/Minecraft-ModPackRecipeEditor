@@ -1,0 +1,231 @@
+package dev.recipeeditor.ui;
+
+import dev.recipeeditor.core.ResourceLocation;
+import dev.recipeeditor.recipeengine.*;
+import dev.recipeeditor.recipeengine.editor.*;
+import dev.recipeeditor.registry.SourceType;
+import javafx.application.Platform;
+import javafx.scene.input.*;
+import java.util.*;
+import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.collections.FXCollections;
+import javafx.geometry.Insets;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+
+public final class RecipeBrowserView extends BorderPane implements AutoCloseable {
+    private final java.util.function.BiConsumer<RecipeDefinition,dev.recipeeditor.exporters.ExportFormat> exportRecipe;
+    private final DiscoveryResult result;
+    private final dev.recipeeditor.integrations.api.IntegrationContext integration;
+    private Set<ResourceLocation> runtimeIds=Set.of();
+    private final TextField search=new TextField();
+    private final ComboBox<String> mod=new ComboBox<>(),type=new ComboBox<>();
+    private final TableView<RecipeDefinition> table=new TableView<>();
+    private final VBox viewer=new VBox(10);
+    private final TextArea json=area(),source=area(),diagnostics=area();
+    private final Label scope=new Label();
+    private final RecipeEditorService editor;
+    private final EditorTasks tasks;
+    private final javafx.collections.ObservableList<RecipeDefinition> rows=FXCollections.observableArrayList();
+    private final javafx.collections.transformation.FilteredList<RecipeDefinition> filtered=new javafx.collections.transformation.FilteredList<>(rows);
+    private final ComboBox<String> modification=new ComboBox<>();
+    private final Label tracking=new Label();
+    private final Label provenance=new Label("STATIC / PROJECT RECIPES — runtime state has not been merged");
+    private final java.util.function.Consumer<ResourceLocation> listener;
+    private final java.util.List<Button> historyButtons=new ArrayList<>();
+    private ResourceLocation scopeItem;
+    private boolean scopeUses,closed;
+    private TabPane detailTabs;
+    private final ComboBox<String> sourceFilter=new ComboBox<>();
+    private javafx.scene.Node staticCenter;
+    private RuntimeRecipeBrowserView runtimeView;
+    private ToolBar editActions;
+    public RecipeBrowserView(final DiscoveryResult result,final RecipeEditorService editor,final EditorTasks tasks,final java.util.function.BiConsumer<RecipeDefinition,dev.recipeeditor.exporters.ExportFormat> exportRecipe,final dev.recipeeditor.integrations.api.IntegrationContext integration) {
+        this.integration=integration;
+        this.exportRecipe=exportRecipe;
+        this.result=result; this.editor=editor; this.tasks=tasks; setPadding(new Insets(18));
+        rows.setAll(editor.effective().recipes());
+        editor.snapshot().changes().values().stream().filter(change->change.type()==RecipeChangeType.DELETE).forEach(change->rows.addAll(editor.originals().findById(change.id())));
+        listener=id->Platform.runLater(()->refresh(id)); editor.addListener(listener);
+        search.setPromptText("Search Recipe ID / type / Mod ID"); HBox.setHgrow(search,Priority.ALWAYS);
+        mod.getItems().add("All mods"); result.recipes().recipes().stream().flatMap(r->r.source().modIds().stream()).distinct().sorted().forEach(mod.getItems()::add); mod.getSelectionModel().selectFirst();
+        type.getItems().add("All types"); result.recipes().recipes().stream().map(r->r.type().displayId()).filter(id->!id.isBlank()).distinct().sorted().forEach(type.getItems()::add); type.getSelectionModel().selectFirst();
+        final var reset=new Button("All recipes"); reset.setOnAction(e->all());
+        modification.getItems().addAll("All changes","UNCHANGED","CREATED","MODIFIED","DELETED","Conflicts"); modification.getSelectionModel().selectFirst();
+        editActions=actions();sourceFilter.getItems().addAll("All", "Static", "Runtime");sourceFilter.setValue("Static");
+        final var header=new VBox(10,new HBox(10,new Label("Source:"),sourceFilter),editActions,tracking,provenance,scope,new HBox(10,search,mod,type,modification,reset));
+        header.setPadding(new Insets(0,0,12,0)); setTop(header);
+        table.getColumns().add(column("Recipe ID",r->changePrefix(r.id())+r.id(),230)); table.getColumns().add(column("Type",r->r.type().displayId(),180));
+        table.getColumns().add(column("Parse",r->r.status().name(),140));
+        table.getColumns().add(column("Change",r->editor.hasConflict(r.id())?"SOURCE CONFLICT":editor.status(r.id()).name(),150));
+        final var sorted=new javafx.collections.transformation.SortedList<>(filtered); sorted.comparatorProperty().bind(table.comparatorProperty()); table.setItems(sorted);
+        table.setRowFactory(view->{ final var row=new TableRow<RecipeDefinition>(); row.setOnMouseClicked(e->{if(e.getClickCount()==2 && !row.isEmpty()) edit(row.getItem());}); return row; });
+        table.setContextMenu(contextMenu());
+        table.getSelectionModel().selectedItemProperty().addListener((o,a,b)->select(b));
+        viewer.setPadding(new Insets(16));
+        final var scroll=new ScrollPane(viewer); scroll.setFitToWidth(true);
+        final var tabs=new TabPane(tab("Recipe",scroll),tab("Raw JSON",json),tab("Source",source),tab("Diagnostics",diagnostics));
+        detailTabs=tabs;
+        final var split=new SplitPane(table,tabs); split.setDividerPositions(0.48); setCenter(split);
+        search.textProperty().addListener((o,a,b)->filter()); mod.valueProperty().addListener((o,a,b)->filter()); type.valueProperty().addListener((o,a,b)->filter());
+        modification.valueProperty().addListener((o,a,b)->filter());staticCenter=getCenter();sourceFilter.valueProperty().addListener((o,a,b)->showSource());all();
+    }
+    public void runtime(final dev.recipeeditor.companionclient.RecipeMergeService.Result merge) {
+        if(staticCenter==null)staticCenter=getCenter();runtimeIds=merge.entries().stream().filter(e->e.runtime()!=null).map(e->e.id()).collect(java.util.stream.Collectors.toSet());runtimeView=new RuntimeRecipeBrowserView(merge.entries(),this::copyRuntime);
+        sourceFilter.setValue("All");showSource();
+    }
+    private void showSource() {final boolean original=sourceFilter.getValue().equals("Static")||(runtimeView==null&&sourceFilter.getValue().equals("All"));editActions.setDisable(!original);provenance.setText(original?"STATIC / PROJECT RECIPES — source files and project overlay":"RUNTIME SNAPSHOT — actual collected state; normalized properties are read only");if(original){setCenter(staticCenter);return;}if(runtimeView==null){setCenter(new Label("No complete runtime snapshot. Use Runtime → Synchronize with Minecraft."));return;}runtimeView.runtimeOnly(sourceFilter.getValue().equals("Runtime"));setCenter(runtimeView);}
+    public void all() { scopeItem=null; scope.setText("All recipe definitions; imported conflicting sources are retained"); filter(); updateTracking(); }
+    public void forItem(final ResourceLocation item,final boolean uses) {
+        scopeItem=item; scopeUses=uses; search.clear(); mod.getSelectionModel().selectFirst(); type.getSelectionModel().selectFirst();
+        scope.setText((uses?"Effective uses (possible tag membership): ":"Effective declared outputs: ")+item); filter();
+    }
+    private void filter() {
+        final String query=search.getText().toLowerCase(Locale.ROOT).strip();
+        final String selectedMod=mod.getSelectionModel().getSelectedIndex()==0?"":mod.getValue();
+        final String selectedType=type.getSelectionModel().getSelectedIndex()==0?"":type.getValue();
+        final var scopeIds=scopeItem==null?Set.<ResourceLocation>of():(scopeUses?editor.effective().findRecipesUsing(scopeItem):editor.effective().findRecipesProducing(scopeItem)).stream().map(RecipeDefinition::id).collect(java.util.stream.Collectors.toSet());
+        filtered.setPredicate(recipe->(scopeItem==null||scopeIds.contains(recipe.id())) && (selectedMod.isEmpty()||recipe.source().modIds().contains(selectedMod))
+            &&(selectedType.isEmpty()||recipe.type().displayId().equals(selectedType))
+            &&(recipe.id().toString().contains(query)||recipe.type().displayId().contains(query)||recipe.source().modIds().stream().anyMatch(id->id.contains(query)))
+            &&(modification.getSelectionModel().getSelectedIndex()==0 || (modification.getValue().equals("Conflicts")?editor.hasConflict(recipe.id()):editor.status(recipe.id()).name().equals(modification.getValue()))));
+        if(!table.getItems().isEmpty() && table.getSelectionModel().getSelectedItem()==null) table.getSelectionModel().selectFirst();
+    }
+    private void refresh(final ResourceLocation id) {
+        if(closed) return;
+        rows.removeIf(recipe->recipe.id().equals(id)); rows.addAll(editor.displayed(id));
+        editor.displayed(id).forEach(recipe->{ final String value=recipe.type().displayId(); if(!type.getItems().contains(value)) type.getItems().add(value); });
+        filter(); table.refresh(); updateTracking();
+    }
+    public void updateTracking() {
+        final var values=editor.snapshot().changes().values();
+        tracking.setText(values.stream().filter(c->c.type()==RecipeChangeType.UPDATE).count()+" Modified | "+values.stream().filter(c->c.type()==RecipeChangeType.CREATE).count()+" Created | "+values.stream().filter(c->c.type()==RecipeChangeType.DELETE).count()+" Deleted | "+editor.conflicts().size()+" source conflicts | "+(editor.dirty()?"Project changes not saved to disk":"Project matches saved snapshot")+" | Export uses saved project changes");
+        if(historyButtons.size()==2) { historyButtons.get(0).setDisable(!editor.canUndo()); historyButtons.get(1).setDisable(!editor.canRedo()); }
+    }
+    private ToolBar actions() {
+        final var create=new Button("+ Create"); create.setOnAction(e->create());
+        final var edit=new Button("Edit"); edit.setOnAction(e->selected().ifPresent(this::edit));
+        final var duplicate=new Button("Duplicate"); duplicate.setOnAction(e->selected().ifPresent(this::duplicate));
+        final var delete=new Button("Delete"); delete.setOnAction(e->selected().ifPresent(this::delete));
+        final var reset=new Button("Reset changes"); reset.setOnAction(e->selected().ifPresent(this::reset));
+        final var undo=new Button("Undo"); undo.setOnAction(e->perform(()->editor.undo()));
+        final var redo=new Button("Redo"); redo.setOnAction(e->perform(()->editor.redo())); historyButtons.addAll(List.of(undo,redo));
+        addEventFilter(KeyEvent.KEY_PRESSED,event->{ if(event.getTarget() instanceof TextInputControl || !event.isControlDown()) return;
+            if(event.getCode()==KeyCode.Z) { perform(event.isShiftDown()?()->editor.redo():()->editor.undo()); event.consume(); }
+            else if(event.getCode()==KeyCode.Y) { perform(()->editor.redo()); event.consume(); }
+        });
+        final var conflicts=new Button("Source conflicts"); conflicts.setOnAction(e->{final var ids=editor.conflicts().stream().map(SourceConflict::recipeId).toList();if(ids.isEmpty()) {new Alert(Alert.AlertType.INFORMATION,"No blocked source changes",ButtonType.OK).showAndWait();return;}
+            final var choice=new ChoiceDialog<ResourceLocation>(ids.getFirst(),ids);choice.setTitle("Blocked source changes");choice.setHeaderText("Review a saved change whose original source changed/disappeared");choice.showAndWait().ifPresent(this::reviewConflict);});
+        return new ToolBar(create,edit,duplicate,delete,reset,new Separator(),undo,redo,conflicts);
+    }
+    private Optional<RecipeDefinition> selected() { return Optional.ofNullable(table.getSelectionModel().getSelectedItem()); }
+    private void perform(final Runnable work) { tasks.submit(()->{work.run(); return true;},done->updateTracking(),this::error); }
+    private void error(final Throwable error) { if(!closed) new Alert(Alert.AlertType.ERROR,error.getMessage(),ButtonType.OK).showAndWait(); }
+    private Optional<ResourceLocation> newId(final String title) {
+        final var dialog=new TextInputDialog(); dialog.initOwner(getScene().getWindow()); dialog.setTitle(title); dialog.setHeaderText("Unique Recipe ID: namespace:path");
+        final var error=new Label(); final var content=(javafx.scene.layout.GridPane)dialog.getDialogPane().getContent(); content.add(error,0,2,2,1);
+        dialog.getDialogPane().lookupButton(ButtonType.OK).addEventFilter(javafx.event.ActionEvent.ACTION,event->{try { final var id=ResourceLocation.parse(dialog.getEditor().getText()); if(runtimeIds.contains(id)||!editor.originals().findById(id).isEmpty()||!editor.effective().findById(id).isEmpty()) throw new IllegalArgumentException("ID already exists"); } catch(RuntimeException invalid) {error.setText(invalid.getMessage()); event.consume();} });
+        return dialog.showAndWait().map(ResourceLocation::parse);
+    }
+    private void create() {
+        final var id=newId("Create New Recipe"); if(id.isEmpty()) return;
+        final var types=new ComboBox<String>(); types.getItems().addAll(new RecipeFormService().types()); types.setEditable(true); types.getSelectionModel().selectFirst();
+        final var dialog=new Dialog<String>(); dialog.initOwner(getScene().getWindow()); dialog.setTitle("Recipe type"); final var error=new Label(); dialog.getDialogPane().setContent(new VBox(10,new Label("Choose a known type or enter a custom Resource Location"),types,error)); dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK,ButtonType.CANCEL);
+        dialog.getDialogPane().lookupButton(ButtonType.OK).addEventFilter(javafx.event.ActionEvent.ACTION,event->{try {ResourceLocation.parse(types.getEditor().getText());}catch(RuntimeException invalid){error.setText(invalid.getMessage());event.consume();}});
+        dialog.setResultConverter(button->button==ButtonType.OK?types.getEditor().getText():null);
+        dialog.showAndWait().ifPresent(type->{final var source=new RecipeSource(SourceType.LOCAL_RESOURCE,List.of(),java.nio.file.Path.of("unsaved-project.json"),"changes/"+id.get(),"Unsaved project overlay (logical path)");
+            tasks.submit(()->new RecipeFormService().template(type),raw->new RecipeEditorDialog(getScene().getWindow(),result,editor,tasks,new RecipeEditSession(id.get(),source,raw),true,integration).showAndWait(),this::error);});
+    }
+    private void copyRuntime(final dev.recipeeditor.companionprotocol.RuntimeData.Recipe recipe) {
+        if(!new dev.recipeeditor.integrations.gregtech.GregTechIntegration().capabilities(integration).enabled("Visual Editing")) {error(new IllegalArgumentException("GT version is not edit-verified"));return;}
+        newId("Copy loaded GT state: use namespace:"+ResourceLocation.parse(recipe.type()).path()+"/name (new ID)").ifPresent(id->{
+            final var source=new RecipeSource(SourceType.LOCAL_RESOURCE,List.of("gtceu"),java.nio.file.Path.of("unsaved-project.json"),"changes/"+id,"Explicit new-ID copy of normalized runtime state; original source UNKNOWN");
+            tasks.submit(()->new dev.recipeeditor.integrations.gregtech.GregTechRuntimeDraft().copy(recipe),raw->new RecipeEditorDialog(getScene().getWindow(),result,editor,tasks,new RecipeEditSession(id,source,raw),true,integration).showAndWait(),this::error);
+        });
+    }
+    private void edit(final RecipeDefinition recipe) {
+        if(editor.hasConflict(recipe.id())) { reviewConflict(recipe.id()); return; }
+        if(editor.status(recipe.id())==RecipeModificationStatus.DELETED) { error(new IllegalStateException("Recipe is deleted. Reset Changes restores it.")); return; }
+        final var bases=editor.originals().findById(recipe.id());
+        if(bases.size()>1 && new Alert(Alert.AlertType.CONFIRMATION,"This ID has "+bases.size()+" original sources. Saving creates one project override for all candidates; the runtime winner is unknown. Continue?",ButtonType.YES,ButtonType.NO).showAndWait().orElse(ButtonType.NO)!=ButtonType.YES) return;
+        final String baseline=bases.isEmpty()?recipe.rawJson():bases.stream().filter(base->base.source().equals(recipe.source())).findFirst().orElse(bases.getFirst()).rawJson();
+        final var source=new RecipeSource(SourceType.LOCAL_RESOURCE,List.of(),java.nio.file.Path.of("unsaved-project.json"),"changes/"+recipe.id(),"Unsaved project overlay (logical path)");
+        new RecipeEditorDialog(getScene().getWindow(),result,editor,tasks,new RecipeEditSession(recipe.id(),source,recipe.rawJson(),baseline),false,integration).showAndWait();
+    }
+    private void duplicate(final RecipeDefinition recipe) { newId("Duplicate Recipe").ifPresent(id->tasks.submit(()->editor.duplicate(recipe,id),this::edit,this::error)); }
+    private void delete(final RecipeDefinition recipe) {
+        if(new Alert(Alert.AlertType.CONFIRMATION,"Logically delete "+recipe.id()+" from the project? Original JAR files will not change.",ButtonType.YES,ButtonType.NO).showAndWait().orElse(ButtonType.NO)==ButtonType.YES) perform(()->editor.delete(recipe.id()));
+    }
+    private void reset(final RecipeDefinition recipe) { if(editor.hasConflict(recipe.id())) reviewConflict(recipe.id()); else perform(()->editor.reset(recipe.id())); }
+    private void reviewConflict(final ResourceLocation id) {
+        final var conflict=editor.conflicts().stream().filter(c->c.recipeId().equals(id)).findFirst().orElseThrow();
+        final var area=area(); area.setText(conflict.message()+"\nSaved bases: "+conflict.savedChange().originals()+"\nCurrent bases: "+conflict.currentSources()+"\nSaved replacement JSON:\n"+conflict.savedChange().replacement().stream().map(RecipeDefinition::rawJson).collect(java.util.stream.Collectors.joining("\n")));
+        final var dialog=new Dialog<ButtonType>(); dialog.setTitle("Source conflict - automatic application blocked"); dialog.initOwner(getScene().getWindow()); dialog.getDialogPane().setContent(area); dialog.getDialogPane().setPrefSize(850,600);
+        final var discard=new ButtonType("Discard saved change",ButtonBar.ButtonData.OTHER); dialog.getDialogPane().getButtonTypes().addAll(discard,ButtonType.CLOSE); dialog.setResultConverter(button->button);
+        if(dialog.showAndWait().orElse(ButtonType.CLOSE)==discard && new Alert(Alert.AlertType.CONFIRMATION,"Discard this blocked saved change? Copy any JSON you need first.",ButtonType.YES,ButtonType.NO).showAndWait().orElse(ButtonType.NO)==ButtonType.YES) perform(()->editor.discardConflict(id));
+    }
+    private ContextMenu contextMenu() {
+        final var menu=new ContextMenu();
+        final var export=new Menu("Export Recipe");
+        for(final var format:dev.recipeeditor.exporters.ExportFormat.values()) export.getItems().add(item(format.name(),recipe->exportRecipe.accept(recipe,format)));
+        menu.getItems().add(export);
+        final MenuItem open=item("Open Recipe",recipe->select(recipe)),edit=item("Edit Recipe",this::edit),duplicate=item("Duplicate Recipe",this::duplicate),delete=item("Delete Recipe",this::delete),reset=item("Reset Changes",this::reset);
+        menu.getItems().addAll(open,edit,duplicate,delete,reset,item("Copy Recipe ID",r->copy(r.id().toString())),item("Copy Recipe JSON",r->copy(r.rawJson())),item("Show Source",r->{select(r);detailTabs.getSelectionModel().select(2);}));
+        menu.setOnShowing(event->{final var chosen=selected(); final boolean unavailable=chosen.isEmpty(); menu.getItems().forEach(action->action.setDisable(unavailable));
+            if(chosen.isPresent()) {final var id=chosen.get().id(); final boolean blocked=editor.hasConflict(id)||editor.status(id)==RecipeModificationStatus.DELETED; duplicate.setDisable(blocked); duplicate.setText(blocked?"Duplicate Recipe (reset deletion/review conflict first)":"Duplicate Recipe");
+            delete.setDisable(blocked); delete.setText(blocked?"Delete Recipe (already deleted or source conflict)":"Delete Recipe");
+            edit.setDisable(editor.status(id)==RecipeModificationStatus.DELETED); edit.setText(editor.status(id)==RecipeModificationStatus.DELETED?"Edit Recipe (Reset Changes restores deleted recipe)":"Edit Recipe");
+            reset.setDisable(!editor.hasConflict(id)&&editor.status(id)==RecipeModificationStatus.UNCHANGED); reset.setText(editor.status(id)==RecipeModificationStatus.UNCHANGED&&!editor.hasConflict(id)?"Reset Changes (no saved project change)":"Reset Changes");}
+        }); return menu;
+    }
+    private MenuItem item(final String title,final java.util.function.Consumer<RecipeDefinition> action) {final var item=new MenuItem(title);item.setOnAction(e->selected().ifPresent(action));return item;}
+    private void copy(final String value) {final var content=new ClipboardContent();content.putString(value);Clipboard.getSystemClipboard().setContent(content);}
+    @Override public void close() {closed=true;editor.removeListener(listener);}
+    private String changePrefix(final ResourceLocation id) {
+        if(editor.hasConflict(id)) return "[!] ";
+        return switch(editor.status(id)) {case CREATED->"[+] ";case MODIFIED->"[M] ";case DELETED->"[-] ";case UNCHANGED->"";};
+    }
+    private TableColumn<RecipeDefinition,String> column(final String title,final java.util.function.Function<RecipeDefinition,String> value,final int width) {
+        final var column=new TableColumn<RecipeDefinition,String>(title); column.setCellValueFactory(cell->new ReadOnlyStringWrapper(value.apply(cell.getValue()))); column.setPrefWidth(width); return column;
+    }
+    private TextArea area() { final var area=new TextArea(); area.setEditable(false); area.setWrapText(true); return area; }
+    private Tab tab(final String title,final javafx.scene.Node content) { final var tab=new Tab(title,content); tab.setClosable(false); return tab; }
+    private Label label(final String text) { final var label=new Label(text); label.setWrapText(true); return label; }
+    private void select(final RecipeDefinition recipe) {
+        viewer.getChildren().clear(); json.clear(); source.clear(); diagnostics.clear();
+        if(recipe==null) { viewer.getChildren().add(label("No matching recipes")); return; }
+        viewer.getChildren().addAll(label(recipe.id().toString()),label("Type: "+recipe.type().displayId()+"\nParse: "+recipe.status()+"\nRecipe status: "+editor.status(recipe.id())+(editor.hasConflict(recipe.id())?" · SOURCE CONFLICT":"")));
+        if(recipe.status()==RecipeParseStatus.UNSUPPORTED || recipe.status()==RecipeParseStatus.INVALID) viewer.getChildren().add(label("Semantic view unavailable. See Raw JSON and Diagnostics."));
+        else {
+            if(!recipe.layout().pattern().isEmpty()) {
+                final var grid=new GridPane(); grid.setHgap(6); grid.setVgap(6);
+                for(int column=0;column<3;column++) grid.getColumnConstraints().add(new javafx.scene.layout.ColumnConstraints(140));
+                for(int row=0;row<recipe.layout().pattern().size();row++) {
+                    final String pattern=recipe.layout().pattern().get(row);
+                    for(int col=0;col<pattern.length();col++) {
+                        final String key=String.valueOf(pattern.charAt(col)); final var value=recipe.layout().slots().get(key);
+                        final var cell=label(value==null?" ":describe(value)); cell.setMinSize(90,60); cell.getStyleClass().add("recipe-slot"); grid.add(cell,col,row);
+                    }
+                }
+                viewer.getChildren().add(grid);
+            }
+            viewer.getChildren().add(label("Inputs:"));
+            if(!recipe.layout().slots().isEmpty() && recipe.layout().pattern().isEmpty()) recipe.layout().slots().forEach((role,ingredient)->viewer.getChildren().add(label(role+": "+describe(ingredient))));
+            else recipe.inputs().forEach(ingredient->viewer.getChildren().add(label(describe(ingredient))));
+            viewer.getChildren().add(label("Outputs:")); recipe.outputs().forEach(output-> {
+                if(output instanceof RecipeOutput.Fixed fixed) viewer.getChildren().add(label(fixed.count()+" x "+fixed.id()+(fixed.copiesBaseData()?" (copies base stack data)":"")));
+                else if(output instanceof RecipeOutput.Dynamic dynamic) viewer.getChildren().add(label("Dynamic: "+dynamic.description()));
+            });
+            recipe.properties().forEach(property->viewer.getChildren().add(label(property.name()+": "+property.rawValue())));
+        }
+        json.setText(recipe.rawJson()); json.positionCaret(0);
+        source.setText("Source type: "+recipe.source().type()+"\nMod IDs (archive owners): "+recipe.source().modIds()+"\nNamespace: "+recipe.id().namespace()+"\nContainer: "+recipe.source().archivePath()+"\nResource: "+recipe.source().internalPath()+"\nMethod: "+recipe.source().discoveryMethod()+"\nDefinitions for this ID: "+result.recipes().findById(recipe.id()).size()+"\nActive winner: UNKNOWN");
+        diagnostics.setText(recipe.diagnostics().stream().map(Object::toString).collect(java.util.stream.Collectors.joining("\n")));
+    }
+    private String describe(final IngredientDefinition value) {
+        if(value instanceof IngredientDefinition.Item item) return item.id().toString();
+        if(value instanceof IngredientDefinition.Tag tag) return "#"+tag.id();
+        if(value instanceof IngredientDefinition.Alternatives alternatives) return alternatives.choices().stream().map(this::describe).collect(java.util.stream.Collectors.joining(" OR "));
+        return "Unsupported ingredient (see JSON)";
+    }
+}

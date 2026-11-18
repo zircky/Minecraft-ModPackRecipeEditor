@@ -1,0 +1,4 @@
+Actual Minecraft 1.20.1 Forge 47.4.10; GTCEu 7.1.4; KubeJS 2001.6.4-build.120
+Mode=baseline
+Expected recipe state for this mode checked after actual startup; content, fluids, EU/t, duration and available chance/non-consumable properties compared.
+Recipes=35194

@@ -1,0 +1,15 @@
+{
+  "capturedAt": "2026-11-18T12:00:13.7623555+03:00",
+  "project": "gui-project.json",
+  "exportFormat": "DATAPACK",
+  "exportDirectory": "export-kubejs",
+  "baselineRecipeCount": 98937,
+  "afterReloadRecipeCount": 100398,
+  "baselineTntPresent": false,
+  "afterReloadTntPresent": true,
+  "afterReloadTntCount": 2,
+  "originalJarCount": 70,
+  "originalJarsChanged": 0,
+  "testWorld": "MRE E2E 20261118",
+  "guiDiagnosticFix": "bulk append, max 200 messages / 64000 chars per batch"
+}

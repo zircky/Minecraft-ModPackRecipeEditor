@@ -1,0 +1,24 @@
+{
+  "properties": {
+    "ProductName": "MinecraftRecipeEditor",
+    "ProductVersion": "1.0.0",
+    "Manufacturer": "Zircky",
+    "ALLUSERS": null,
+    "MSIINSTALLPERUSER": null,
+    "UpgradeCode": "{C9A88B06-3B35-4BF7-9513-A7CD32819CC7}",
+    "ProductCode": "{8D445974-A6E8-3D31-AB59-B6363783A76B}"
+  },
+  "shortcuts": [
+    {
+      "name": "uochbbsi|MinecraftRecipeEditor",
+      "target": "[#filed5029c4f17d9344f82668b4b8de04d83]",
+      "directory": "dirf899069f51463865b2f659d89ddfb6cb"
+    },
+    {
+      "name": "hfe9cftl|MinecraftRecipeEditor",
+      "target": "[#filed5029c4f17d9344f82668b4b8de04d83]",
+      "directory": "DesktopFolder"
+    }
+  ],
+  "installed": false
+}

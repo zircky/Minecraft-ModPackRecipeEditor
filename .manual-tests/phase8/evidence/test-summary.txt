@@ -1,0 +1,1 @@
+Analyzer tests including real saved snapshot + synthetic stress: total=29, passed=29, skipped=0, failures=0, errors=0

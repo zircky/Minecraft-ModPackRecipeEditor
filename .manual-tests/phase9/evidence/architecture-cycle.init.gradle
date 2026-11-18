@@ -1,0 +1,3 @@
+gradle.projectsEvaluated {
+    rootProject.project(':core').dependencies.add('implementation', rootProject.project(':recipe-engine'))
+}

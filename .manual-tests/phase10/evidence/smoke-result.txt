@@ -1,0 +1,11 @@
+Packaged app-image smoke test, Windows 11 amd64.
+Version observed in About: 1.0.0-alpha.1.
+Bundled Java observed in About: 21.0.10.
+Separate protocol=1, Companion=0.1.0, project format=1; NOT READY displayed.
+Launcher started from a different working directory. JAVA_HOME/JDK_HOME removed, child PATH restricted to Windows System32.
+Loaded jvm.dll: app/build/windows/image/MinecraftRecipeEditor/runtime/bin/server/jvm.dll.
+Data/logs isolated using absolute MRE_DATA_HOME outside the image directory.
+Native neutral grid icon and dark JavaFX window observed; About opened and displayed factual metadata.
+User interacted with import/search: observed 71 mod definitions, 25692 resources, 11489 recipe definitions. This is observation of interactive use, not a controlled full release E2E suite.
+Before authorized close: 0 Modified / 0 Created / 0 Deleted; Project matches saved snapshot. Closed normally; Application stopped logged.
+Clean VM without any installed Java, install/uninstall, shortcuts after install, reboot, Windows 10, runtime Minecraft: NOT EXECUTED.

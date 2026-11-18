@@ -1,0 +1,54 @@
+{
+  "app": [
+    "companion-client",
+    "desktop-ui",
+    "core",
+    "modpack-parser",
+    "registry",
+    "recipe-engine",
+    "recipe-analyzer",
+    "integrations",
+    "exporters",
+    "companion-protocol"
+  ],
+  "core": [],
+  "modpack-parser": [
+    "core"
+  ],
+  "registry": [
+    "core"
+  ],
+  "recipe-engine": [
+    "core",
+    "registry"
+  ],
+  "recipe-analyzer": [
+    "core",
+    "recipe-engine"
+  ],
+  "integrations": [
+    "recipe-engine",
+    "core",
+    "companion-protocol"
+  ],
+  "exporters": [
+    "integrations",
+    "core",
+    "recipe-engine"
+  ],
+  "companion-protocol": [],
+  "companion-client": [
+    "companion-protocol",
+    "recipe-engine"
+  ],
+  "companion-server": [
+    "companion-protocol"
+  ],
+  "desktop-ui": [
+    "integrations",
+    "companion-client",
+    "exporters",
+    "recipe-engine",
+    "core"
+  ]
+}

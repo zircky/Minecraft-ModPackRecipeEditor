@@ -1,0 +1,1 @@
+Fresh post-restart snapshot normalized codec JSON equals the complete expected JSON for updated and created recipes (including type/category and all serialized contents). Deleted original absent, checked by live probe.

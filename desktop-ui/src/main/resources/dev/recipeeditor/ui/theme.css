@@ -1,0 +1,34 @@
+.root {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 13px;
+    -fx-base: #2b2d30;
+    -fx-background: #1e1f22;
+    -fx-control-inner-background: #1e1f22;
+    -fx-accent: #3574f0;
+    -fx-focus-color: #548af7;
+}
+.label { -fx-text-fill: #dfe1e5; }
+.tool-bar { -fx-background-color: #2b2d30; -fx-padding: 12 18; -fx-spacing: 16; }
+.brand { -fx-font-weight: bold; }
+.muted { -fx-text-fill: #a8adb8; }
+.navigation { -fx-background-color: #25262a; -fx-padding: 20 10; -fx-border-color: transparent #393b40 transparent transparent; }
+.toggle-button { -fx-background-color: transparent; -fx-text-fill: #c8cbd2; -fx-padding: 12 16; -fx-background-radius: 5; -fx-cursor: hand; }
+.toggle-button:hover { -fx-background-color: #33353b; }
+.toggle-button:selected { -fx-background-color: #2e436e; -fx-text-fill: #ffffff; }
+.toggle-button:focused { -fx-border-color: #548af7; -fx-border-radius: 5; }
+.empty-title { -fx-font-size: 25px; -fx-font-weight: bold; }
+.status-bar { -fx-padding: 8 16; -fx-background-color: #2b2d30; -fx-border-color: #393b40 transparent transparent transparent; }
+.status-bar .label { -fx-text-fill: #a8adb8; -fx-font-size: 12px; }
+.button { -fx-padding: 7 12; -fx-background-radius: 4; }
+
+.text-field, .text-area { -fx-text-fill: #dfe1e5; -fx-prompt-text-fill: #9399a5; }
+.table-view { -fx-background-color: #1e1f22; -fx-table-cell-border-color: #33353b; }
+.table-row-cell { -fx-background-color: #25262a; }
+.table-row-cell:odd { -fx-background-color: #2b2d30; }
+.table-row-cell:selected { -fx-background-color: #2e436e; }
+.table-cell { -fx-text-fill: #dfe1e5; }
+
+.recipe-slot { -fx-background-color: #33353b; -fx-padding: 8; -fx-border-color: #545862; }
+
+.validation-error { -fx-text-fill: #e4aa79; }
+.dialog-pane { -fx-background-color: #2b2d30; }

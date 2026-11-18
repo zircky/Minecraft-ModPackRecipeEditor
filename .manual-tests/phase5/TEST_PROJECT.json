@@ -1,0 +1,21 @@
+{
+  "formatVersion": 1,
+  "sha256": "5ea124ae6671881e8e6b8497501b1c6f653d4781fcd50eadc5c1e535adae9e28",
+  "project": {
+    "modpackDirectory": "L:\\My Add\\RecipeEditor\\.manual-tests\\phase5\\TEST_INSTANCE",
+    "changes": [
+      {
+        "id": "crafttweaker:ui_test_fixture",
+        "type": "CREATE",
+        "timestamp": "2026-11-17T00:00:00Z",
+        "originals": [],
+        "replacementJson": [
+          "{\"type\":\"minecraft:smelting\",\"ingredient\":{\"item\":\"minecraft:iron_ore\"},\"result\":\"minecraft:iron_ingot\",\"experience\":0.7,\"cookingtime\":200}"
+        ],
+        "metadata": {
+          "purpose": "Phase 5 UI TEST ONLY"
+        }
+      }
+    ]
+  }
+}

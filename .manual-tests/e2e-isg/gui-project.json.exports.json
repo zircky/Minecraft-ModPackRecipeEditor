@@ -1,0 +1,29 @@
+{
+  "version" : 1,
+  "sha256" : "8d7f9ae254aa9f0a740efee151fd1c3b202e1e78b24be05044d0c9c395545d2d",
+  "workspace" : {
+    "profiles" : [ {
+      "id" : "147a0422c59e453fb2b269415304ae8d",
+      "name" : "Development",
+      "target" : "L:\\My Add\\RecipeEditor\\.manual-tests\\e2e-isg\\export-kubejs",
+      "format" : "AUTO",
+      "overwrite" : "REFUSE",
+      "backups" : true,
+      "minecraft" : "1.20.1",
+      "loader" : "FORGE"
+    } ],
+    "manifests" : [ {
+      "profile" : "147a0422c59e453fb2b269415304ae8d",
+      "target" : "L:\\My Add\\RecipeEditor\\.manual-tests\\e2e-isg\\export-kubejs",
+      "minecraft" : "1.20.1",
+      "timestamp" : "2026-11-18T08:27:49.827864900Z",
+      "status" : "GENERATED_RUNTIME_UNVERIFIED",
+      "formats" : [ "DATAPACK" ],
+      "hashes" : {
+        "datapacks/recipe_editor_147a0422c59e453fb2b269415304ae8d/data/minecraft/recipes/tnt.json" : "37e7ba01055a96fac7bef179ef79f01898c1a6984d51d2eb48f310486d3fe38c",
+        "datapacks/recipe_editor_147a0422c59e453fb2b269415304ae8d/pack.mcmeta" : "ce2aeba55ba45eacdd7fb777303d358a257624effd3da62e322dd59391e1ad1b"
+      },
+      "recipeIds" : [ "minecraft:tnt" ]
+    } ]
+  }
+}

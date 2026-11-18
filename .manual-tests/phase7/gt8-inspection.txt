@@ -1,0 +1,6 @@
+Detected artifact: G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh\minecraft\mods\gtceu-1.20.1-8.0.0-SNAPSHOT+20261104-224207-e24b238.jar
+SHA256: 448e1cca586dec48005bba818151b056ac2c00d23c1a421376ba3e16214aa2fd
+mods.toml version: 8.0.0-SNAPSHOT+e24b238
+Public javap: Content is record (Object content, int chance, int maxChance), accessors content()/chance()/maxChance(). tierChanceBoost absent.
+GTRecipe has input/output/tick chance logic maps, ingredientActions, allParallels, groupColor and keepSpoilingProgress.
+7.1.4 field-based ABI/codec profile cannot be applied safely. No editing/export or runtime test claimed for 8.0.

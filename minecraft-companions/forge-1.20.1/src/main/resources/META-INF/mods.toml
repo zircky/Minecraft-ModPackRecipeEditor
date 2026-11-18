@@ -1,0 +1,20 @@
+modLoader="javafml"
+loaderVersion="[47,48)"
+license="MIT"
+[[mods]]
+modId="mre_companion"
+version="${companionVersion}"
+displayName="Minecraft Recipe Editor Companion"
+description="Read-only localhost runtime registry and recipe collector."
+[[dependencies.mre_companion]]
+modId="forge"
+mandatory=true
+versionRange="[47,48)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.mre_companion]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.20.2)"
+ordering="NONE"
+side="BOTH"

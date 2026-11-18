@@ -1,0 +1,96 @@
+plugins { id 'java'; id 'net.minecraftforge.gradle' version '6.0.54' }
+group = 'dev.recipeeditor'
+def releaseProperties = new Properties()
+file('../../gradle.properties').withInputStream { releaseProperties.load(it) }
+version = releaseProperties.getProperty('companionVersion')
+base { archivesName = 'mre_companion-forge-1.20.1' }
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+minecraft {
+    mappings channel: 'official', version: '1.20.1'
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+            property 'forge.logging.console.level', 'info'
+            if (providers.gradleProperty('probeRunId').isPresent()) property 'mre.probeRunId', providers.gradleProperty('probeRunId').get()
+            mods { mre_companion { source sourceSets.main } }
+        }
+        client {
+            workingDirectory project.file('run-client')
+            if (providers.gradleProperty('quickPlayWorld').isPresent()) {
+                args '--quickPlaySingleplayer', providers.gradleProperty('quickPlayWorld').get()
+                if (providers.gradleProperty('withGameTests').isPresent()) property 'mre.clientProbe', 'true'
+            }
+        }
+        server { args '--nogui' }
+        gameTestServer {
+            property 'forge.enabledGameTestNamespaces', 'mre_companion'
+            if (providers.gradleProperty('vanillaFixture').isPresent()) workingDirectory project.file('run-vanilla')
+        }
+    }
+}
+sourceSets.main.java.srcDirs += ['../../companion-protocol/src/main/java', '../../companion-server/src/main/java']
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.20.1-47.4.10'
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8'; options.release = 17 }
+test { useJUnitPlatform() }
+processResources {
+    inputs.property 'companionVersion', project.version.toString()
+    filesMatching('META-INF/mods.toml') { expand(companionVersion: project.version.toString()) }
+    doLast {
+        def identity = new File(destinationDir, 'dev/recipeeditor/companionprotocol/companion.properties')
+        identity.parentFile.mkdirs()
+        identity.text = "version=${project.version}\n"
+    }
+}
+jar { finalizedBy 'reobfJar' }
+
+// Test-only code/resources are excluded from the distributable build by default.
+if (providers.gradleProperty('withGameTests').isPresent()) {
+    sourceSets.main.java.srcDir 'src/gametest/java'
+    sourceSets.main.resources.srcDir 'src/gametest/resources'
+}
+
+tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+    doFirst {
+        def testDir = providers.gradleProperty('vanillaFixture').isPresent() ? file('run-vanilla') : file('run')
+        delete new File(testDir, 'runtime-probe.ok'), new File(testDir, 'runtime-ready.flag')
+    }
+}
+
+// Optional local GTCEu test dependencies. Never bundled into the Companion JAR.
+if (providers.gradleProperty('gtReferenceDirectory').isPresent()) {
+    minecraft.runs.configureEach {
+        property 'mixin.env.remapRefMap', 'true'
+        property 'mixin.env.refMapRemappingFile', file('build/createSrgToMcp/output.srg').absolutePath
+    }
+    repositories { flatDir { dirs providers.gradleProperty('gtReferenceDirectory').get() } }
+    dependencies {
+        runtimeOnly fg.deobf('local:gtceu-1.20.1:7.1.4')
+        runtimeOnly fg.deobf('local:ldlib-forge-1.20.1:1.0.40.b')
+        runtimeOnly fg.deobf('local:Registrate:MC1.20-1.3.11')
+        runtimeOnly fg.deobf('local:configuration-forge-1.20.1:2.2.0')
+        runtimeOnly 'local:mixinextras-forge:0.5.0'
+    }
+}
+
+if (providers.gradleProperty('withKubeJS').isPresent()) {
+    if (!providers.gradleProperty('gtReferenceDirectory').isPresent()) throw new GradleException('withKubeJS requires isolated gtReferenceDirectory')
+    dependencies {
+        runtimeOnly fg.deobf('local:kubejs-forge:2001.6.4-build.120')
+        runtimeOnly fg.deobf('local:rhino-forge:2001.2.3-build.6')
+        runtimeOnly fg.deobf('local:architectury:9.2.14-forge')
+    }
+}
+
+// Clear only explicit isolated client-probe signals before each fresh runtime run.
+tasks.matching { it.name == 'runClient' }.configureEach {
+    doFirst {
+        if (providers.gradleProperty('withGameTests').isPresent() && providers.gradleProperty('quickPlayWorld').isPresent()) {
+            ['runtime-ready.flag', 'runtime-probe.ok', 'runtime-reload.request', 'runtime-reload.done'].each { delete new File(file('run-client'), it) }
+        }
+    }
+}

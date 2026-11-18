@@ -1,0 +1,197 @@
+> Task :companion-server:clean
+> Task :companion-protocol:clean
+> Task :companion-client:clean
+> Task :core:clean
+> Task :app:clean
+> Task :desktop-ui:clean
+> Task :modpack-parser:clean
+> Task :integrations:clean
+> Task :exporters:clean
+> Task :assemble UP-TO-DATE
+> Task :check UP-TO-DATE
+> Task :recipe-analyzer:clean
+> Task :registry:clean
+> Task :recipe-engine:clean
+> Task :clean UP-TO-DATE
+> Task :companion-client:processResources NO-SOURCE
+> Task :app:processResources
+> Task :exporters:processResources NO-SOURCE
+> Task :integrations:processResources NO-SOURCE
+> Task :modpack-parser:processResources NO-SOURCE
+> Task :recipe-analyzer:processResources NO-SOURCE
+> Task :recipe-engine:processResources NO-SOURCE
+> Task :registry:processResources NO-SOURCE
+> Task :app:processTestResources NO-SOURCE
+> Task :companion-client:processTestResources NO-SOURCE
+> Task :companion-server:processResources NO-SOURCE
+> Task :desktop-ui:processResources
+> Task :desktop-ui:processTestResources NO-SOURCE
+> Task :companion-server:processTestResources NO-SOURCE
+> Task :exporters:processTestResources NO-SOURCE
+> Task :integrations:processTestResources NO-SOURCE
+> Task :recipe-analyzer:processTestResources NO-SOURCE
+> Task :modpack-parser:processTestResources NO-SOURCE
+> Task :registry:processTestResources NO-SOURCE
+> Task :recipe-engine:processTestResources NO-SOURCE
+> Task :core:compileJava
+> Task :core:processResources NO-SOURCE
+> Task :core:classes
+> Task :core:jar
+> Task :core:assemble
+> Task :companion-protocol:compileJava
+> Task :companion-protocol:processResources NO-SOURCE
+> Task :companion-protocol:classes
+> Task :companion-protocol:jar
+> Task :companion-server:compileJava
+> Task :companion-server:classes
+> Task :companion-server:jar
+> Task :companion-protocol:assemble
+> Task :companion-protocol:compileTestJava
+> Task :companion-protocol:processTestResources NO-SOURCE
+> Task :companion-protocol:testClasses
+> Task :registry:compileJava
+> Task :companion-protocol:test
+> Task :registry:classes
+> Task :registry:jar
+> Task :companion-protocol:check
+> Task :companion-protocol:build
+> Task :companion-server:assemble
+> Task :companion-server:compileTestJava NO-SOURCE
+> Task :companion-server:testClasses UP-TO-DATE
+> Task :companion-server:test NO-SOURCE
+> Task :companion-server:check UP-TO-DATE
+> Task :companion-server:build
+> Task :registry:assemble
+> Task :core:compileTestJava
+> Task :core:processTestResources NO-SOURCE
+> Task :core:testClasses
+> Task :recipe-engine:compileJava
+> Task :companion-client:compileJava
+> Task :modpack-parser:compileJava
+> Task :companion-client:classes
+> Task :companion-client:jar
+> Task :modpack-parser:classes
+> Task :core:test
+> Task :recipe-engine:classes
+> Task :recipe-engine:jar
+> Task :companion-client:assemble
+> Task :core:check
+> Task :core:build
+> Task :recipe-engine:assemble
+> Task :modpack-parser:jar
+> Task :modpack-parser:assemble
+> Task :recipe-engine:compileTestJava
+> Task :recipe-engine:testClasses
+> Task :modpack-parser:compileTestJava
+> Task :modpack-parser:testClasses
+> Task :integrations:compileJava
+> Task :recipe-engine:test
+> Task :registry:compileTestJava
+> Task :integrations:classes
+> Task :integrations:jar
+> Task :integrations:assemble
+> Task :exporters:compileJava
+> Task :integrations:compileTestJava
+> Task :exporters:classes
+> Task :exporters:jar
+
+> Task :modpack-parser:test
+
+ModScannerTest > symbolicLinkOutsideRootIsRejectedWhenSupported() SKIPPED
+
+RealModpackImportTest > importsRealForge1201InstanceReadOnly() SKIPPED
+
+> Task :recipe-analyzer:compileJava
+> Task :recipe-analyzer:classes
+> Task :exporters:assemble
+> Task :recipe-analyzer:jar
+> Task :integrations:testClasses
+> Task :companion-client:compileTestJava
+> Task :companion-client:testClasses
+> Task :exporters:compileTestJava
+> Task :exporters:testClasses
+
+> Task :companion-client:test
+
+GregTechKubeJsLiveTest > realGtEditingExportAndRestart() SKIPPED
+
+GregTechRuntimeRecipeAdapterTest > itemInputsAndOutputs() SKIPPED
+
+GregTechRuntimeRecipeAdapterTest > chancedOutputsRetainChanceMaxAndBoost() SKIPPED
+
+GregTechRuntimeRecipeAdapterTest > nonConsumableInputsStayDistinct() SKIPPED
+
+GregTechRuntimeRecipeAdapterTest > durationAndEUtAreReceived() SKIPPED
+
+GregTechRuntimeRecipeAdapterTest > conditionsCategoryAndExtraDataAreAvailable() SKIPPED
+
+GregTechRuntimeRecipeAdapterTest > fluidInputsAndOutputs() SKIPPED
+
+RuntimeLiveIntegrationTest > actualForgeRegistryRecipeSnapshotAndReconnect() SKIPPED
+
+RuntimeRecipeAdapterTest > actualCookingRecipeKeepsLoadedTimeExperienceInputsAndResult() SKIPPED
+
+RuntimeRecipeAdapterTest > unknownRecipesNeverAcquireGuessedIngredientsOrEditableSourceJson() SKIPPED
+
+> Task :desktop-ui:compileJava
+> Task :integrations:test
+> Task :desktop-ui:classes
+> Task :desktop-ui:jar
+> Task :desktop-ui:assemble
+> Task :app:compileJava
+> Task :app:classes
+> Task :app:jar
+> Task :app:startScripts
+> Task :desktop-ui:compileTestJava
+> Task :desktop-ui:testClasses
+> Task :app:distTar
+> Task :companion-client:check
+> Task :companion-client:build
+> Task :integrations:check
+> Task :integrations:build
+> Task :modpack-parser:check
+> Task :modpack-parser:build
+> Task :recipe-analyzer:assemble
+> Task :app:distZip
+> Task :app:assemble
+> Task :recipe-analyzer:compileTestJava
+> Task :recipe-analyzer:testClasses
+> Task :desktop-ui:test
+> Task :desktop-ui:check
+> Task :desktop-ui:build
+> Task :recipe-engine:check
+> Task :recipe-engine:build
+> Task :registry:testClasses
+> Task :app:compileTestJava
+> Task :app:testClasses
+
+> Task :recipe-analyzer:test
+
+AnalyzerSnapshotIntegrationTest > analyzesActualPreviouslyCapturedMinecraftSnapshot() SKIPPED
+
+AnalyzerStressTest > sixtyThousandRecipeChainAndSixHundredSyntheticModIdentities() SKIPPED
+
+> Task :registry:test
+> Task :registry:check
+> Task :registry:build
+> Task :recipe-analyzer:check
+> Task :recipe-analyzer:build
+
+> Task :app:test
+
+ExportIntegrationTest > exportsActualStaticRecipeToTemporaryDirectoryOnly() SKIPPED
+
+RealRecipeEditingTest > editsRealRecipeWithUndoPersistenceAndSourceConflictWithoutChangingJar() SKIPPED
+
+RealStaticAnalysisTest > realForge1201Instance() SKIPPED
+
+> Task :app:check
+> Task :app:build
+> Task :exporters:test
+> Task :exporters:check
+> Task :exporters:build
+> Task :build
+
+BUILD SUCCESSFUL in 52s
+64 actionable tasks: 63 executed, 1 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.0/userguide/configuration_cache_enabling.html

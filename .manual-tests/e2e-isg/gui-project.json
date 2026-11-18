@@ -1,0 +1,22 @@
+{
+  "formatVersion" : 1,
+  "sha256" : "cacd9ecce51188960a190346e596fc1375bceabfecee025ff7e1ef80fce3bd9a",
+  "project" : {
+    "modpackDirectory" : "G:\\PrismLauncher\\instances\\ISG-0.6.0-alpha.1-harsh",
+    "changes" : [ {
+      "id" : "minecraft:tnt",
+      "type" : "UPDATE",
+      "timestamp" : "2026-11-18T08:10:06.594817600Z",
+      "originals" : [ {
+        "hash" : "aa56447ab88becff1db35cd5c6add8a0bfea29a57c9c9cc8f81fdc23ad2efa63",
+        "sourceType" : "MOD_JAR",
+        "modIds" : [ "biomesoplenty" ],
+        "archivePath" : "G:\\PrismLauncher\\instances\\ISG-0.6.0-alpha.1-harsh\\minecraft\\mods\\BiomesOPlenty-1.20.1-18.0.0.592.jar",
+        "internalPath" : "data/minecraft/recipes/tnt.json",
+        "method" : "Static resource scan"
+      } ],
+      "replacementJson" : [ "{\"type\":\"minecraft:crafting_shaped\",\"pattern\":[\"X#X\",\"#X#\",\"X#X\"],\"key\":{\"#\":{\"tag\":\"minecraft:sand\"},\"X\":{\"item\":\"minecraft:gunpowder\"}},\"result\":{\"item\":\"minecraft:tnt\",\"count\":2}}" ],
+      "metadata" : { }
+    } ]
+  }
+}

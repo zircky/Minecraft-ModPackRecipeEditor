@@ -1,0 +1,1 @@
+Synthetic test fixture for Phase 5 UI verification. No real mods or game data. Not a playable Minecraft instance.

@@ -1,0 +1,5 @@
+Actual Forge runtime: Environment[sessionId=734a4d0f-5310-4f41-8389-f7d994b50774, sourceInstance=L:\My Add\RecipeEditor\minecraft-companions\forge-1.20.1\run-vanilla, minecraftVersion=1.20.1, loader=FORGE, loaderVersion=47.4.10, companionVersion=0.1.0, generation=1, collectedAt=2026-11-17T18:18:11.894874400Z]
+Registries=2294, tags=556, recipes=1174, mods=3
+GT adapter recipes=0
+TCP/auth/sync/snapshot/re-sync/disconnect/reconnect verified. GTCEu present=false
+Minecraft process shutdown detected by heartbeat

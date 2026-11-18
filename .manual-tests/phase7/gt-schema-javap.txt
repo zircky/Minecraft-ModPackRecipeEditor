@@ -1,0 +1,354 @@
+Compiled from "GTRecipeSchema.java"
+public interface com.gregtechceu.gtceu.integration.kjs.recipe.GTRecipeSchema {
+  public static final dev.latvian.mods.kubejs.recipe.RecipeKey<net.minecraft.resources.ResourceLocation> ID;
+
+  public static final dev.latvian.mods.kubejs.recipe.RecipeKey<java.lang.Long> DURATION;
+
+  public static final dev.latvian.mods.kubejs.recipe.RecipeKey<net.minecraft.nbt.CompoundTag> DATA;
+
+  public static final dev.latvian.mods.kubejs.recipe.RecipeKey<com.gregtechceu.gtceu.api.recipe.RecipeCondition[]> CONDITIONS;
+
+  public static final dev.latvian.mods.kubejs.recipe.RecipeKey<net.minecraft.resources.ResourceLocation> CATEGORY;
+
+  public static final dev.latvian.mods.kubejs.recipe.RecipeKey<com.gregtechceu.gtceu.integration.kjs.recipe.components.CapabilityMap> ALL_INPUTS;
+
+  public static final dev.latvian.mods.kubejs.recipe.RecipeKey<com.gregtechceu.gtceu.integration.kjs.recipe.components.CapabilityMap> ALL_TICK_INPUTS;
+
+  public static final dev.latvian.mods.kubejs.recipe.RecipeKey<com.gregtechceu.gtceu.integration.kjs.recipe.components.CapabilityMap> ALL_OUTPUTS;
+
+  public static final dev.latvian.mods.kubejs.recipe.RecipeKey<com.gregtechceu.gtceu.integration.kjs.recipe.components.CapabilityMap> ALL_TICK_OUTPUTS;
+
+  public static final dev.latvian.mods.kubejs.recipe.RecipeKey<java.util.Map<com.gregtechceu.gtceu.api.capability.recipe.RecipeCapability<?>, com.gregtechceu.gtceu.api.recipe.chance.logic.ChanceLogic>> INPUT_CHANCE_LOGICS;
+
+  public static final dev.latvian.mods.kubejs.recipe.RecipeKey<java.util.Map<com.gregtechceu.gtceu.api.capability.recipe.RecipeCapability<?>, com.gregtechceu.gtceu.api.recipe.chance.logic.ChanceLogic>> OUTPUT_CHANCE_LOGICS;
+
+  public static final dev.latvian.mods.kubejs.recipe.RecipeKey<java.util.Map<com.gregtechceu.gtceu.api.capability.recipe.RecipeCapability<?>, com.gregtechceu.gtceu.api.recipe.chance.logic.ChanceLogic>> TICK_INPUT_CHANCE_LOGICS;
+
+  public static final dev.latvian.mods.kubejs.recipe.RecipeKey<java.util.Map<com.gregtechceu.gtceu.api.capability.recipe.RecipeCapability<?>, com.gregtechceu.gtceu.api.recipe.chance.logic.ChanceLogic>> TICK_OUTPUT_CHANCE_LOGICS;
+
+  public static final dev.latvian.mods.kubejs.recipe.schema.RecipeSchema SCHEMA;
+
+  public static java.lang.String makeDefaultRecipeId(dev.latvian.mods.kubejs.recipe.RecipeJS);
+    Code:
+       0: aload_0
+       1: aload_0
+       2: getstatic     #55                 // Field ALL_OUTPUTS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+       5: invokevirtual #61                 // Method dev/latvian/mods/kubejs/recipe/RecipeJS.getValue:(Ldev/latvian/mods/kubejs/recipe/RecipeKey;)Ljava/lang/Object;
+       8: checkcast     #63                 // class com/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMap
+      11: invokestatic  #67                 // InterfaceMethod resolveRecipeIdFromOutputs:(Ldev/latvian/mods/kubejs/recipe/RecipeJS;Lcom/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMap;)Ljava/lang/String;
+      14: astore_1
+      15: aload_1
+      16: ifnonnull     34
+      19: aload_0
+      20: aload_0
+      21: getstatic     #69                 // Field ALL_TICK_OUTPUTS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+      24: invokevirtual #61                 // Method dev/latvian/mods/kubejs/recipe/RecipeJS.getValue:(Ldev/latvian/mods/kubejs/recipe/RecipeKey;)Ljava/lang/Object;
+      27: checkcast     #63                 // class com/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMap
+      30: invokestatic  #67                 // InterfaceMethod resolveRecipeIdFromOutputs:(Ldev/latvian/mods/kubejs/recipe/RecipeJS;Lcom/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMap;)Ljava/lang/String;
+      33: astore_1
+      34: aload_1
+      35: ifnonnull     40
+      38: aconst_null
+      39: areturn
+      40: aload_1
+      41: invokestatic  #77                 // Method dev/latvian/mods/kubejs/recipe/schema/RecipeSchema.normalizeId:(Ljava/lang/String;)Ljava/lang/String;
+      44: bipush        47
+      46: bipush        95
+      48: invokevirtual #81                 // Method java/lang/String.replace:(CC)Ljava/lang/String;
+      51: areturn
+
+  private static java.lang.String resolveRecipeIdFromOutputs(dev.latvian.mods.kubejs.recipe.RecipeJS, com.gregtechceu.gtceu.integration.kjs.recipe.components.CapabilityMap);
+    Code:
+       0: aload_1
+       1: ifnull        11
+       4: aload_1
+       5: invokevirtual #89                 // Method com/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMap.isEmpty:()Z
+       8: ifeq          13
+      11: aconst_null
+      12: areturn
+      13: aload_0
+      14: aload_1
+      15: invokestatic  #92                 // InterfaceMethod parseItemOutputId:(Ldev/latvian/mods/kubejs/recipe/RecipeJS;Lcom/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMap;)Ljava/lang/String;
+      18: astore_2
+      19: aload_2
+      20: ifnull        25
+      23: aload_2
+      24: areturn
+      25: aload_0
+      26: aload_1
+      27: invokestatic  #95                 // InterfaceMethod parseFluidOutputId:(Ldev/latvian/mods/kubejs/recipe/RecipeJS;Lcom/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMap;)Ljava/lang/String;
+      30: areturn
+
+  private static java.lang.String parseItemOutputId(dev.latvian.mods.kubejs.recipe.RecipeJS, com.gregtechceu.gtceu.integration.kjs.recipe.components.CapabilityMap);
+    Code:
+       0: aload_1
+       1: getstatic     #104                // Field com/gregtechceu/gtceu/api/capability/recipe/ItemRecipeCapability.CAP:Lcom/gregtechceu/gtceu/api/capability/recipe/ItemRecipeCapability;
+       4: invokevirtual #108                // Method com/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMap.get:(Ljava/lang/Object;)Ljava/lang/Object;
+       7: checkcast     #110                // class "[Lcom/gregtechceu/gtceu/api/recipe/content/Content;"
+      10: astore_2
+      11: aload_2
+      12: ifnull        79
+      15: aload_2
+      16: arraylength
+      17: ifle          79
+      20: getstatic     #114                // Field com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents.ITEM_OUT:Lcom/gregtechceu/gtceu/integration/kjs/recipe/components/ContentJS;
+      23: invokevirtual #120                // Method com/gregtechceu/gtceu/integration/kjs/recipe/components/ContentJS.baseComponent:()Ldev/latvian/mods/kubejs/recipe/component/RecipeComponent;
+      26: aload_0
+      27: aload_2
+      28: iconst_0
+      29: aaload
+      30: getfield      #126                // Field com/gregtechceu/gtceu/api/recipe/content/Content.content:Ljava/lang/Object;
+      33: invokeinterface #132,  3          // InterfaceMethod dev/latvian/mods/kubejs/recipe/component/RecipeComponent.read:(Ldev/latvian/mods/kubejs/recipe/RecipeJS;Ljava/lang/Object;)Ljava/lang/Object;
+      38: checkcast     #134                // class com/gregtechceu/gtceu/integration/kjs/recipe/components/ExtendedOutputItem
+      41: astore_3
+      42: aload_3
+      43: getfield      #137                // Field com/gregtechceu/gtceu/integration/kjs/recipe/components/ExtendedOutputItem.item:Lnet/minecraft/world/item/ItemStack;
+      46: invokevirtual #143                // Method net/minecraft/world/item/ItemStack.m_220173_:()Lnet/minecraft/core/Holder;
+      49: invokeinterface #147,  1          // InterfaceMethod net/minecraft/core/Holder.m_203543_:()Ljava/util/Optional;
+      54: astore        4
+      56: aload         4
+      58: invokevirtual #152                // Method java/util/Optional.isPresent:()Z
+      61: ifeq          79
+      64: aload         4
+      66: invokevirtual #155                // Method java/util/Optional.get:()Ljava/lang/Object;
+      69: checkcast     #157                // class net/minecraft/resources/ResourceKey
+      72: invokevirtual #161                // Method net/minecraft/resources/ResourceKey.m_135782_:()Lnet/minecraft/resources/ResourceLocation;
+      75: invokevirtual #167                // Method net/minecraft/resources/ResourceLocation.m_135815_:()Ljava/lang/String;
+      78: areturn
+      79: aconst_null
+      80: areturn
+
+  private static java.lang.String parseFluidOutputId(dev.latvian.mods.kubejs.recipe.RecipeJS, com.gregtechceu.gtceu.integration.kjs.recipe.components.CapabilityMap);
+    Code:
+       0: aload_1
+       1: getstatic     #178                // Field com/gregtechceu/gtceu/api/capability/recipe/FluidRecipeCapability.CAP:Lcom/gregtechceu/gtceu/api/capability/recipe/FluidRecipeCapability;
+       4: invokevirtual #108                // Method com/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMap.get:(Ljava/lang/Object;)Ljava/lang/Object;
+       7: checkcast     #110                // class "[Lcom/gregtechceu/gtceu/api/recipe/content/Content;"
+      10: astore_2
+      11: aload_2
+      12: ifnull        97
+      15: aload_2
+      16: arraylength
+      17: ifle          97
+      20: getstatic     #181                // Field com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents.FLUID_OUT:Lcom/gregtechceu/gtceu/integration/kjs/recipe/components/ContentJS;
+      23: invokevirtual #120                // Method com/gregtechceu/gtceu/integration/kjs/recipe/components/ContentJS.baseComponent:()Ldev/latvian/mods/kubejs/recipe/component/RecipeComponent;
+      26: aload_0
+      27: aload_2
+      28: iconst_0
+      29: aaload
+      30: getfield      #126                // Field com/gregtechceu/gtceu/api/recipe/content/Content.content:Ljava/lang/Object;
+      33: invokeinterface #132,  3          // InterfaceMethod dev/latvian/mods/kubejs/recipe/component/RecipeComponent.read:(Ldev/latvian/mods/kubejs/recipe/RecipeJS;Ljava/lang/Object;)Ljava/lang/Object;
+      38: checkcast     #9                  // class com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents$FluidIngredientJS
+      41: astore_3
+      42: aload_3
+      43: invokevirtual #185                // Method com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents$FluidIngredientJS.ingredient:()Lcom/gregtechceu/gtceu/api/recipe/ingredient/FluidIngredient;
+      46: invokevirtual #191                // Method com/gregtechceu/gtceu/api/recipe/ingredient/FluidIngredient.getStacks:()[Lnet/minecraftforge/fluids/FluidStack;
+      49: astore        4
+      51: aload         4
+      53: arraylength
+      54: ifne          59
+      57: aconst_null
+      58: areturn
+      59: aload         4
+      61: iconst_0
+      62: aaload
+      63: invokevirtual #199                // Method net/minecraftforge/fluids/FluidStack.getFluid:()Lnet/minecraft/world/level/material/Fluid;
+      66: invokevirtual #205                // Method net/minecraft/world/level/material/Fluid.m_205069_:()Lnet/minecraft/core/Holder$Reference;
+      69: invokevirtual #206                // Method net/minecraft/core/Holder$Reference.m_203543_:()Ljava/util/Optional;
+      72: astore        5
+      74: aload         5
+      76: invokevirtual #152                // Method java/util/Optional.isPresent:()Z
+      79: ifeq          97
+      82: aload         5
+      84: invokevirtual #155                // Method java/util/Optional.get:()Ljava/lang/Object;
+      87: checkcast     #157                // class net/minecraft/resources/ResourceKey
+      90: invokevirtual #161                // Method net/minecraft/resources/ResourceKey.m_135782_:()Lnet/minecraft/resources/ResourceLocation;
+      93: invokevirtual #167                // Method net/minecraft/resources/ResourceLocation.m_135815_:()Ljava/lang/String;
+      96: areturn
+      97: aconst_null
+      98: areturn
+
+  private static void lambda$static$0(dev.latvian.mods.kubejs.recipe.RecipeJS, dev.latvian.mods.kubejs.recipe.schema.RecipeSchemaType, dev.latvian.mods.kubejs.recipe.RecipeKey[], dev.latvian.mods.kubejs.recipe.component.ComponentValueMap);
+    Code:
+       0: aload_0
+       1: aload_3
+       2: aload_0
+       3: getstatic     #213                // Field ID:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+       6: invokevirtual #218                // Method dev/latvian/mods/kubejs/recipe/component/ComponentValueMap.getValue:(Ldev/latvian/mods/kubejs/recipe/RecipeJS;Ldev/latvian/mods/kubejs/recipe/RecipeKey;)Ljava/lang/Object;
+       9: checkcast     #163                // class net/minecraft/resources/ResourceLocation
+      12: invokevirtual #221                // Method dev/latvian/mods/kubejs/recipe/RecipeJS.id:(Lnet/minecraft/resources/ResourceLocation;)Ldev/latvian/mods/kubejs/recipe/RecipeJS;
+      15: pop
+      16: return
+
+  static {};
+    Code:
+       0: getstatic     #233                // Field com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents.RESOURCE_LOCATION:Ldev/latvian/mods/kubejs/recipe/component/RecipeComponent;
+       3: ldc           #234                // String id
+       5: invokeinterface #238,  2          // InterfaceMethod dev/latvian/mods/kubejs/recipe/component/RecipeComponent.key:(Ljava/lang/String;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+      10: putstatic     #213                // Field ID:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+      13: getstatic     #244                // Field dev/latvian/mods/kubejs/recipe/component/TimeComponent.TICKS:Ldev/latvian/mods/kubejs/recipe/component/TimeComponent;
+      16: ldc           #246                // String duration
+      18: invokevirtual #247                // Method dev/latvian/mods/kubejs/recipe/component/TimeComponent.key:(Ljava/lang/String;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+      21: ldc2_w        #248                // long 100l
+      24: invokestatic  #255                // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;
+      27: invokevirtual #261                // Method dev/latvian/mods/kubejs/recipe/RecipeKey.optional:(Ljava/lang/Object;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+      30: putstatic     #263                // Field DURATION:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+      33: getstatic     #266                // Field com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents.TAG:Ldev/latvian/mods/kubejs/recipe/component/RecipeComponent;
+      36: ldc_w         #268                // String data
+      39: invokeinterface #238,  2          // InterfaceMethod dev/latvian/mods/kubejs/recipe/component/RecipeComponent.key:(Ljava/lang/String;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+      44: aconst_null
+      45: checkcast     #270                // class net/minecraft/nbt/CompoundTag
+      48: invokevirtual #261                // Method dev/latvian/mods/kubejs/recipe/RecipeKey.optional:(Ljava/lang/Object;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+      51: putstatic     #272                // Field DATA:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+      54: getstatic     #275                // Field com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents.RECIPE_CONDITION:Ldev/latvian/mods/kubejs/recipe/component/RecipeComponent;
+      57: invokeinterface #279,  1          // InterfaceMethod dev/latvian/mods/kubejs/recipe/component/RecipeComponent.asArray:()Ldev/latvian/mods/kubejs/recipe/component/ArrayRecipeComponent;
+      62: ldc_w         #281                // String recipeConditions
+      65: invokevirtual #284                // Method dev/latvian/mods/kubejs/recipe/component/ArrayRecipeComponent.key:(Ljava/lang/String;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+      68: iconst_0
+      69: anewarray     #286                // class com/gregtechceu/gtceu/api/recipe/RecipeCondition
+      72: invokevirtual #261                // Method dev/latvian/mods/kubejs/recipe/RecipeKey.optional:(Ljava/lang/Object;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+      75: putstatic     #288                // Field CONDITIONS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+      78: getstatic     #233                // Field com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents.RESOURCE_LOCATION:Ldev/latvian/mods/kubejs/recipe/component/RecipeComponent;
+      81: ldc_w         #290                // String category
+      84: invokeinterface #238,  2          // InterfaceMethod dev/latvian/mods/kubejs/recipe/component/RecipeComponent.key:(Ljava/lang/String;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+      89: invokevirtual #294                // Method dev/latvian/mods/kubejs/recipe/RecipeKey.defaultOptional:()Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+      92: putstatic     #296                // Field CATEGORY:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+      95: getstatic     #300                // Field com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents.IN:Lcom/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMapComponent;
+      98: ldc_w         #302                // String inputs
+     101: invokevirtual #305                // Method com/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMapComponent.key:(Ljava/lang/String;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     104: invokevirtual #294                // Method dev/latvian/mods/kubejs/recipe/RecipeKey.defaultOptional:()Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     107: putstatic     #307                // Field ALL_INPUTS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     110: getstatic     #310                // Field com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents.TICK_IN:Lcom/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMapComponent;
+     113: ldc_w         #312                // String tickInputs
+     116: invokevirtual #305                // Method com/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMapComponent.key:(Ljava/lang/String;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     119: invokevirtual #294                // Method dev/latvian/mods/kubejs/recipe/RecipeKey.defaultOptional:()Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     122: putstatic     #314                // Field ALL_TICK_INPUTS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     125: getstatic     #317                // Field com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents.OUT:Lcom/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMapComponent;
+     128: ldc_w         #318                // String outputs
+     131: invokevirtual #305                // Method com/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMapComponent.key:(Ljava/lang/String;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     134: invokevirtual #294                // Method dev/latvian/mods/kubejs/recipe/RecipeKey.defaultOptional:()Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     137: putstatic     #55                 // Field ALL_OUTPUTS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     140: getstatic     #321                // Field com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents.TICK_OUT:Lcom/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMapComponent;
+     143: ldc_w         #323                // String tickOutputs
+     146: invokevirtual #305                // Method com/gregtechceu/gtceu/integration/kjs/recipe/components/CapabilityMapComponent.key:(Ljava/lang/String;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     149: invokevirtual #294                // Method dev/latvian/mods/kubejs/recipe/RecipeKey.defaultOptional:()Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     152: putstatic     #69                 // Field ALL_TICK_OUTPUTS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     155: getstatic     #326                // Field com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents.CHANCE_LOGIC_MAP:Ldev/latvian/mods/kubejs/recipe/component/RecipeComponent;
+     158: ldc_w         #328                // String inputChanceLogics
+     161: invokeinterface #238,  2          // InterfaceMethod dev/latvian/mods/kubejs/recipe/component/RecipeComponent.key:(Ljava/lang/String;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     166: invokevirtual #294                // Method dev/latvian/mods/kubejs/recipe/RecipeKey.defaultOptional:()Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     169: putstatic     #330                // Field INPUT_CHANCE_LOGICS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     172: getstatic     #326                // Field com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents.CHANCE_LOGIC_MAP:Ldev/latvian/mods/kubejs/recipe/component/RecipeComponent;
+     175: ldc_w         #332                // String outputChanceLogics
+     178: invokeinterface #238,  2          // InterfaceMethod dev/latvian/mods/kubejs/recipe/component/RecipeComponent.key:(Ljava/lang/String;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     183: invokevirtual #294                // Method dev/latvian/mods/kubejs/recipe/RecipeKey.defaultOptional:()Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     186: putstatic     #334                // Field OUTPUT_CHANCE_LOGICS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     189: getstatic     #326                // Field com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents.CHANCE_LOGIC_MAP:Ldev/latvian/mods/kubejs/recipe/component/RecipeComponent;
+     192: ldc_w         #336                // String tickInputChanceLogics
+     195: invokeinterface #238,  2          // InterfaceMethod dev/latvian/mods/kubejs/recipe/component/RecipeComponent.key:(Ljava/lang/String;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     200: invokevirtual #294                // Method dev/latvian/mods/kubejs/recipe/RecipeKey.defaultOptional:()Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     203: putstatic     #338                // Field TICK_INPUT_CHANCE_LOGICS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     206: getstatic     #326                // Field com/gregtechceu/gtceu/integration/kjs/recipe/components/GTRecipeComponents.CHANCE_LOGIC_MAP:Ldev/latvian/mods/kubejs/recipe/component/RecipeComponent;
+     209: ldc_w         #340                // String tickOutputChanceLogics
+     212: invokeinterface #238,  2          // InterfaceMethod dev/latvian/mods/kubejs/recipe/component/RecipeComponent.key:(Ljava/lang/String;)Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     217: invokevirtual #294                // Method dev/latvian/mods/kubejs/recipe/RecipeKey.defaultOptional:()Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     220: putstatic     #342                // Field TICK_OUTPUT_CHANCE_LOGICS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     223: new           #73                 // class dev/latvian/mods/kubejs/recipe/schema/RecipeSchema
+     226: dup
+     227: ldc           #7                  // class com/gregtechceu/gtceu/integration/kjs/recipe/GTRecipeSchema$GTRecipeJS
+     229: invokedynamic #359,  0            // InvokeDynamic #0:get:()Ljava/util/function/Supplier;
+     234: bipush        12
+     236: anewarray     #257                // class dev/latvian/mods/kubejs/recipe/RecipeKey
+     239: dup
+     240: iconst_0
+     241: getstatic     #263                // Field DURATION:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     244: aastore
+     245: dup
+     246: iconst_1
+     247: getstatic     #272                // Field DATA:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     250: aastore
+     251: dup
+     252: iconst_2
+     253: getstatic     #288                // Field CONDITIONS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     256: aastore
+     257: dup
+     258: iconst_3
+     259: getstatic     #307                // Field ALL_INPUTS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     262: aastore
+     263: dup
+     264: iconst_4
+     265: getstatic     #314                // Field ALL_TICK_INPUTS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     268: aastore
+     269: dup
+     270: iconst_5
+     271: getstatic     #55                 // Field ALL_OUTPUTS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     274: aastore
+     275: dup
+     276: bipush        6
+     278: getstatic     #69                 // Field ALL_TICK_OUTPUTS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     281: aastore
+     282: dup
+     283: bipush        7
+     285: getstatic     #330                // Field INPUT_CHANCE_LOGICS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     288: aastore
+     289: dup
+     290: bipush        8
+     292: getstatic     #334                // Field OUTPUT_CHANCE_LOGICS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     295: aastore
+     296: dup
+     297: bipush        9
+     299: getstatic     #338                // Field TICK_INPUT_CHANCE_LOGICS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     302: aastore
+     303: dup
+     304: bipush        10
+     306: getstatic     #342                // Field TICK_OUTPUT_CHANCE_LOGICS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     309: aastore
+     310: dup
+     311: bipush        11
+     313: getstatic     #296                // Field CATEGORY:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     316: aastore
+     317: invokespecial #362                // Method dev/latvian/mods/kubejs/recipe/schema/RecipeSchema."<init>":(Ljava/lang/Class;Ljava/util/function/Supplier;[Ldev/latvian/mods/kubejs/recipe/RecipeKey;)V
+     320: invokedynamic #370,  0            // InvokeDynamic #1:setValues:()Ldev/latvian/mods/kubejs/recipe/schema/RecipeConstructor$Factory;
+     325: iconst_1
+     326: anewarray     #257                // class dev/latvian/mods/kubejs/recipe/RecipeKey
+     329: dup
+     330: iconst_0
+     331: getstatic     #213                // Field ID:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     334: aastore
+     335: invokevirtual #374                // Method dev/latvian/mods/kubejs/recipe/schema/RecipeSchema.constructor:(Ldev/latvian/mods/kubejs/recipe/schema/RecipeConstructor$Factory;[Ldev/latvian/mods/kubejs/recipe/RecipeKey;)Ldev/latvian/mods/kubejs/recipe/schema/RecipeSchema;
+     338: getstatic     #378                // Field dev/latvian/mods/kubejs/recipe/schema/RecipeConstructor$Factory.DEFAULT:Ldev/latvian/mods/kubejs/recipe/schema/RecipeConstructor$Factory;
+     341: iconst_0
+     342: anewarray     #257                // class dev/latvian/mods/kubejs/recipe/RecipeKey
+     345: invokevirtual #374                // Method dev/latvian/mods/kubejs/recipe/schema/RecipeSchema.constructor:(Ldev/latvian/mods/kubejs/recipe/schema/RecipeConstructor$Factory;[Ldev/latvian/mods/kubejs/recipe/RecipeKey;)Ldev/latvian/mods/kubejs/recipe/schema/RecipeSchema;
+     348: bipush        6
+     350: anewarray     #257                // class dev/latvian/mods/kubejs/recipe/RecipeKey
+     353: dup
+     354: iconst_0
+     355: getstatic     #263                // Field DURATION:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     358: aastore
+     359: dup
+     360: iconst_1
+     361: getstatic     #288                // Field CONDITIONS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     364: aastore
+     365: dup
+     366: iconst_2
+     367: getstatic     #307                // Field ALL_INPUTS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     370: aastore
+     371: dup
+     372: iconst_3
+     373: getstatic     #55                 // Field ALL_OUTPUTS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     376: aastore
+     377: dup
+     378: iconst_4
+     379: getstatic     #314                // Field ALL_TICK_INPUTS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     382: aastore
+     383: dup
+     384: iconst_5
+     385: getstatic     #69                 // Field ALL_TICK_OUTPUTS:Ldev/latvian/mods/kubejs/recipe/RecipeKey;
+     388: aastore
+     389: invokevirtual #381                // Method dev/latvian/mods/kubejs/recipe/schema/RecipeSchema.constructor:([Ldev/latvian/mods/kubejs/recipe/RecipeKey;)Ldev/latvian/mods/kubejs/recipe/schema/RecipeSchema;
+     392: invokedynamic #390,  0            // InvokeDynamic #2:apply:()Ljava/util/function/Function;
+     397: invokevirtual #394                // Method dev/latvian/mods/kubejs/recipe/schema/RecipeSchema.uniqueId:(Ljava/util/function/Function;)Ldev/latvian/mods/kubejs/recipe/schema/RecipeSchema;
+     400: putstatic     #396                // Field SCHEMA:Ldev/latvian/mods/kubejs/recipe/schema/RecipeSchema;
+     403: return
+}

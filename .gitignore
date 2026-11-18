@@ -1,0 +1,17 @@
+.gradle/
+**/build/
+.idea/
+*.iml
+logs/
+.gradle-user-home/
+
+.manual-tests/phase6/gt-reference/
+**/run/
+**/run-client/
+**/.gradle/
+
+**/run-vanilla/
+
+.manual-tests/phase10/tools/
+.manual-tests/phase10/smoke-user-data/
+.manual-tests/phase10/smoke-working-directory/
