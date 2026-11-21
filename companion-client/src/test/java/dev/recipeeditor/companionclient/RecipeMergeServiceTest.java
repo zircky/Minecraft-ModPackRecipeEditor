@@ -28,6 +28,14 @@ final class RecipeMergeServiceTest {
         assertEquals(SourceType.RUNTIME,merged.provenance().activeDefinition().orElseThrow().type());
         assertTrue(merged.provenance().overriddenDefinitions().isEmpty());
         assertTrue(merged.provenance().activeDefinition().orElseThrow().discoveryMethod().contains(snapshot.snapshotId()));
+        assertTrue(merged.provenance().runtimeConfirmed());
+        final var observation=merged.provenance().runtimeObservation().orElseThrow();
+        assertEquals(snapshot.snapshotId(),observation.snapshotId());
+        assertEquals(snapshot.environment().collectedAt(),observation.collectedAt());
+        assertEquals(merged.runtime().type(),observation.recipeType());
+        assertEquals(merged.runtime().serializer(),observation.serializer());
+        assertEquals(merged.runtime().sourceInformation(),observation.sourceInformation());
+        assertTrue(merged.provenance().describe().contains("Runtime Snapshot ID: "+snapshot.snapshotId()));
     }
     @Test void matchingKnownFieldsPreserveBothSourcesWithoutClaimingOriginalJson(){final var original=recipe("test:smelt",raw);final var result=new RecipeMergeService().merge(index(List.of(original)),new RuntimeFixtures().snapshot(root,"s",1));assertTrue(result.changedOrMissing().isEmpty());assertEquals(List.of(original),result.entries().getFirst().staticDefinitions());assertNotNull(result.entries().getFirst().runtime());assertTrue(result.entries().getFirst().diagnostics().stream().anyMatch(d->d.contains("not proven")));}
     @Test void changedOutputAndMissingRecipeAreDiagnosed(){final var result=new RecipeMergeService().merge(index(List.of(recipe("test:smelt",raw.replace("minecraft:iron_ingot","minecraft:gold_ingot")),recipe("test:missing",raw))),new RuntimeFixtures().snapshot(root,"s",1));assertEquals(Set.of(ResourceLocation.parse("test:smelt"),ResourceLocation.parse("test:missing")),result.changedOrMissing());}

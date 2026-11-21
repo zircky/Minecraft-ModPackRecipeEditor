@@ -22,4 +22,10 @@ public final class RecipeSourceResolver {
         if(observed.type()!=SourceType.RUNTIME)throw new IllegalArgumentException("Runtime observation required");
         return new RecipeProvenance(id,RecipeProvenance.Scope.RUNTIME,candidates,Optional.of(observed),List.of(),ProvenanceConfidence.RUNTIME_OBSERVED_ORIGIN_UNKNOWN);
     }
+    public RecipeProvenance runtime(final RuntimeRecipeObservation observation, final List<RecipeSource> candidates,
+            final RecipeSource observed) {
+        if(observed.type()!=SourceType.RUNTIME)throw new IllegalArgumentException("Runtime observation required");
+        return new RecipeProvenance(observation.recipeId(),RecipeProvenance.Scope.RUNTIME,candidates,Optional.of(observed),
+                List.of(),ProvenanceConfidence.RUNTIME_OBSERVED_ORIGIN_UNKNOWN,Optional.of(observation));
+    }
 }
