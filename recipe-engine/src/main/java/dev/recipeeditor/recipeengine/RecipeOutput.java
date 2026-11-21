@@ -8,5 +8,6 @@ public sealed interface RecipeOutput {
     }
     /** A mod capability output; quantity/chance remain in its typed integration model and raw representation. */
     record Capability(String capability, IngredientDefinition ingredient, String rawDetails) implements RecipeOutput { }
+    record Brew(BrewDefinition definition) implements RecipeOutput { public Brew { java.util.Objects.requireNonNull(definition); } }
     record Dynamic(String description) implements RecipeOutput { }
 }
