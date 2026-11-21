@@ -83,4 +83,4 @@ Minecraft/Forge, GT8 8.0.0-SNAPSHOT+e24b238, GT7.1.4 live reload и Create/Mekan
 
 Build/обязательные functional suites/production module DAG — PASS с двумя явно указанными platform skips. Profiling/performance/security campaigns/live Minecraft/platform matrix — NOT EXECUTED. Recovery и продуктовые функции — INCOMPLETE. Поэтому Release 1.0 **NOT READY** и вся Phase 9 не объявляется завершённой.
 
-Команды, suite rules, opt-in свойства и ограничения fixtures находятся в [TESTING.md](TESTING.md). Выполнены только Step 1–2; следующий шаг требует отдельного запроса.
+Команды, suite rules, opt-in свойства и ограничения fixtures находятся в [TESTING.md](../../TESTING.md). Выполнены только Step 1–2; следующий шаг требует отдельного запроса.

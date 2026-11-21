@@ -4,7 +4,7 @@
 
 ## Аудит и архитектура
 
-До изменений создан [RELEASE_READINESS.md](RELEASE_READINESS.md): состояние предыдущих фаз, подтверждённый функциональный baseline, packaging blockers и незакрытые release gates. Изменения ограничены упаковкой, версиями, пользовательскими каталогами и связанными проверками. Проект остаётся из 12 модулей; отдельный Forge build не включён в desktop multi-module configuration.
+До изменений создан [RELEASE_READINESS.md](../../RELEASE_READINESS.md): состояние предыдущих фаз, подтверждённый функциональный baseline, packaging blockers и незакрытые release gates. Изменения ограничены упаковкой, версиями, пользовательскими каталогами и связанными проверками. Проект остаётся из 12 модулей; отдельный Forge build не включён в desktop multi-module configuration.
 
 Desktop version задаётся **один раз** через `appVersion` в gradle.properties. Gradle проверяет SemVer; generated build-info.properties используется приложением, минимальным About, диагностическим текстом и логами. Companion version задаётся отдельным `companionVersion`; из неё генерируются protocol/shared identity resource и Forge mods.toml. Protocol=1 и project format=1 остаются независимыми схемами; конфигурация не допускает их фиктивного изменения без реализации совместимости. Project format не изменён.
 
@@ -111,7 +111,7 @@ Embedded dependency notices, дополнительные официальные
 
 ## Использование
 
-Для локального запуска откройте `app/build/windows/image/MinecraftRecipeEditor/MinecraftRecipeEditor.exe` либо распакуйте весь image ZIP из bundle. Команды воспроизведения, prerequisite WiX, каталоги, migration и ограничения приведены в [WINDOWS_PACKAGING.md](WINDOWS_PACKAGING.md).
+Для локального запуска откройте `app/build/windows/image/MinecraftRecipeEditor/MinecraftRecipeEditor.exe` либо распакуйте весь image ZIP из bundle. Команды воспроизведения, prerequisite WiX, каталоги, migration и ограничения приведены в [WINDOWS_PACKAGING.md](../../WINDOWS_PACKAGING.md).
 
 Проверить hashes:
 
