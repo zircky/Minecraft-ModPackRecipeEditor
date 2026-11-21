@@ -22,7 +22,7 @@ public final class RecipeSlotView extends ToggleButton {
         final var graphic=new StackPane();graphic.setMinSize(size-8,size-8);
         RecipeSlotContent sample=content;
         if(content.kind()==RecipeSlotContent.Kind.ALTERNATIVES&&!content.alternatives().isEmpty())sample=content.alternatives().getFirst();
-        final var kind=sample.kind()==RecipeSlotContent.Kind.FLUID?ResourceKind.FLUID:ResourceKind.ITEM;
+        final var kind=sample.kind()==RecipeSlotContent.Kind.FLUID?ResourceKind.FLUID:sample.kind()==RecipeSlotContent.Kind.BLOCK?ResourceKind.BLOCK:ResourceKind.ITEM;
         final var entries=sample.id()==null||sample.kind()==RecipeSlotContent.Kind.CHEMICAL?List.<RegistryEntry>of():discovery.registry().find(sample.id()).stream().filter(entry->entry.kind()==kind).toList();
         final Optional<RegistryEntry> entry;
         if(sample.kind()==RecipeSlotContent.Kind.TAG) {

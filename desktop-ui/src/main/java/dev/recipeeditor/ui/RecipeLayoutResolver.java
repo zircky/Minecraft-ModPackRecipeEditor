@@ -8,14 +8,20 @@ import java.util.function.Function;
 
 /** Adapters must explicitly supply a model; namespace alone never implies a crafting layout. */
 public final class RecipeLayoutResolver {
+    private final dev.recipeeditor.integrations.api.ModdedRecipeAdapterRegistry modded=new dev.recipeeditor.integrations.ProjectRecipeAdapters().registry();
     private final RecipeLayoutProvider vanilla=new RecipeLayoutProvider();
     private final CookingRecipeLayoutProvider cooking=new CookingRecipeLayoutProvider();
     private final RecipeFormService forms=new RecipeFormService();
     private final Map<String,Function<RecipeDefinition,RecipeLayoutModel>> integrations=new HashMap<>();
-    public void register(final String type,final Function<RecipeDefinition,RecipeLayoutModel> adapter){ResourceLocation.parse(type);if(vanilla.find(type).isPresent()||integrations.putIfAbsent(type,Objects.requireNonNull(adapter))!=null)throw new IllegalArgumentException("Layout already registered: "+type);}
+    public void register(final String type,final Function<RecipeDefinition,RecipeLayoutModel> adapter){ResourceLocation.parse(type);if(modded.supports(ResourceLocation.parse(type))||vanilla.find(type).isPresent()||integrations.putIfAbsent(type,Objects.requireNonNull(adapter))!=null)throw new IllegalArgumentException("Layout already registered: "+type);}
     public Optional<RecipeLayoutModel> resolve(final RecipeDefinition recipe) {
         final String type=recipe.type().displayId();
         if(integrations.containsKey(type)){final var value=integrations.get(type).apply(recipe);if(!value.recipeType().equals(type))throw new IllegalArgumentException("Layout type mismatch");return Optional.of(value);}
+        final var adapter=recipe.type().location().flatMap(modded::find);
+        if(adapter.isPresent()) {
+            if(!adapter.get().capabilities(recipe).supports(dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_VIEW))return Optional.empty();
+            return Optional.of(new RecipeLayoutModel(type,RecipeLayoutProvider.Kind.PROCESSING,List.of(),RecipeSlotContent.parse(""),false,Map.of(),Optional.of(adapter.get().layout(recipe))));
+        }
         final var layout=vanilla.find(type);if(layout.isEmpty())return Optional.empty();
         final Map<String,String> fields;
         try{fields=forms.fields(recipe.rawJson());}catch(IllegalArgumentException invalid){return Optional.empty();}

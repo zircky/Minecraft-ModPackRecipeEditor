@@ -5,7 +5,7 @@ import java.util.*;
 
 /** Desktop DTO; chemical references are deliberately distinct from fluids. */
 public record RecipeSlotContent(Kind kind, ResourceLocation id, long amount, List<RecipeSlotContent> alternatives, RecipeSlotState state) {
-    public enum Kind { EMPTY, ITEM, FLUID, CHEMICAL, TAG, ALTERNATIVES, UNKNOWN }
+    public enum Kind { EMPTY, ITEM, BLOCK, FLUID, CHEMICAL, TAG, ALTERNATIVES, UNKNOWN }
     public RecipeSlotContent { alternatives=List.copyOf(alternatives); }
     public static RecipeSlotContent parse(final String json) {
         if(json.isBlank())return new RecipeSlotContent(Kind.EMPTY,null,0,List.of(),RecipeSlotState.EMPTY);
@@ -21,7 +21,7 @@ public record RecipeSlotContent(Kind kind, ResourceLocation id, long amount, Lis
         final long amount=node.path("count").asLong(node.path("amount").asLong(1));
         if(amount<1)throw new IllegalArgumentException("Positive amount required");
         if(node.isTextual())return new RecipeSlotContent(Kind.ITEM,ResourceLocation.parse(node.asText()),amount,List.of(),RecipeSlotState.FILLED);
-        for(final var kind:List.of(Kind.ITEM,Kind.FLUID,Kind.CHEMICAL,Kind.TAG)) {
+        for(final var kind:List.of(Kind.ITEM,Kind.BLOCK,Kind.FLUID,Kind.CHEMICAL,Kind.TAG)) {
             final String key=kind.name().toLowerCase(Locale.ROOT);
             if(node.path(key).isTextual())return new RecipeSlotContent(kind,ResourceLocation.parse(node.path(key).asText()),amount,List.of(),RecipeSlotState.FILLED);
         }

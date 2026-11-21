@@ -24,6 +24,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   public void resourceNavigation(final java.util.function.BiConsumer<dev.recipeeditor.registry.ResourceKind,ResourceLocation> action){resourceNavigation=Objects.requireNonNull(action);}
   private final dev.recipeeditor.registry.TextureResourceService textures=new dev.recipeeditor.registry.TextureResourceService();
   private final dev.recipeeditor.integrations.api.IntegrationContext integration;
+  private final dev.recipeeditor.integrations.api.ModdedRecipeAdapterRegistry moddedAdapters=new dev.recipeeditor.integrations.ProjectRecipeAdapters().registry();
   private final RecipeTypeDisplayNameResolver typeNames=new RecipeTypeDisplayNameResolver();
   private final RecipeDisplayNameResolver displayNames;
   private final Map<RecipeDefinition,RecipeDisplayNameResolver.Display> displayCache=new IdentityHashMap<>();
@@ -246,6 +247,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     duplicate.setOnAction(e -> selected().ifPresent(this::duplicate));
     final var delete = new Button("Delete");
     delete.setOnAction(e -> selected().ifPresent(this::delete));
+    table.getSelectionModel().selectedItemProperty().addListener((o,a,b)->{final boolean readOnly=b!=null&&readOnlyModRecipe(b);edit.setDisable(b==null||readOnly);duplicate.setDisable(b==null||readOnly);delete.setDisable(b==null||readOnly);});
     final var reset = new Button("Reset changes");
     reset.setOnAction(e -> selected().ifPresent(this::reset));
     final var undo = new Button("Undo");
@@ -331,7 +333,8 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
     dialog.getDialogPane().lookupButton(ButtonType.OK).addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
       try {
-        ResourceLocation.parse(types.getEditor().getText());
+        final var selectedType=ResourceLocation.parse(types.getEditor().getText());
+        if(moddedAdapters.supports(selectedType))throw new IllegalArgumentException("This mod adapter is read only; creation is not verified yet");
       } catch (RuntimeException invalid) {
         error.setText(invalid.getMessage());
         event.consume();
@@ -355,7 +358,12 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     });
   }
 
+  private boolean readOnlyModRecipe(final RecipeDefinition recipe) {
+    return recipe.type().location().flatMap(moddedAdapters::find).map(adapter->!adapter.capabilities(recipe).supports(dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_EDIT)).orElse(false);
+  }
+
   private void edit(final RecipeDefinition recipe) {
+    if(readOnlyModRecipe(recipe)){error(new IllegalStateException("This mod adapter supports read-only viewing; authoring/export are not yet verified"));return;}
     if (editor.hasConflict(recipe.id())) {
       reviewConflict(recipe.id());
       return;
@@ -373,10 +381,12 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   }
 
   private void duplicate(final RecipeDefinition recipe) {
+    if(readOnlyModRecipe(recipe)){error(new IllegalStateException("This mod adapter supports read-only viewing; authoring/export are not yet verified"));return;}
     newId("Duplicate Recipe").ifPresent(id -> tasks.submit(() -> editor.duplicate(recipe, id), this::edit, this::error));
   }
 
   private void delete(final RecipeDefinition recipe) {
+    if(readOnlyModRecipe(recipe)){error(new IllegalStateException("This mod adapter supports read-only viewing; authoring/export are not yet verified"));return;}
     if (new UiTheme().apply(new Alert(Alert.AlertType.CONFIRMATION, "Logically delete " + recipe.id() + " from the project? Original JAR files will not change.", ButtonType.YES, ButtonType.NO)).showAndWait().orElse(ButtonType.NO) == ButtonType.YES)
       perform(() -> editor.delete(recipe.id()));
   }
@@ -419,12 +429,13 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       menu.getItems().forEach(action -> action.setDisable(unavailable));
       if (chosen.isPresent()) {
         final var id = chosen.get().id();
-        final boolean blocked = editor.hasConflict(id) || editor.status(id) == RecipeModificationStatus.DELETED;
+        final boolean blocked = readOnlyModRecipe(chosen.get()) || editor.hasConflict(id) || editor.status(id) == RecipeModificationStatus.DELETED;
         duplicate.setDisable(blocked);
         duplicate.setText(blocked ? "Duplicate Recipe (reset deletion/review conflict first)" : "Duplicate Recipe");
         delete.setDisable(blocked);
         delete.setText(blocked ? "Delete Recipe (already deleted or source conflict)" : "Delete Recipe");
-        edit.setDisable(editor.status(id) == RecipeModificationStatus.DELETED);
+        edit.setDisable(readOnlyModRecipe(chosen.get())||editor.status(id) == RecipeModificationStatus.DELETED);
+        export.setDisable(readOnlyModRecipe(chosen.get()));
         edit.setText(editor.status(id) == RecipeModificationStatus.DELETED ? "Edit Recipe (Reset Changes restores deleted recipe)" : "Edit Recipe");
         reset.setDisable(!editor.hasConflict(id) && editor.status(id) == RecipeModificationStatus.UNCHANGED);
         reset.setText(editor.status(id) == RecipeModificationStatus.UNCHANGED && !editor.hasConflict(id) ? "Reset Changes (no saved project change)" : "Reset Changes");
@@ -523,6 +534,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       return;
     }
     final var presentation=display(recipe);
+    recipe.type().location().flatMap(moddedAdapters::find).ifPresent(adapter->{final var caps=adapter.capabilities(recipe);viewer.getChildren().add(label("View: "+(caps.supports(dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_VIEW)?"SUPPORTED":"UNSUPPORTED")+" · Edit: UNSUPPORTED · Create: UNSUPPORTED · Export: UNSUPPORTED"));viewer.getChildren().add(label(caps.reason()));});
     viewer.getChildren().addAll(label(presentation.name()),label("Type: "+presentation.type()+" · "+presentation.machine()),label("Recipe ID: "+recipe.id()),label("Recipe status: "+editor.status(recipe.id())+(editor.hasConflict(recipe.id())?" · SOURCE CONFLICT":"")));
     if (recipe.status() == RecipeParseStatus.UNSUPPORTED || recipe.status() == RecipeParseStatus.INVALID)
       viewer.getChildren().add(label("Semantic view unavailable. See Raw JSON and Diagnostics."));
@@ -538,7 +550,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
         viewer.getChildren().add(label("No verified visual layout. Inspect Raw JSON for inputs and outputs."));
         recipe.properties().forEach(property->viewer.getChildren().add(label(property.name()+": "+property.rawValue())));
       }
-      final var editButton=new Button("Edit recipe");editButton.setOnAction(event->edit(recipe));
+      final var editButton=new Button("Edit recipe");editButton.setDisable(readOnlyModRecipe(recipe));editButton.setOnAction(event->edit(recipe));
       final var sourceButton=new Button("View Source");sourceButton.setOnAction(event->detailTabs.getSelectionModel().select(2));
       viewer.getChildren().add(new HBox(8,editButton,sourceButton));
     }

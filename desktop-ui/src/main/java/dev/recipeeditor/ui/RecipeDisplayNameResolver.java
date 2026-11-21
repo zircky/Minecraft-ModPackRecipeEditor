@@ -14,6 +14,8 @@ public final class RecipeDisplayNameResolver {
     private final ResourceBrowserViewModel resources;
     public RecipeDisplayNameResolver(final RegistryIndex registry,final RecipeTypeDisplayNameResolver types){this.registry=registry;this.types=types;resources=new ResourceBrowserViewModel(registry);}
     public Display resolve(final RecipeDefinition recipe,final String language) {
+        if(recipe.outputs().size()==1&&recipe.outputs().getFirst() instanceof RecipeOutput.Brew value)
+            return new Display((language.equals("ru_ru")?"Напиток: ":"Brew: ")+value.definition().displayName(language),types.name(recipe.type().displayId(),language),types.machine(recipe.type().displayId(),language),Optional.empty(),0);
         final var output=recipe.outputs().stream().map(this::reference).flatMap(Optional::stream).findFirst();
         final boolean ru=language.equals("ru_ru");
         final String name=output.map(value->registry.find(value.id()).stream().filter(entry->entry.kind()==value.kind()).findFirst()

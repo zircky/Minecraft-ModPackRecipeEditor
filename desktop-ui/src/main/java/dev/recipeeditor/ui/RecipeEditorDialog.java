@@ -76,13 +76,18 @@ public final class RecipeEditorDialog extends Dialog<Void> {
         tasks.submit(()->new RecipeDraftPreviewService().inspect(editor.validator(),session.id(),session.source(),session.originalJson(),text),value->{
             if(!alive || revision!=session.revision()) return; preview=value;
             issues.setText(new RecipeValidationPresenter().format(value));
-            getDialogPane().lookupButton(save).setDisable(!value.validation().valid() || !pendingAdvanced.isEmpty()); state.setText(!pendingAdvanced.isEmpty()?"Unapplied Advanced fields: "+pendingAdvanced.keySet()+". Apply them or Reset draft before Save.":session.dirty()?"Unsaved editor changes":"Draft matches last Apply/Save · project file may still need Save Project");
+            getDialogPane().lookupButton(save).setDisable(!canAuthor(value.validation().recipe()) || !value.validation().valid() || !pendingAdvanced.isEmpty()); raw.setEditable(canAuthor(value.validation().recipe())); state.setText(!pendingAdvanced.isEmpty()?"Unapplied Advanced fields: "+pendingAdvanced.keySet()+". Apply them or Reset draft before Save.":session.dirty()?"Unsaved editor changes":"Draft matches last Apply/Save · project file may still need Save Project");
             render(value); diff.setText(value.diffError().isEmpty()?value.differences().stream().map(d->d.path()+"\n- "+d.before()+"\n+ "+d.after()).collect(java.util.stream.Collectors.joining("\n\n")):value.diffError());
         },error->{if(alive && revision==session.revision()) issues.setText(error.getMessage());});
     }
     private void render(final RecipeEditPreview value) {
         visual.getChildren().clear(); advanced.getChildren().clear();
         if(value.validation().recipe()==null){visual.getChildren().add(new Label("Repair the recipe using Raw JSON; validation details are shown below."));return;}
+        if(!canAuthor(value.validation().recipe())) {
+            visual.getChildren().add(new Label("Read-only mod adapter: authoring/export require a separately verified implementation."));
+            layoutResolver.resolve(value.validation().recipe()).ifPresent(model->visual.getChildren().add(new RecipeLayoutRenderer(model,discovery,textures,slotSize,Locale.getDefault().getLanguage().equals("ru")?"ru_ru":"en_us",RecipeLayoutRenderer.Mode.VIEWER,null)));
+            return;
+        }
         if(modEditor.supports(value.validation().recipe(),integration)) {
             visual.getChildren().add(modEditor.createEditor(new RecipeEditorContext(value.validation().recipe(),pendingAdvanced,
                 (name,text)->{pendingAdvanced.put(name,text); state.setText("Unapplied GregTech fields: "+pendingAdvanced.keySet()); getDialogPane().lookupButton(save).setDisable(true);},
@@ -161,8 +166,12 @@ public final class RecipeEditorDialog extends Dialog<Void> {
     private void patch(final java.util.function.UnaryOperator<String> work) {
         final long revision=session.revision(); final String current=raw.getText(); tasks.submit(()->work.apply(current),value->{if(alive && revision==session.revision()) raw.setText(value);},error->{if(alive) issues.setText(error.getMessage());});
     }
+    private boolean canAuthor(final RecipeDefinition recipe) {
+        if(recipe==null)return true;
+        return recipe.type().location().flatMap(new dev.recipeeditor.integrations.ProjectRecipeAdapters().registry()::find).map(adapter->adapter.capabilities(recipe).supports(dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_EDIT)).orElse(true);
+    }
     private void save() {
-        if(preview==null || !preview.validation().valid() || !pendingAdvanced.isEmpty()) return;
+        if(preview==null || !canAuthor(preview.validation().recipe()) || !preview.validation().valid() || !pendingAdvanced.isEmpty()) return;
         final String text=raw.getText(); saving=true; getDialogPane().lookupButton(save).setDisable(true);
         tasks.submit(()->{ final var valid=editor.validator().validate(session.id(),text,session.source()); if(!valid.valid()) throw new IllegalArgumentException(valid.issues().toString());
             if(creating && editor.effective().findById(session.id()).isEmpty()) editor.create(valid.recipe()); else editor.update(session.id(),valid.recipe()); return text;

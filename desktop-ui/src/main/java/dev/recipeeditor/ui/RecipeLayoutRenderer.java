@@ -21,6 +21,10 @@ public final class RecipeLayoutRenderer extends VBox {
         final boolean editable=mode!=Mode.VIEWER;if(editable)Objects.requireNonNull(actions);
         getStyleClass().add("recipe-layout");setSpacing(12);setAlignment(Pos.TOP_CENTER);
         final var title=new Label(new RecipeTypeDisplayNameResolver().machine(model.recipeType(),language));title.getStyleClass().add("section-title");getChildren().add(title);
+        if(model.machine().isPresent()) {
+            if(editable)throw new IllegalArgumentException("Machine layout is read only until an authoring adapter is verified");
+            getChildren().add(new ProcessingRecipeLayoutView(model.machine().get(),discovery,textures,size,language));return;
+        }
         if(!model.parameters().isEmpty()){final var properties=new FlowPane(16,8);properties.setAlignment(Pos.CENTER);model.parameters().forEach((name,value)->properties.getChildren().add(new Label(name+": "+value)));getChildren().add(properties);}
         final var row=new GridPane();row.setHgap(16);row.setVgap(8);row.setAlignment(Pos.CENTER);row.setMaxSize(USE_PREF_SIZE,USE_PREF_SIZE);
         row.getStyleClass().add("recipe-layout-slots");
@@ -62,7 +66,7 @@ public final class RecipeLayoutRenderer extends VBox {
             if(!(slot.getUserData() instanceof RecipeSlotContent content))return;
             if(content.kind()==RecipeSlotContent.Kind.ALTERNATIVES&&!content.alternatives().isEmpty())content=content.alternatives().getFirst();
             if(content.id()==null||content.kind()==RecipeSlotContent.Kind.TAG||content.kind()==RecipeSlotContent.Kind.CHEMICAL)return;
-            final var target=content;slot.setOnAction(event->{slot.setSelected(false);navigate.accept(target.kind()==RecipeSlotContent.Kind.FLUID?dev.recipeeditor.registry.ResourceKind.FLUID:dev.recipeeditor.registry.ResourceKind.ITEM,target.id());});
+            final var target=content;slot.setOnAction(event->{slot.setSelected(false);navigate.accept(target.kind()==RecipeSlotContent.Kind.FLUID?dev.recipeeditor.registry.ResourceKind.FLUID:target.kind()==RecipeSlotContent.Kind.BLOCK?dev.recipeeditor.registry.ResourceKind.BLOCK:dev.recipeeditor.registry.ResourceKind.ITEM,target.id());});
         });
     }
     private void visitSlots(final javafx.scene.Parent parent,final java.util.function.Consumer<RecipeSlotView> action) {

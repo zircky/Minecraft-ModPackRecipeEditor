@@ -333,7 +333,7 @@ public final class MainWindow {
         resources = createResources(result);
         materials = new MaterialsBrowserView(result, textures, this::forForm);
         recipes = new RecipeBrowserView(result, editor, editorTasks, this::openExport, dev.recipeeditor.integrations.api.IntegrationContext.from(imported.modpack()));
-        recipes.resourceNavigation((kind,id)->{select(kind==ResourceKind.FLUID?NavigationSection.FLUIDS:NavigationSection.ITEMS);resources.showResource(kind,id);});
+        recipes.resourceNavigation((kind,id)->{select(kind==ResourceKind.FLUID?NavigationSection.FLUIDS:kind==ResourceKind.BLOCK?NavigationSection.BLOCKS:NavigationSection.ITEMS);resources.showResource(kind,id);});
         editor.addListener(id -> Platform.runLater(() -> {
           if (!closed) updateProjectState();
         }));

@@ -17,6 +17,7 @@ public final class RecipeTypeDisplayNameResolver {
         vanilla("stonecutting","Stonecutting","Обработка камня","Stonecutter","Камнерез");
         vanilla("smithing_transform","Smithing","Кузнечное дело","Smithing Table","Кузнечный стол");
         vanilla("smithing_trim","Smithing Trim","Отделка брони","Smithing Table","Кузнечный стол");
+        new dev.recipeeditor.integrations.ProjectRecipeAdapters().registry().types().forEach(type->register(type.id().toString(),type.names(),type.machines()));
     }
     public void register(final String type,final Map<String,String> names,final Map<String,String> machines) {
         ResourceLocation.parse(type);final var value=new Names(Map.copyOf(names),Map.copyOf(machines));
