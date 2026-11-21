@@ -20,6 +20,7 @@ public final class RecipeEditorDialog extends Dialog<Void> {
     private final DiscoveryResult discovery;
     private final EditorTasks tasks;
     private final RecipeEditSession session;
+    private final RecipeLayoutResolver layoutResolver=new RecipeLayoutResolver();
     private final RecipeFormService forms=new RecipeFormService();
     private final TextureResourceService textures=new TextureResourceService();
     private final TextArea raw=new TextArea(),diff=new TextArea();
@@ -91,6 +92,15 @@ public final class RecipeEditorDialog extends Dialog<Void> {
             return;
         }
         if(!value.visualSupported()) { visual.getChildren().add(new Label("Visual editing unavailable. Raw JSON is preserved; unknown recipes have limited semantic validation.")); advanced.getChildren().add(new Label("No adapter for this type. Inspect and edit Raw JSON explicitly.")); return; }
+        final var shared=layoutResolver.resolve(value.validation().recipe());
+        if(shared.isPresent()) {
+            final var actions=new RecipeLayoutRenderer.Actions(this::chooseInput,this::clearInput,this::chooseOutput);
+            visual.setAlignment(javafx.geometry.Pos.TOP_CENTER);
+            visual.getChildren().add(new RecipeLayoutRenderer(shared.get(),discovery,textures,slotSize,Locale.getDefault().getLanguage().equals("ru")?"ru_ru":"en_us",creating?RecipeLayoutRenderer.Mode.CREATOR:RecipeLayoutRenderer.Mode.EDITOR,actions));
+            final var scale=new Spinner<Integer>(40,80,(int)slotSize,8);scale.setPrefWidth(100);scale.setAccessibleText("Recipe slot size in pixels");scale.valueProperty().addListener((o,a,b)->{slotSize=b;render(value);});
+            final var sizing=new HBox(8,new Label("Slot size"),scale);sizing.setAlignment(javafx.geometry.Pos.CENTER);visual.getChildren().add(sizing);
+            renderAdvancedFields(value);return;
+        }
         final String type=value.type();
         final var layout=new RecipeLayoutProvider().find(type);
         final var workstationTitle=new Label(layout.map(RecipeLayoutProvider.Layout::workstation).orElse(type));workstationTitle.getStyleClass().add("section-title");
@@ -116,6 +126,10 @@ public final class RecipeEditorDialog extends Dialog<Void> {
         } else {
             final var workstation=new HBox(24,inputPane,new RecipeArrowView(),outputPane);workstation.setAlignment(javafx.geometry.Pos.CENTER);workstation.setMaxWidth(850);visual.getChildren().add(workstation);
         }
+        renderAdvancedFields(value);
+    }
+    private void renderAdvancedFields(final RecipeEditPreview value) {
+        final String type=value.type();
         final var fields=new ArrayList<>(List.of("group"));
         if(Set.of("minecraft:smelting","minecraft:blasting","minecraft:smoking","minecraft:campfire_cooking").contains(type)) fields.addAll(List.of("experience","cookingtime"));
         for(final var name:fields) advancedField(name,value.fields().getOrDefault(name,name.equals("group")?"\"\"":name.equals("experience")?"0":type.equals("minecraft:smelting")?"200":type.equals("minecraft:campfire_cooking")?"600":"100"));
@@ -137,6 +151,22 @@ public final class RecipeEditorDialog extends Dialog<Void> {
     private RecipeSlotView slot(final String json) { return new RecipeSlotView(RecipeSlotContent.parse(json),discovery,textures,slotSize); }
     private void ingredientButton(final String field,final String value) {visual.getChildren().add(ingredientControl(field,value));}
     private VBox ingredientControl(final String field,final String value) {final var button=slot(value);button.setOnAction(e->pickIngredient(json->patch(text->forms.patch(text,field,json))));return new VBox(6,new Label(field),button);}
+    private void chooseInput(final String role,final int index) {
+        pickIngredient(json->patch(text->{
+            if(role.equals("grid")){final var values=new ArrayList<>(forms.grid(text));values.set(index,json);return forms.shaped(text,values);}
+            if(role.equals("shapeless")){final var values=new ArrayList<>(forms.ingredientList(text));if(index<values.size())values.set(index,json);else values.add(json);return forms.shapeless(text,values);}
+            return forms.patch(text,role,json);
+        }));
+    }
+    private void clearInput(final String role,final int index) {
+        patch(text->{if(role.equals("grid")){final var values=new ArrayList<>(forms.grid(text));values.set(index,"");return forms.shaped(text,values);}
+            if(role.equals("shapeless")){final var values=new ArrayList<>(forms.ingredientList(text));if(index<values.size())values.remove(index);return forms.shapeless(text,values);}
+            return forms.patch(text,role,"{}");});
+    }
+    private void chooseOutput() {
+        final boolean cooking=new CookingRecipeLayoutProvider().find(forms.type(raw.getText())).isPresent();
+        new IngredientPicker(getDialogPane().getScene().getWindow(),discovery,ResourceKind.ITEM,false,!cooking).showAndWait().ifPresent(value->patch(text->forms.result(text,value.id(),value.amount())));
+    }
     private void restoreDraft(final Deque<String> from,final Deque<String> to) {
         if(saving||from.isEmpty())return;
         if(!pendingAdvanced.isEmpty()){issues.setText("Apply Advanced fields or Reset draft before Undo/Redo.");return;}
