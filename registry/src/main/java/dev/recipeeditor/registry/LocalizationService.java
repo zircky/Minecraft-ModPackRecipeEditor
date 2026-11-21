@@ -21,7 +21,7 @@ public final class LocalizationService {
                 final var values=languages.computeIfAbsent(language,k->new HashMap<>());
                 while (entries.hasNext()) {
                     final var entry=entries.next();
-                    if (!entry.getValue().isTextual()) continue;
+                    if (!entry.getValue().isTextual()||entry.getValue().asText().isBlank()) continue;
                     if(conflicts.getOrDefault(language,Set.of()).contains(entry.getKey())) continue;
                     final String previous=values.putIfAbsent(entry.getKey(),entry.getValue().asText());
                     if (previous!=null && !previous.equals(entry.getValue().asText())) {
@@ -66,7 +66,7 @@ public final class LocalizationService {
     }
     private String component(final com.fasterxml.jackson.databind.JsonNode node,final String language,final int depth) {
         if(depth>16) throw new IllegalArgumentException("Component nesting limit");
-        if(node.isTextual()) return node.asText();
+        if(node.isValueNode()&&!node.isNull()) return node.asText();
         if(node.isArray()) { final var text=new StringBuilder();for(final var child:node)text.append(Objects.requireNonNull(component(child,language,depth+1)));return text.toString(); }
         String result;
         if(node.has("text")) result=node.path("text").asText();

@@ -15,9 +15,10 @@ public final class FluidTextureResolver {
         if(textures.size()>1)return ResourceVisual.unavailable(AMBIGUOUS_SOURCE,"Multiple physical textures; pack precedence unknown: "+reference);
         if(textures.isEmpty())return ResourceVisual.unavailable(TEXTURE_NOT_FOUND,"Sprite not found in indexed assets: "+reference);
         Integer tint=null;
-        try { if(metadata.containsKey("tintColor"))tint=(int)Long.parseUnsignedLong(metadata.get("tintColor"),16); }
+        try { if(metadata.containsKey("tintColor")){if(!metadata.get("tintColor").matches("[a-fA-F0-9]{8}"))throw new NumberFormatException();tint=(int)Long.parseUnsignedLong(metadata.get("tintColor"),16);} }
         catch(NumberFormatException error) { return ResourceVisual.unavailable(INVALID_TEXTURE,"Invalid runtime tint color"); }
-        return new ResourceVisual(TEXTURE_SAMPLE,List.of(new ResourceVisual.Layer(textures.getFirst(),tint,activeHash(metadata,reference))),"Fluid still/flowing sprite sample: "+reference+(tint==null?"; tint unknown":"; verified runtime tint"));
+        try {return new ResourceVisual(TEXTURE_SAMPLE,List.of(new ResourceVisual.Layer(textures.getFirst(),tint,activeHash(metadata,reference))),"Fluid still/flowing sprite sample: "+reference+(tint==null?"; tint unknown":"; verified runtime tint"));}
+        catch(IllegalArgumentException invalid){return ResourceVisual.unavailable(INVALID_TEXTURE,"Invalid active fluid texture hash");}
     }
     String activeHash(final Map<String,String> metadata,final String reference) {
         try { return new ResourceJsonReader().read(metadata.getOrDefault("textureHashes","{}")).path(reference).asText(""); }

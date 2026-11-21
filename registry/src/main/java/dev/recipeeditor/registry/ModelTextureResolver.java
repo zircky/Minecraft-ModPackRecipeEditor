@@ -60,9 +60,9 @@ public final class ModelTextureResolver {
             if (parent.isEmpty()) break;
             final var id=ResourceLocation.parse(parent);
             if (!visited.add(id)) return missing(INVALID_TEXTURE,"Cyclic model inheritance");
-            if (id.namespace().equals("minecraft") && Set.of("item/generated","item/handheld","item/handheld_rod","builtin/generated").contains(id.path())) { generated=true;break; }
             final var parents=assets.models(id);
             if (parents.size()>1) return missing(AMBIGUOUS_SOURCE,"Parent model override order is unknown: "+id);
+            if (parents.isEmpty() && id.namespace().equals("minecraft") && Set.of("item/generated","item/handheld","item/handheld_rod","builtin/generated").contains(id.path())) { generated=true;break; }
             if (parents.isEmpty()) {
                 complex|=!id.namespace().equals("minecraft") || !id.path().startsWith("block/cube");
                 break;
@@ -72,6 +72,7 @@ public final class ModelTextureResolver {
         }
         final var layers=new ArrayList<ResourceVisual.Layer>();
         if (generated) {
+            if(values.keySet().stream().anyMatch(key->key.matches("layer[0-9]+")&&Integer.parseInt(key.substring(5))>=8))return missing(UNSUPPORTED_RENDERER,"Generated item exceeds eight preview layers");
             for (int i=0;i<8;i++) {
                 final String key="layer"+i;
                 if (!values.containsKey(key)) { if(i==0) return missing(TEXTURE_NOT_FOUND,"Missing layer0");break; }

@@ -1,0 +1,45 @@
+Starting a Gradle Daemon, 2 busy and 1 incompatible and 1 stopped Daemons could not be reused, use --status for details
+> Task :registry:processResources NO-SOURCE
+> Task :companion-client:processResources NO-SOURCE
+> Task :registry:processTestResources NO-SOURCE
+> Task :companion-server:processResources NO-SOURCE
+> Task :exporters:processResources NO-SOURCE
+> Task :integrations:processResources NO-SOURCE
+> Task :recipe-engine:processResources NO-SOURCE
+> Task :companion-client:processTestResources NO-SOURCE
+> Task :core:compileJava UP-TO-DATE
+> Task :core:processResources NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :core:jar UP-TO-DATE
+> Task :companion-protocol:compileJava UP-TO-DATE
+> Task :companion-protocol:generateCompanionIdentity UP-TO-DATE
+> Task :companion-protocol:processResources UP-TO-DATE
+> Task :companion-protocol:classes UP-TO-DATE
+> Task :companion-protocol:jar UP-TO-DATE
+> Task :companion-server:compileJava UP-TO-DATE
+> Task :companion-server:classes UP-TO-DATE
+> Task :companion-server:jar UP-TO-DATE
+> Task :registry:compileJava
+> Task :registry:classes
+> Task :recipe-engine:compileJava UP-TO-DATE
+> Task :recipe-engine:classes UP-TO-DATE
+> Task :recipe-engine:jar UP-TO-DATE
+> Task :integrations:compileJava UP-TO-DATE
+> Task :integrations:classes UP-TO-DATE
+> Task :integrations:jar UP-TO-DATE
+> Task :registry:jar
+> Task :exporters:compileJava UP-TO-DATE
+> Task :exporters:classes UP-TO-DATE
+> Task :exporters:jar UP-TO-DATE
+> Task :companion-client:compileJava
+> Task :companion-client:classes
+> Task :companion-client:compileTestJava UP-TO-DATE
+> Task :companion-client:testClasses UP-TO-DATE
+> Task :companion-client:test
+> Task :registry:compileTestJava
+> Task :registry:testClasses
+> Task :registry:test
+
+BUILD SUCCESSFUL in 27s
+21 actionable tasks: 6 executed, 15 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.0/userguide/configuration_cache_enabling.html

@@ -32,7 +32,7 @@ final class ResourceBrowserAuditTest {
             for(final var kind:ResourceKind.values()){
                 final var entries=index.entries(kind);int images=0,en=0,ru=0;final var statuses=new TreeMap<String,Integer>();
                 for(final var entry:entries){final var image=verify(entry.visual(),textures,root);if(image.available())images++;statuses.merge(image.status().name(),1,Integer::sum);if(entry.localizedNames().containsKey("en_us"))en++;if(entry.localizedNames().containsKey("ru_ru")||entry.localizedNames().containsKey("en_us"))ru++;}
-                rows.add(Map.of("scope",scope,"kind",kind.name(),"resources",entries.size(),"images",images,"names_en_us",en,"names_ru_ru_with_en_fallback",ru,"preview_statuses",statuses));
+                rows.add(Map.of("scope",scope,"kind",kind.name(),"resources",entries.size(),"images",images,"names_en_us",en,"names_ru_ru_with_en_fallback",ru,"preview_statuses",statuses,"runtime_confirmed",entries.stream().filter(entry->entry.confidence()==DiscoveryConfidence.CONFIRMED_BY_RUNTIME).count(),"diagnostics",new ResourceDiagnostics().summarize(new RegistryIndex(entries),"ru_ru")));
             }
             if(!index.materials().isEmpty()) {
                 int images=0,en=0,ru=0;
@@ -41,7 +41,7 @@ final class ResourceBrowserAuditTest {
                     if(material.localizedNames().containsKey("ru_ru")||material.localizedNames().containsKey("en_us"))ru++;
                     if(material.forms().stream().map(form->index.find(form.resourceId()).stream().filter(entry->entry.kind()==form.kind()).findFirst()).flatMap(Optional::stream).anyMatch(entry->verify(entry.visual(),textures,root).available()))images++;
                 }
-                rows.add(Map.of("scope",scope,"kind","MATERIAL","resources",index.materials().size(),"images",images,"names_en_us",en,"names_ru_ru_with_en_fallback",ru));
+                rows.add(Map.of("scope",scope,"kind","MATERIAL","resources",index.materials().size(),"images",images,"names_en_us",en,"names_ru_ru_with_en_fallback",ru,"runtime_confirmed",index.materials().size()));
             }
         }
     }

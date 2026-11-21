@@ -10,6 +10,11 @@ import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
 
 final class FluidTextureResolverTest {
+    @Test void malformedTintAndHashArePlaceholdersInsteadOfImportFailures() {
+        final var resolver=new FluidTextureResolver(new ResourceAssetCatalog(new ResourceScanResult(List.of(),List.of(texture()),List.of())));
+        assertEquals(ResourceVisual.Status.INVALID_TEXTURE,resolver.resolve(Map.of("stillTexture","test:block/fluid","tintColor","ffffffffffffffff")).status());
+        assertEquals(ResourceVisual.Status.INVALID_TEXTURE,resolver.resolve(Map.of("stillTexture","test:block/fluid","textureHashes","{\"test:block/fluid\":\"bad\"}")).status());
+    }
     @TempDir Path root;
     private ResourceSource texture() { return new ResourceSource(SourceType.LOCAL_RESOURCE,List.of(),root,"assets/test/textures/block/fluid.png","fixture"); }
     @Test void actualSpriteReferenceAndTintAreAppliedToSelectedAnimationFrame() throws Exception {
