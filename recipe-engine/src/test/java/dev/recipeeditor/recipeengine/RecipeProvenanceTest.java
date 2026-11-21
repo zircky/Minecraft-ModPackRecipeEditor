@@ -9,6 +9,20 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 final class RecipeProvenanceTest {
+    @Test void runtimeEvidenceCannotBeAssignedToAnotherRecipeOrAStaticScope() {
+        final var id=ResourceLocation.parse("minecraft:tnt");
+        final var source=new RecipeSource(SourceType.RUNTIME,List.of(),Path.of("snapshot"),"","Companion");
+        final var observation=new RuntimeRecipeObservation(id,"minecraft:crafting","minecraft:crafting_shaped","snapshot-1","time","UNKNOWN");
+        final var resolver=new RecipeSourceResolver();
+        assertTrue(resolver.runtime(observation,List.of(),source).runtimeConfirmed());
+        assertFalse(resolver.discover(id,List.of()).runtimeConfirmed());
+        assertThrows(IllegalArgumentException.class,()->new RecipeProvenance(ResourceLocation.parse("minecraft:stone"),
+                RecipeProvenance.Scope.RUNTIME,List.of(),Optional.of(source),List.of(),ProvenanceConfidence.RUNTIME_OBSERVED_ORIGIN_UNKNOWN,Optional.of(observation)));
+        assertThrows(IllegalArgumentException.class,()->new RecipeProvenance(id,RecipeProvenance.Scope.STATIC_DISCOVERY,
+                List.of(),Optional.empty(),List.of(),ProvenanceConfidence.UNKNOWN,Optional.of(observation)));
+        assertThrows(IllegalArgumentException.class,()->new RecipeProvenance(id,RecipeProvenance.Scope.RUNTIME,
+                List.of(),Optional.empty(),List.of(),ProvenanceConfidence.UNKNOWN));
+    }
     @Test void mismatchedChangeKeyCannotAssignAnotherRecipesSources() {
         final var recipe=RecipeFixtures.recipe("test:one","one.jar",List.of(),List.of(),RecipeParseStatus.UNSUPPORTED);
         final var change=new RecipeChange(recipe.id(),RecipeChangeType.CREATE,List.of(),List.of(recipe),java.time.Instant.EPOCH,Map.of());

@@ -6,13 +6,25 @@ import java.util.*;
 /** Overrides are scoped: a project overlay does not prove a Minecraft load-order winner. */
 public record RecipeProvenance(ResourceLocation recipeId, Scope scope,
         List<RecipeSource> discoveredDefinitions, Optional<RecipeSource> activeDefinition,
-        List<RecipeSource> overriddenDefinitions, ProvenanceConfidence confidence) {
+        List<RecipeSource> overriddenDefinitions, ProvenanceConfidence confidence,
+        Optional<RuntimeRecipeObservation> runtimeObservation) {
     public enum Scope { STATIC_DISCOVERY, PROJECT, PROJECT_CONFLICT, RUNTIME }
+    public RecipeProvenance(final ResourceLocation recipeId, final Scope scope,
+            final List<RecipeSource> discoveredDefinitions, final Optional<RecipeSource> activeDefinition,
+            final List<RecipeSource> overriddenDefinitions, final ProvenanceConfidence confidence) {
+        this(recipeId,scope,discoveredDefinitions,activeDefinition,overriddenDefinitions,confidence,Optional.empty());
+    }
     public RecipeProvenance {
         Objects.requireNonNull(recipeId); Objects.requireNonNull(scope); Objects.requireNonNull(confidence);
         discoveredDefinitions=List.copyOf(discoveredDefinitions); activeDefinition=Objects.requireNonNull(activeDefinition);
         overriddenDefinitions=List.copyOf(overriddenDefinitions);
+        runtimeObservation=Objects.requireNonNull(runtimeObservation);
+        if(scope==Scope.RUNTIME && activeDefinition.filter(source->source.type()==dev.recipeeditor.registry.SourceType.RUNTIME).isEmpty())
+            throw new IllegalArgumentException("Runtime provenance requires an observed runtime definition");
+        if(runtimeObservation.isPresent() && (scope!=Scope.RUNTIME || !runtimeObservation.get().recipeId().equals(recipeId)))
+            throw new IllegalArgumentException("Runtime observation must match provenance identity and scope");
     }
+    public boolean runtimeConfirmed() { return scope==Scope.RUNTIME; }
     public String recipeNamespace() { return recipeId.namespace(); }
     public String declaringSource() { return activeDefinition.map(RecipeSource::declaringSource).orElse("UNKNOWN"); }
     public Set<String> sourceModIds() {
@@ -35,7 +47,12 @@ public record RecipeProvenance(ResourceLocation recipeId, Scope scope,
     public String describe() {
         final var text=new StringBuilder("Recipe ID: "+recipeId+"\nRecipe Namespace: "+recipeNamespace()
                 +"\nDeclaring Source: "+declaringSource()+"\nActive Source: "+activeSource()
-                +"\nScope: "+scope+"\nProvenance Confidence: "+confidence+"\n");
+                +"\nScope: "+scope+"\nProvenance Confidence: "+confidence+"\nRuntime Confirmation: "+runtimeConfirmed()+"\n");
+        runtimeObservation.ifPresent(observed->text.append("Runtime Recipe Type: ").append(observed.recipeType())
+                .append("\nRuntime Serializer: ").append(observed.serializer())
+                .append("\nRuntime Snapshot ID: ").append(observed.snapshotId())
+                .append("\nCollected At: ").append(observed.collectedAt())
+                .append("\nRuntime Source Information: ").append(observed.sourceInformation()).append('\n'));
         activeDefinition.ifPresent(source->append(text,"Active definition location",source));
         text.append("\nAll discovered / derived-from definitions (not a load-order ranking):\n");
         discoveredDefinitions.forEach(source->append(text,"Candidate",source));

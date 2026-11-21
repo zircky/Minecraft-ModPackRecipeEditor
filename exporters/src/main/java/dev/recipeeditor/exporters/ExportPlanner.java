@@ -17,10 +17,12 @@ import java.util.*;
 public final class ExportPlanner {
   private final List<RecipeExporter> exporters;
   private final ExportValidator validator;
+  private final ExportCapabilityResolver capabilities;
 
   public ExportPlanner(final List<RecipeExporter> exporters, final ExportValidator validator) {
     this.exporters = List.copyOf(exporters);
     this.validator = validator;
+    this.capabilities = new ExportCapabilityResolver(exporters);
     if (exporters.stream().map(RecipeExporter::format).distinct().count() != exporters.size())
       throw new IllegalArgumentException("Duplicate exporter format");
   }
@@ -55,18 +57,18 @@ public final class ExportPlanner {
     for (final var change : changes.values()) {
       SafeFiles.checkCancelled();
       diagnostics.addAll(validator.check(change, context, copies.contains(change.id())));
-      final var supported = exporters.stream().filter(exporter -> exporter.checkCapability(change, context).supported()).map(RecipeExporter::format).toList();
+      final var resolved = new EnumMap<ExportFormat, ExportCapability>(ExportFormat.class);
+      exporters.forEach(exporter -> resolved.put(exporter.format(), capabilities.resolve(change, context, exporter.format())));
+      final var supported = exporters.stream().map(RecipeExporter::format).filter(format -> resolved.get(format).supported()).toList();
       ExportFormat choice = request.choices().getOrDefault(change.id(), context.profile().preferredFormat());
       if (choice == ExportFormat.AUTO) {
         // Defaults are preferences, while all supported alternatives remain visible and selectable.
         choice = supported.contains(ExportFormat.DATAPACK) ? ExportFormat.DATAPACK : supported.contains(ExportFormat.KUBEJS) ? ExportFormat.KUBEJS : supported.stream().findFirst().orElse(ExportFormat.AUTO);
       }
-      final var selected = choice;
-      final var exporter = exporters.stream().filter(e -> e.format() == selected).findFirst();
-      final var capability = exporter.map(e -> e.checkCapability(change, context)).orElseGet(() -> ExportCapability.unsupported("No compatible exporter. " + exporters.stream().map(e -> e.format() + ": " + e.checkCapability(change, context).reason()).collect(java.util.stream.Collectors.joining("; "))));
+      final var capability = resolved.containsKey(choice) ? resolved.get(choice) : ExportCapability.unsupported("No compatible exporter. " + exporters.stream().map(e -> e.format() + ": " + resolved.get(e.format()).reason()).collect(java.util.stream.Collectors.joining("; ")));
       final var kubePlan = choice == ExportFormat.KUBEJS ? new KubeJsRecipeExporter().plan(change, context) : null;
       final String mode = kubePlan == null ? choice.name() : kubePlan.mechanism().name();
-      final var targets = kubePlan != null ? kubePlan.targetFiles() : choice == ExportFormat.DATAPACK && capability.supported() ? List.of("datapacks/recipe_editor_" + context.profile().id() + "/" + new RecipeDataPathResolver().resolve(context.modpack().minecraftVersion().value(), change.id())) : choice == ExportFormat.CRAFTTWEAKER && capability.supported() ? List.of("scripts/recipe_editor_" + context.profile().id() + "_generated.zs") : List.<String>of();
+      final var targets = !capability.supported() ? List.<String>of() : kubePlan != null ? kubePlan.targetFiles() : choice == ExportFormat.DATAPACK ? List.of("datapacks/recipe_editor_" + context.profile().id() + "/" + new RecipeDataPathResolver().resolve(context.modpack().minecraftVersion().value(), change.id())) : choice == ExportFormat.CRAFTTWEAKER ? List.of("scripts/recipe_editor_" + context.profile().id() + "_generated.zs") : List.<String>of();
       planned.add(new PlannedRecipe(change, choice, capability, supported, new ExportSourceMapping().resolve(change, context.originals(), context.projectFile(), context.blockedIds().contains(change.id())), mode, targets));
       if (!capability.supported() && (choice == ExportFormat.KUBEJS || choice == ExportFormat.CRAFTTWEAKER || choice == ExportFormat.AUTO)) {
         final var candidates = choice == ExportFormat.AUTO ? List.of(ExportFormat.KUBEJS, ExportFormat.CRAFTTWEAKER) : List.of(choice);

@@ -6,6 +6,7 @@ import dev.recipeeditor.recipeengine.editor.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.*;
 final class VanillaExportSupport {
+    private final RecipeValidator validator=new RecipeValidator(new dev.recipeeditor.integrations.Vanilla1201Parsers().parsers(),new dev.recipeeditor.registry.RegistryIndex(List.of()));
     private final Set<String> types=Set.of("crafting_shaped","crafting_shapeless","smelting","blasting","smoking","campfire_cooking","stonecutting","smithing_transform","smithing_trim");
     String check(final RecipeChange change,final ExportContext context) {
         return check(change,context,false);
@@ -20,8 +21,18 @@ final class VanillaExportSupport {
             if(recipe.source().type()==dev.recipeeditor.registry.SourceType.RUNTIME)return "Normalized runtime state is not original serializer JSON; an explicit source adapter is required";
             final JsonNode json;
             try{json=new ExportText().json(recipe.rawJson());}catch(RuntimeException invalid){return "Invalid JSON: "+invalid.getMessage();}
+            if(!json.isObject() || !json.path("type").isTextual() || !json.path("type").asText().equals(recipe.type().rawId()))
+                return "Recipe type metadata does not match serializer type in JSON";
+            if(Set.of("smelting","blasting","smoking","campfire_cooking").contains(type.get().path()) && !json.path("result").isTextual())
+                return "Minecraft 1.20.1 cooking result must be an item ID string";
+            if(json.path("result").asText().equals("minecraft:air") || json.path("result").path("item").asText().equals("minecraft:air"))
+                return "Vanilla output cannot be minecraft:air";
             if(opaqueRootFields){final String compatibility=checkRootExtensions(recipe,json,type.get().path());if(!compatibility.isEmpty())return compatibility;}
-            else if(recipe.status()!=RecipeParseStatus.PARSED)return "Only fully parsed Vanilla recipes are supported; custom properties/ingredients need an adapter";
+            else {
+                final var parsed=validator.validate(recipe.id(),recipe.rawJson(),recipe.source());
+                if(!parsed.valid() || parsed.recipe().status()!=RecipeParseStatus.PARSED)
+                    return "Only fully parsed Vanilla recipes are supported; invalid properties/custom ingredients need an adapter";
+            }
             if(json.has("group")&&!json.path("group").isTextual())return "group must be a string";
             if(json.has("show_notification")&&!json.path("show_notification").isBoolean())return "show_notification must be boolean";
             final Set<String> categories=type.get().path().startsWith("crafting_")?Set.of("building","redstone","equipment","misc"):Set.of("food","blocks","misc");
@@ -46,7 +57,6 @@ final class VanillaExportSupport {
             ((com.fasterxml.jackson.databind.node.ObjectNode)projected).remove(field);
         }
         // Vanilla serializers ignore unconsumed ordinary root keys. Nested ingredient/result extensions do not get this exemption.
-        final var validator=new RecipeValidator(new dev.recipeeditor.integrations.Vanilla1201Parsers().parsers(),new dev.recipeeditor.registry.RegistryIndex(List.of()));
         final var parsed=validator.validate(recipe.id(),projected.toString(),recipe.source());
         return parsed.valid()&&parsed.recipe().status()==RecipeParseStatus.PARSED?"":"Custom ingredient/result semantics or invalid required properties need an adapter";
     }

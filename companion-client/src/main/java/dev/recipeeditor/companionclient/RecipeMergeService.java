@@ -22,7 +22,8 @@ public final class RecipeMergeService {
             if(actual!=null&&actual.status()!=RuntimeData.Support.SUPPORTED)diagnostics.add("Runtime view is partial/unsupported; no editable source JSON is inferred");
             final var sources=staticDefinitions.stream().map(RecipeDefinition::source).toList();
             final var resolver=new RecipeSourceResolver();
-            final var provenance=actual==null?resolver.discover(id,sources):resolver.runtime(id,sources,
+            final var provenance=actual==null?resolver.discover(id,sources):resolver.runtime(
+                    new RuntimeRecipeObservation(id,actual.type(),actual.serializer(),snapshot.snapshotId(),snapshot.environment().collectedAt(),actual.sourceInformation()),sources,
                     new RecipeSource(dev.recipeeditor.registry.SourceType.RUNTIME,List.of(),java.nio.file.Path.of(snapshot.environment().sourceInstance()),"",
                             "Companion snapshot "+snapshot.snapshotId()+" @ "+snapshot.environment().collectedAt()+"; "+actual.sourceInformation()));
             diagnostics.forEach(message->messages.add(id+": "+message));entries.add(new Entry(id,staticDefinitions,actual,diagnostics,provenance));
