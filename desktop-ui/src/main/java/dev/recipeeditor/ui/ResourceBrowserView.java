@@ -34,6 +34,7 @@ public final class ResourceBrowserView extends BorderPane {
         getStyleClass().add("workspace-view");search.setPromptText("Search ID or localized name");HBox.setHgrow(search,Priority.ALWAYS);
         mode.getItems().setAll(ResourceBrowserViewModel.FilterMode.values());mode.getSelectionModel().selectFirst();
         language.getItems().setAll("en_us","ru_ru");language.getSelectionModel().selectFirst();
+        language.setAccessibleText("Resource display language");source.setAccessibleText("Resource source filter");search.setAccessibleText("Search resources");
         final var notice=new Label("Runtime-confirmed entries and static candidates retain separate confidence. Images are flat previews; complex Minecraft geometry is not rendered.");notice.setWrapText(true);notice.getStyleClass().add("muted");
         final var filters=new FlowPane(search,mode,source,new Label("Language:"),language);filters.getStyleClass().add("filter-row");
         final var header=new VBox(summary,notice,filters);header.getStyleClass().add("view-header");setTop(header);
@@ -42,7 +43,7 @@ public final class ResourceBrowserView extends BorderPane {
         final var split=new SplitPane(pages,selection);split.setDividerPositions(0.70);setCenter(split);
         pages.setPageFactory(this::page);
         search.textProperty().addListener((o,a,b)->filter());source.valueProperty().addListener((o,a,b)->filter());
-        language.valueProperty().addListener((o,a,b)->filter());mode.valueProperty().addListener((o,a,b)->{updateSources();filter();});
+        language.valueProperty().addListener((o,a,b)->filter(true));mode.valueProperty().addListener((o,a,b)->{updateSources();filter();});
     }
     public void show(final ResourceKind kind) { this.kind=kind;active=true;updateSources();filter(); }
     public void showResource(final ResourceKind kind,final ResourceLocation id) {
@@ -54,14 +55,18 @@ public final class ResourceBrowserView extends BorderPane {
         updating=true;source.getItems().setAll("All");source.getItems().addAll(model.filterValues(kind,mode.getValue()));source.getSelectionModel().selectFirst();updating=false;
     }
     private void filter() {
+        filter(false);
+    }
+    private void filter(final boolean retainSelection) {
         if(!active||updating)return;
         generation++;selectionGeneration++;
         filtered=model.search(kind,search.getText(),mode.getValue(),source.getSelectionModel().getSelectedIndex()<=0?"":source.getValue());
         final long confirmed=filtered.stream().filter(entry->entry.confidence()==DiscoveryConfidence.CONFIRMED_BY_RUNTIME).count();
         summary.setText(kind+" · "+filtered.size()+" entries · "+confirmed+" runtime-confirmed · "+(filtered.size()-confirmed)+" static candidates");
-        pages.setPageCount((filtered.size()+59)/60);pages.setCurrentPageIndex(0);pages.setPageFactory(this::page);
-        selection.getChildren().setAll(new Label("Select a resource to inspect details."));setBottom(null);
-        selectedId.set(null);
+        pages.setPageCount((filtered.size()+59)/60);if(!retainSelection)pages.setCurrentPageIndex(0);pages.setPageFactory(this::page);
+        final var selected=retainSelection?filtered.stream().filter(entry->entry.id().equals(selectedId.get())).findFirst():Optional.<RegistryEntry>empty();
+        if(selected.isPresent())select(selected.get());
+        else {selection.getChildren().setAll(new Label("Select a resource to inspect details."));setBottom(null);selectedId.set(null);}
     }
     private javafx.scene.Node page(final Integer number) {
         final long request=++generation;
@@ -87,12 +92,12 @@ public final class ResourceBrowserView extends BorderPane {
     private Button tile(final RegistryEntry entry,final long request) {
         final var image=new ResourcePreview(entry.visual(),result.selectedRoot(),textures,48,()->active&&generation==request,preview->{});
         final var name=line(model.displayName(entry,language.getValue()));
-        final var id=line(entry.id().toString());id.getStyleClass().add("muted");
+        final var id=line(model.secondaryId(entry,language.getValue()));id.getStyleClass().add("muted");id.setVisible(!id.getText().isEmpty());id.managedProperty().bind(id.visibleProperty());
         final var origin=line(model.source(entry));origin.getStyleClass().add("muted");
         final var confidence=line(entry.confidence()==DiscoveryConfidence.CONFIRMED_BY_RUNTIME?"Runtime confirmed":"Static candidate");confidence.getStyleClass().add("muted");
         final var content=new VBox(5,image,name,id,origin,confidence);content.setAlignment(Pos.CENTER);
         final var button=new ResourceCardView(entry.id(),selectedId);button.setGraphic(content);button.setMinSize(148,166);button.setPrefSize(148,166);button.setMaxSize(148,166);
-        button.setTooltip(new Tooltip(model.displayName(entry,language.getValue())+"\n"+entry.id()+"\n"+model.source(entry)+"\n"+entry.confidence()+"\n"+entry.visual().status()+": "+entry.visual().explanation()));
+        button.setTooltip(new Tooltip(model.tooltip(entry,language.getValue())));button.setAccessibleText(model.displayName(entry,language.getValue())+" · "+entry.id());
         button.setOnAction(event->{if(entry.id().equals(selectedId.get())){selectedId.set(null);selection.getChildren().setAll(new Label("Select a resource to inspect details."));setBottom(null);selectionGeneration++;}else select(entry);});return button;
     }
     private Label line(final String text) { final var label=new Label(text);label.setMinWidth(0);label.setPrefWidth(128);label.setMaxWidth(128);label.setWrapText(false);label.setTextOverrun(OverrunStyle.ELLIPSIS);return label; }
