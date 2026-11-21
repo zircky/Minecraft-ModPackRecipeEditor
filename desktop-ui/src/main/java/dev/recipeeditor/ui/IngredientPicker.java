@@ -21,7 +21,7 @@ public final class IngredientPicker extends Dialog<IngredientPicker.Selection> {
         final var textures=new TextureResourceService();
         addEventHandler(javafx.scene.control.DialogEvent.DIALOG_HIDDEN,event->textures.close());
         final var entries=new ArrayList<RegistryEntry>();
-        final var list=new Pagination();list.setPrefHeight(420);
+        final var list=new PaginationView();list.setPrefHeight(420);
         final var id=new TextField(); id.setPromptText("namespace:path");
         final var knownTags=new ComboBox<String>(); knownTags.setPromptText("Known tags"); knownTags.setDisable(!allowTag);
         result.recipes().tagIndex().definitions().stream().filter(value->value.kind()==kind).map(value->value.id().toString()).distinct().sorted().forEach(knownTags.getItems()::add);
@@ -44,7 +44,7 @@ public final class IngredientPicker extends Dialog<IngredientPicker.Selection> {
             }
             final var scroll=new ScrollPane(grid);scroll.setFitToWidth(true);return scroll;
         };
-        final Runnable filter=()->{entries.clear();entries.addAll(new RegistrySearchService(result.registry()).search(kind,search.getText(),mods.getSelectionModel().getSelectedIndex()==0?"":mods.getValue()));list.setPageCount(Math.max(1,(entries.size()+29)/30));list.setCurrentPageIndex(0);list.setPageFactory(page);};
+        final Runnable filter=()->{entries.clear();entries.addAll(new RegistrySearchService(result.registry()).search(kind,search.getText(),mods.getSelectionModel().getSelectedIndex()==0?"":mods.getValue()));list.setPageCount((entries.size()+29)/30);list.setCurrentPageIndex(0);list.setPageFactory(page);};
         search.textProperty().addListener((o,a,b)->filter.run()); mods.valueProperty().addListener((o,a,b)->filter.run()); filter.run();
         knownTags.setOnAction(e->{ if(knownTags.getValue()!=null) { id.setText(knownTags.getValue()); tag.setSelected(true); } });
         addChoice.setOnAction(e->{ try { final var location=ResourceLocation.parse(id.getText()); choices.add(new RecipeFormService().ingredient(location,tag.isSelected())); choiceLabel.setText("Alternatives queued: "+choices.size()+". OK adds the current selection too."); error.setText(""); } catch(RuntimeException invalid) {error.setText(invalid.getMessage());} });

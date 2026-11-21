@@ -19,7 +19,7 @@ public final class ResourceBrowserView extends BorderPane {
     private final TextField search=new TextField();
     private final ComboBox<String> source=new ComboBox<>(),language=new ComboBox<>();
     private final ComboBox<ResourceBrowserViewModel.FilterMode> mode=new ComboBox<>();
-    private final Pagination pages=new Pagination();
+    private final PaginationView pages=new PaginationView();
     private final TextArea details=new TextArea();
     private final VBox selection=new VBox(10);
     private final Label summary=new Label(),previewStatus=new Label();
@@ -58,7 +58,7 @@ public final class ResourceBrowserView extends BorderPane {
         filtered=model.search(kind,search.getText(),mode.getValue(),source.getSelectionModel().getSelectedIndex()<=0?"":source.getValue());
         final long confirmed=filtered.stream().filter(entry->entry.confidence()==DiscoveryConfidence.CONFIRMED_BY_RUNTIME).count();
         summary.setText(kind+" · "+filtered.size()+" entries · "+confirmed+" runtime-confirmed · "+(filtered.size()-confirmed)+" static candidates");
-        pages.setPageCount(Math.max(1,(filtered.size()+59)/60));pages.setCurrentPageIndex(0);pages.setPageFactory(this::page);
+        pages.setPageCount((filtered.size()+59)/60);pages.setCurrentPageIndex(0);pages.setPageFactory(this::page);
         selection.getChildren().setAll(new Label("Select a resource to inspect details."));setBottom(null);
     }
     private javafx.scene.Node page(final Integer number) {
