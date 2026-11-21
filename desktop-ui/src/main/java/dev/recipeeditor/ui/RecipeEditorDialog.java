@@ -134,8 +134,14 @@ public final class RecipeEditorDialog extends Dialog<Void> {
             return forms.patch(text,role,"{}");});
     }
     private void chooseOutput() {
-        final boolean cooking=new CookingRecipeLayoutProvider().find(forms.type(raw.getText())).isPresent();
-        new IngredientPicker(getDialogPane().getScene().getWindow(),discovery,ResourceKind.ITEM,false,!cooking,forms.fields(raw.getText()).getOrDefault("result","")).showAndWait().ifPresent(value->patch(text->forms.result(text,value.id(),value.amount())));
+        final String type=forms.type(raw.getText());
+        final var fields=forms.fields(raw.getText());
+        String initial=fields.getOrDefault("result","");
+        final var output=RecipeSlotContent.parse(initial);
+        if(type.equals("minecraft:stonecutting")&&output.id()!=null)initial="{\"item\":\""+output.id()+"\",\"count\":"+fields.getOrDefault("count","1")+"}";
+        final boolean cooking=new CookingRecipeLayoutProvider().find(type).isPresent();
+        final boolean objectOutput=initial.stripLeading().startsWith("{");
+        new IngredientPicker(getDialogPane().getScene().getWindow(),discovery,ResourceKind.ITEM,false,!cooking||objectOutput,initial).showAndWait().ifPresent(value->patch(text->forms.result(text,value.id(),value.amount())));
     }
     private void restoreDraft(final Deque<String> from,final Deque<String> to) {
         if(saving||from.isEmpty())return;
