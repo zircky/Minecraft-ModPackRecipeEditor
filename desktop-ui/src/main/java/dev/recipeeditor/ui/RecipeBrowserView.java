@@ -92,9 +92,10 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     header.getStyleClass().add("view-header");
     setTop(header);
     table.setId("recipe-table");table.getColumns().add(resultColumn());
-    table.getColumns().add(column("Type", r -> display(r).type(), 170));
-    table.getColumns().add(column("Parse", r -> r.status().name(), 140));
-    table.getColumns().add(column("Change", r -> editor.hasConflict(r.id()) ? "SOURCE CONFLICT" : editor.status(r.id()).name(), 150));
+    table.getColumns().add(column("Type", r -> display(r).type(), 125));
+    table.getColumns().add(column("Parse", r -> r.status().name(), 90));
+    table.getColumns().add(column("Change", r -> editor.hasConflict(r.id()) ? "SOURCE CONFLICT" : editor.status(r.id()).name(), 105));
+    table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
     final var sorted = new javafx.collections.transformation.SortedList<>(filtered);
     sorted.comparatorProperty().bind(table.comparatorProperty());
     table.setItems(sorted);
@@ -460,7 +461,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   }
 
   private TableColumn<RecipeDefinition,RecipeDefinition> resultColumn() {
-    final var column=new TableColumn<RecipeDefinition,RecipeDefinition>("Result");column.setPrefWidth(330);
+    final var column=new TableColumn<RecipeDefinition,RecipeDefinition>("Result");column.setPrefWidth(280);
     column.setCellValueFactory(cell->new javafx.beans.property.ReadOnlyObjectWrapper<>(cell.getValue()));
     column.setComparator(Comparator.comparing(recipe->display(recipe).name(),String.CASE_INSENSITIVE_ORDER));
     column.setCellFactory(view->new TableCell<>() {
