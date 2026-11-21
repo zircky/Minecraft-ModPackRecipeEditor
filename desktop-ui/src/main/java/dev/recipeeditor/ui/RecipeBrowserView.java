@@ -358,6 +358,8 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     });
   }
 
+  private String capabilityStatus(final dev.recipeeditor.integrations.api.RecipeTypeCapabilities caps,final dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature feature){return caps.supports(feature)?"SUPPORTED":"UNSUPPORTED";}
+
   private boolean readOnlyModRecipe(final RecipeDefinition recipe) {
     return recipe.type().location().flatMap(moddedAdapters::find).map(adapter->!adapter.capabilities(recipe).supports(dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_EDIT)).orElse(false);
   }
@@ -534,7 +536,6 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       return;
     }
     final var presentation=display(recipe);
-    recipe.type().location().flatMap(moddedAdapters::find).ifPresent(adapter->{final var caps=adapter.capabilities(recipe);viewer.getChildren().add(label("View: "+(caps.supports(dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_VIEW)?"SUPPORTED":"UNSUPPORTED")+" · Edit: UNSUPPORTED · Create: UNSUPPORTED · Export: UNSUPPORTED"));viewer.getChildren().add(label(caps.reason()));});
     viewer.getChildren().addAll(label(presentation.name()),label("Type: "+presentation.type()+" · "+presentation.machine()),label("Recipe ID: "+recipe.id()),label("Recipe status: "+editor.status(recipe.id())+(editor.hasConflict(recipe.id())?" · SOURCE CONFLICT":"")));
     if (recipe.status() == RecipeParseStatus.UNSUPPORTED || recipe.status() == RecipeParseStatus.INVALID)
       viewer.getChildren().add(label("Semantic view unavailable. See Raw JSON and Diagnostics."));
@@ -554,6 +555,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       final var sourceButton=new Button("View Source");sourceButton.setOnAction(event->detailTabs.getSelectionModel().select(2));
       viewer.getChildren().add(new HBox(8,editButton,sourceButton));
     }
+    recipe.type().location().flatMap(moddedAdapters::find).ifPresent(adapter->{final var caps=adapter.capabilities(recipe);viewer.getChildren().add(label("View: "+(caps.supports(dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_VIEW)?"SUPPORTED":"UNSUPPORTED")+" · Edit: "+capabilityStatus(caps,dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_EDIT)+" · Create: "+capabilityStatus(caps,dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_CREATE)+" · Export: "+capabilityStatus(caps,dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_EXPORT)));viewer.getChildren().add(label(caps.reason()));});
     viewer.getChildren().add(label("Physical source: "+recipe.source().physicalSource()+" · "+recipe.source().confidence()));
     json.setText(recipe.rawJson());
     json.positionCaret(0);

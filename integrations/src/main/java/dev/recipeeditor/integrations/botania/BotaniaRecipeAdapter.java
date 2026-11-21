@@ -72,7 +72,7 @@ public final class BotaniaRecipeAdapter implements ModdedRecipeAdapter {
         final var features=EnumSet.of(RecipeTypeCapabilities.Feature.REQUIRES_INTEGRATION);
         if(recipe.type().location().map(this::supports).orElse(false)&&recipe.status()!=RecipeParseStatus.INVALID&&recipe.status()!=RecipeParseStatus.UNSUPPORTED)features.add(RecipeTypeCapabilities.Feature.CAN_VIEW);
         if(recipe.type().displayId().equals("botania:brew"))features.add(RecipeTypeCapabilities.Feature.REQUIRES_RUNTIME);
-        return new RecipeTypeCapabilities(features,"Botania 1.20.1-456 structural parser and read-only layout; authoring/export are not verified in Steps 1–4. Brew registry binding requires runtime evidence.");
+        return new RecipeTypeCapabilities(features,"Read-only Botania recipe preview. Creating, editing and exporting this format are not supported yet."+(recipe.type().displayId().equals("botania:brew")?" Brew registry binding requires runtime evidence.":""));
     }
     private JsonNode object(final String raw)throws java.io.IOException {final var root=new ResourceJsonReader().read(raw);if(!root.isObject())throw new IllegalArgumentException("Recipe must be an object");return root;}
     private void register(final Map<ResourceLocation,ModdedRecipeType> index,final String path,final String en,final String ru,final String machineEn,final String machineRu){final var id=new ResourceLocation("botania",path);index.put(id,new ModdedRecipeType(id,Map.of("en_us",en,"ru_ru",ru),Map.of("en_us",machineEn,"ru_ru",machineRu)));}
