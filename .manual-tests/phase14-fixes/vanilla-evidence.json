@@ -1,0 +1,97 @@
+[ {
+  "runtimeConfirmed" : false,
+  "names" : {
+    "ru_ru" : "Алмаз",
+    "en_us" : "Diamond"
+  },
+  "model" : true,
+  "previewStatus" : "READY",
+  "id" : "minecraft:diamond",
+  "source" : "ResourceSource[type=VANILLA_ASSET, modIds=[], container=C:\\Users\\ziran\\AppData\\Roaming\\PrismLauncher\\libraries\\com\\mojang\\minecraft\\1.20.1\\minecraft-1.20.1-client.jar, internalPath=assets/minecraft/textures/item/diamond.png, method=Vanilla client assets; available preview, active resource order UNKNOWN]",
+  "translationKey" : "item.minecraft.diamond",
+  "textureBytes" : 237
+}, {
+  "runtimeConfirmed" : false,
+  "names" : {
+    "ru_ru" : "Железный слиток",
+    "en_us" : "Iron Ingot"
+  },
+  "model" : true,
+  "previewStatus" : "READY",
+  "id" : "minecraft:iron_ingot",
+  "source" : "ResourceSource[type=VANILLA_ASSET, modIds=[], container=C:\\Users\\ziran\\AppData\\Roaming\\PrismLauncher\\libraries\\com\\mojang\\minecraft\\1.20.1\\minecraft-1.20.1-client.jar, internalPath=assets/minecraft/textures/item/iron_ingot.png, method=Vanilla client assets; available preview, active resource order UNKNOWN]",
+  "translationKey" : "item.minecraft.iron_ingot",
+  "textureBytes" : 193
+}, {
+  "runtimeConfirmed" : false,
+  "names" : {
+    "ru_ru" : "Золотой слиток",
+    "en_us" : "Gold Ingot"
+  },
+  "model" : true,
+  "previewStatus" : "READY",
+  "id" : "minecraft:gold_ingot",
+  "source" : "ResourceSource[type=VANILLA_ASSET, modIds=[], container=C:\\Users\\ziran\\AppData\\Roaming\\PrismLauncher\\libraries\\com\\mojang\\minecraft\\1.20.1\\minecraft-1.20.1-client.jar, internalPath=assets/minecraft/textures/item/gold_ingot.png, method=Vanilla client assets; available preview, active resource order UNKNOWN]",
+  "translationKey" : "item.minecraft.gold_ingot",
+  "textureBytes" : 208
+}, {
+  "runtimeConfirmed" : false,
+  "names" : {
+    "ru_ru" : "Камень",
+    "en_us" : "Stone"
+  },
+  "model" : true,
+  "previewStatus" : "RENDERING_UNSUPPORTED",
+  "id" : "minecraft:stone",
+  "source" : "ResourceSource[type=VANILLA_ASSET, modIds=[], container=C:\\Users\\ziran\\AppData\\Roaming\\PrismLauncher\\libraries\\com\\mojang\\minecraft\\1.20.1\\minecraft-1.20.1-client.jar, internalPath=assets/minecraft/textures/block/stone.png, method=Vanilla client assets; available preview, active resource order UNKNOWN]",
+  "translationKey" : "block.minecraft.stone",
+  "textureBytes" : 227
+}, {
+  "runtimeConfirmed" : false,
+  "names" : {
+    "ru_ru" : "Дубовые доски",
+    "en_us" : "Oak Planks"
+  },
+  "model" : true,
+  "previewStatus" : "RENDERING_UNSUPPORTED",
+  "id" : "minecraft:oak_planks",
+  "source" : "ResourceSource[type=VANILLA_ASSET, modIds=[], container=C:\\Users\\ziran\\AppData\\Roaming\\PrismLauncher\\libraries\\com\\mojang\\minecraft\\1.20.1\\minecraft-1.20.1-client.jar, internalPath=assets/minecraft/textures/block/oak_planks.png, method=Vanilla client assets; available preview, active resource order UNKNOWN]",
+  "translationKey" : "block.minecraft.oak_planks",
+  "textureBytes" : 275
+}, {
+  "runtimeConfirmed" : false,
+  "names" : {
+    "ru_ru" : "Верстак",
+    "en_us" : "Crafting Table"
+  },
+  "model" : true,
+  "previewStatus" : "RENDERING_UNSUPPORTED",
+  "id" : "minecraft:crafting_table",
+  "source" : "ResourceSource[type=VANILLA_ASSET, modIds=[], container=C:\\Users\\ziran\\AppData\\Roaming\\PrismLauncher\\libraries\\com\\mojang\\minecraft\\1.20.1\\minecraft-1.20.1-client.jar, internalPath=assets/minecraft/textures/block/crafting_table_front.png, method=Vanilla client assets; available preview, active resource order UNKNOWN]",
+  "translationKey" : "block.minecraft.crafting_table",
+  "textureBytes" : 351
+}, {
+  "runtimeConfirmed" : false,
+  "names" : {
+    "ru_ru" : "Динамит",
+    "en_us" : "TNT"
+  },
+  "model" : true,
+  "previewStatus" : "RENDERING_UNSUPPORTED",
+  "id" : "minecraft:tnt",
+  "source" : "ResourceSource[type=VANILLA_ASSET, modIds=[], container=C:\\Users\\ziran\\AppData\\Roaming\\PrismLauncher\\libraries\\com\\mojang\\minecraft\\1.20.1\\minecraft-1.20.1-client.jar, internalPath=assets/minecraft/textures/block/tnt_side.png, method=Vanilla client assets; available preview, active resource order UNKNOWN]",
+  "translationKey" : "block.minecraft.tnt",
+  "textureBytes" : 215
+}, {
+  "runtimeConfirmed" : false,
+  "names" : {
+    "ru_ru" : "Порох",
+    "en_us" : "Gunpowder"
+  },
+  "model" : true,
+  "previewStatus" : "READY",
+  "id" : "minecraft:gunpowder",
+  "source" : "ResourceSource[type=VANILLA_ASSET, modIds=[], container=C:\\Users\\ziran\\AppData\\Roaming\\PrismLauncher\\libraries\\com\\mojang\\minecraft\\1.20.1\\minecraft-1.20.1-client.jar, internalPath=assets/minecraft/textures/item/gunpowder.png, method=Vanilla client assets; available preview, active resource order UNKNOWN]",
+  "translationKey" : "item.minecraft.gunpowder",
+  "textureBytes" : 186
+} ]

@@ -1,0 +1,41 @@
+Starting a Gradle Daemon, 3 busy Daemons could not be reused, use --status for details
+> Task :integrations:processResources NO-SOURCE
+> Task :recipe-engine:processResources NO-SOURCE
+> Task :integrations:processTestResources NO-SOURCE
+> Task :registry:processResources NO-SOURCE
+> Task :companion-client:processResources NO-SOURCE
+> Task :recipe-analyzer:processResources NO-SOURCE
+> Task :recipe-analyzer:processTestResources NO-SOURCE
+> Task :core:compileJava UP-TO-DATE
+> Task :core:processResources NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :core:jar UP-TO-DATE
+> Task :companion-protocol:compileJava UP-TO-DATE
+> Task :registry:compileJava UP-TO-DATE
+> Task :registry:classes UP-TO-DATE
+> Task :companion-protocol:generateCompanionIdentity UP-TO-DATE
+> Task :registry:jar UP-TO-DATE
+> Task :companion-protocol:processResources UP-TO-DATE
+> Task :companion-protocol:classes UP-TO-DATE
+> Task :companion-protocol:jar UP-TO-DATE
+> Task :recipe-engine:compileJava
+> Task :recipe-engine:classes
+> Task :recipe-engine:jar
+> Task :companion-client:compileJava
+> Task :companion-client:classes
+> Task :companion-client:jar UP-TO-DATE
+> Task :integrations:compileJava
+> Task :integrations:classes
+> Task :integrations:jar
+> Task :recipe-analyzer:compileJava
+> Task :recipe-analyzer:classes
+> Task :recipe-analyzer:compileTestJava
+> Task :recipe-analyzer:testClasses
+> Task :integrations:compileTestJava
+> Task :integrations:testClasses
+> Task :integrations:test
+> Task :recipe-analyzer:test
+
+BUILD SUCCESSFUL in 50s
+19 actionable tasks: 10 executed, 9 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.0/userguide/configuration_cache_enabling.html

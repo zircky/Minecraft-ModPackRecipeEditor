@@ -1,0 +1,70 @@
+> Task :registry:processResources NO-SOURCE
+> Task :recipe-engine:processResources NO-SOURCE
+> Task :companion-client:processResources NO-SOURCE
+> Task :recipe-engine:processTestResources NO-SOURCE
+> Task :companion-client:processTestResources NO-SOURCE
+> Task :core:compileJava UP-TO-DATE
+> Task :companion-server:processResources NO-SOURCE
+> Task :exporters:processResources NO-SOURCE
+> Task :core:processResources NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :companion-protocol:compileJava UP-TO-DATE
+> Task :integrations:processResources NO-SOURCE
+> Task :companion-protocol:generateCompanionIdentity UP-TO-DATE
+> Task :core:jar UP-TO-DATE
+> Task :companion-protocol:processResources UP-TO-DATE
+> Task :companion-protocol:classes UP-TO-DATE
+> Task :companion-protocol:jar UP-TO-DATE
+> Task :app:generateBuildInfo UP-TO-DATE
+> Task :app:processResources UP-TO-DATE
+> Task :registry:compileJava UP-TO-DATE
+> Task :app:processTestFixturesResources NO-SOURCE
+> Task :registry:classes UP-TO-DATE
+> Task :modpack-parser:compileJava UP-TO-DATE
+> Task :app:processTestResources NO-SOURCE
+> Task :registry:jar UP-TO-DATE
+> Task :desktop-ui:processResources UP-TO-DATE
+> Task :modpack-parser:processResources NO-SOURCE
+> Task :modpack-parser:classes UP-TO-DATE
+> Task :recipe-analyzer:processResources NO-SOURCE
+> Task :modpack-parser:jar UP-TO-DATE
+> Task :companion-server:compileJava UP-TO-DATE
+> Task :companion-server:classes UP-TO-DATE
+> Task :companion-server:jar UP-TO-DATE
+> Task :recipe-engine:compileJava
+> Task :recipe-engine:classes
+> Task :integrations:compileJava UP-TO-DATE
+> Task :integrations:classes UP-TO-DATE
+> Task :integrations:jar UP-TO-DATE
+> Task :recipe-engine:jar
+> Task :companion-client:compileJava
+> Task :companion-client:classes
+> Task :companion-client:jar
+> Task :recipe-engine:compileTestJava
+> Task :recipe-engine:testClasses
+> Task :recipe-analyzer:compileJava
+> Task :recipe-analyzer:classes
+> Task :recipe-analyzer:jar UP-TO-DATE
+> Task :exporters:compileJava
+> Task :exporters:classes
+> Task :exporters:jar UP-TO-DATE
+> Task :companion-client:compileTestJava
+> Task :companion-client:testClasses
+> Task :recipe-engine:test
+> Task :desktop-ui:compileJava
+> Task :desktop-ui:classes
+> Task :desktop-ui:jar UP-TO-DATE
+> Task :companion-client:test
+> Task :app:compileJava
+> Task :app:classes
+> Task :app:jar UP-TO-DATE
+> Task :app:compileTestFixturesJava UP-TO-DATE
+> Task :app:testFixturesClasses UP-TO-DATE
+> Task :app:testFixturesJar UP-TO-DATE
+> Task :app:compileTestJava
+> Task :app:testClasses
+> Task :app:externalTest
+
+BUILD SUCCESSFUL in 41s
+37 actionable tasks: 14 executed, 23 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.0/userguide/configuration_cache_enabling.html

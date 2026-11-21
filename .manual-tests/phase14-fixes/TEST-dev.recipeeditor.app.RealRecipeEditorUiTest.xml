@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.recipeeditor.app.RealRecipeEditorUiTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-11-21T15:57:43.063Z" hostname="ZIRCKY" time="25.382">
+  <properties/>
+  <testcase name="actualTntCanBeVisuallyClearedUndoneRedoneEditedSavedAndReopened()" classname="dev.recipeeditor.app.RealRecipeEditorUiTest" time="25.382"/>
+  <system-out><![CDATA[18:57:44.510 INFO  d.r.m.DefaultModpackImportService - Imported G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh: Minecraft 1.20.1, loader FORGE, 71 JARs, 72 mod definitions
+18:57:56.926 INFO  d.r.app.DefaultStaticAnalysisService - Indexed G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh: 29096 resources, 11490 recipes, 1 conflicts in 12356 ms
+]]></system-out>
+  <system-err><![CDATA[Nov 21, 2026 6:57:56 PM com.sun.javafx.application.PlatformImpl startup
+WARNING: Unsupported JavaFX configuration: classes were loaded from 'unnamed module @5d534f5d'
+]]></system-err>
+</testsuite>

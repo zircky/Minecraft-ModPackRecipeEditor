@@ -1,0 +1,47 @@
+> Task :companion-client:processResources NO-SOURCE
+> Task :desktop-ui:processResources UP-TO-DATE
+> Task :core:compileJava UP-TO-DATE
+> Task :exporters:processResources NO-SOURCE
+> Task :core:processResources NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :desktop-ui:processTestResources NO-SOURCE
+> Task :integrations:processResources NO-SOURCE
+> Task :core:jar UP-TO-DATE
+> Task :recipe-engine:processResources NO-SOURCE
+> Task :companion-protocol:compileJava UP-TO-DATE
+> Task :companion-protocol:generateCompanionIdentity UP-TO-DATE
+> Task :companion-protocol:processResources UP-TO-DATE
+> Task :companion-protocol:classes UP-TO-DATE
+> Task :companion-protocol:jar UP-TO-DATE
+> Task :registry:compileJava UP-TO-DATE
+> Task :registry:processResources NO-SOURCE
+> Task :registry:classes UP-TO-DATE
+> Task :registry:jar UP-TO-DATE
+> Task :recipe-engine:compileJava UP-TO-DATE
+> Task :recipe-engine:classes UP-TO-DATE
+> Task :recipe-engine:jar UP-TO-DATE
+> Task :integrations:compileJava UP-TO-DATE
+> Task :companion-client:compileJava UP-TO-DATE
+> Task :companion-client:classes UP-TO-DATE
+> Task :integrations:classes UP-TO-DATE
+> Task :integrations:jar UP-TO-DATE
+> Task :companion-client:jar UP-TO-DATE
+> Task :exporters:compileJava UP-TO-DATE
+> Task :exporters:classes UP-TO-DATE
+> Task :exporters:jar UP-TO-DATE
+> Task :desktop-ui:compileJava
+> Task :desktop-ui:classes
+
+> Task :desktop-ui:compileTestJava
+Note: L:\My Add\RecipeEditor\desktop-ui\src\test\java\dev\recipeeditor\ui\ResourceBrowserStateTest.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :desktop-ui:testClasses
+> Task :desktop-ui:test
+> Task :desktop-ui:integrationTest
+
+[Incubating] Problems report is available at: file:///L:/My%20Add/RecipeEditor/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 14s
+21 actionable tasks: 4 executed, 17 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.0/userguide/configuration_cache_enabling.html
