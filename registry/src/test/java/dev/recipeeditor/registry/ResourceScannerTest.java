@@ -18,7 +18,7 @@ final class ResourceScannerTest {
     @Test void corruptArchiveBecomesDiagnostic() throws Exception { final var jar=root.resolve("bad.jar"); Files.writeString(jar,"bad"); assertFalse(scan(jar).diagnostics().isEmpty()); }
     @Test void traversalRejectedWithoutExtraction() throws Exception {
         final var result=scan(ResourceFixtures.jar(root,Map.of("assets/test/models/item/../../escape.json","{}","/absolute.json","{}")));
-        assertTrue(result.documents().isEmpty()); assertEquals(2,result.diagnostics().size()); assertFalse(Files.exists(root.resolve("escape.json")));
+        assertTrue(result.documents().isEmpty()); assertEquals(2,result.diagnostics().stream().filter(d->d.message().contains("Unsafe resource path")).count()); assertFalse(Files.exists(root.resolve("escape.json")));
     }
     @Test void readsFolderAndZipDatapacksAndLocalData() throws Exception {
         final var jar=ResourceFixtures.jar(root,Map.of());

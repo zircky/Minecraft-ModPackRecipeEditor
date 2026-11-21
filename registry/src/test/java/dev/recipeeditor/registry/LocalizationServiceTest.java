@@ -5,6 +5,14 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 final class LocalizationServiceTest {
+    @Test void blockItemsUseExistingBlockTranslationsWithoutInventingItemNames() {
+        final var service=new LocalizationService(List.of(ResourceFixtures.document("assets/example/lang/en_us.json","{\"block.example.planks\":\"Actual Planks\"}")));
+        final var id=ResourceLocation.parse("example:planks");
+        assertEquals("block.example.planks",service.key(ResourceKind.ITEM,id));
+        assertEquals("Actual Planks",service.displayName(id,service.key(ResourceKind.ITEM,id),"ru_ru"));
+        final var unknown=ResourceLocation.parse("example:missing");
+        assertEquals(unknown.toString(),service.displayName(unknown,service.key(ResourceKind.ITEM,unknown),"en_us"));
+    }
     @Test void blankRussianFallsBackAndNumericComponentArgumentsAreSupported() {
         final var service=new LocalizationService(List.of(ResourceFixtures.document("assets/test/lang/en_us.json","{\"item.test.a\":\"English\",\"count.test\":\"Count %s\"}"),ResourceFixtures.document("assets/test/lang/ru_ru.json","{\"item.test.a\":\"   \"}")));
         assertEquals("English",service.displayName(ResourceLocation.parse("test:a"),"item.test.a","ru_ru"));

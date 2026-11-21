@@ -32,7 +32,12 @@ public final class LocalizationService {
             } catch (Exception error) { diagnostics.add(new ImportDiagnostic(ScanStatus.WARNING,path,"Invalid language document: "+error.getMessage())); }
         }
     }
-    public String key(final ResourceKind kind,final ResourceLocation id) { return kind.name().toLowerCase(Locale.ROOT)+"."+id.namespace()+"."+id.path().replace('/','.'); }
+    public String key(final ResourceKind kind,final ResourceLocation id) {
+        final String suffix=id.namespace()+"."+id.path().replace('/','.');
+        final String key=kind.name().toLowerCase(Locale.ROOT)+"."+suffix;
+        // Block items commonly use the block translation key, including Vanilla and Ad Astra planks.
+        return kind==ResourceKind.ITEM&&translations(key).isEmpty()&&!translations("block."+suffix).isEmpty()?"block."+suffix:key;
+    }
     public String displayName(final ResourceLocation id,final String key,final String language) {
         final var names=translations(key);return names.getOrDefault(language,names.getOrDefault("en_us",id.toString()));
     }

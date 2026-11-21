@@ -25,6 +25,7 @@ public final class TextureResourceService implements AutoCloseable {
     private final LinkedHashMap<FrameKey,BufferedImage> frames=new LinkedHashMap<>(32,0.75f,true);
     private final LinkedHashMap<Path,Archive> archives=new LinkedHashMap<>(4,0.75f,true);
     private final Set<CompletableFuture<Preview>> pending=ConcurrentHashMap.newKeySet();
+    private final Map<Path,Set<Path>> vanillaArchives=new LinkedHashMap<>();
     private final java.util.concurrent.atomic.AtomicLong epoch=new java.util.concurrent.atomic.AtomicLong();
     public TextureResourceService() { this(2*1024*1024,2048); }
     public TextureResourceService(final int maxBytes,final int maxDimension) { this.maxBytes=maxBytes;this.maxDimension=maxDimension; }
@@ -105,7 +106,16 @@ public final class TextureResourceService implements AutoCloseable {
     }
     private byte[] read(final ResourceSource source,final Path root,final String path,final int limit,final boolean optional) throws IOException {
         if(!new ResourceScanner(new DiscoveryLimits(),ResourceLayout.minecraft1201()).validPath(path)) throw new IOException("Unsafe texture path");
-        final var container=SafeFiles.inside(root,source.container());
+        final Path container;
+        if(source.type()==SourceType.VANILLA_ASSET) {
+            synchronized(vanillaArchives) {
+                final var selected=root.toAbsolutePath().normalize();
+                if(!vanillaArchives.containsKey(selected))vanillaArchives.put(selected,new VanillaAssetLocator().approvedArchives(selected));
+                while(vanillaArchives.size()>4)vanillaArchives.remove(vanillaArchives.keySet().iterator().next());
+                container=source.container().toRealPath();
+                if(!vanillaArchives.get(selected).contains(container))throw new IOException("Unapproved Vanilla asset archive");
+            }
+        } else container=SafeFiles.inside(root,source.container());
         if(Files.isDirectory(container)) {
             final var candidate=container.resolve(path);
             if(optional&&!Files.exists(candidate,LinkOption.NOFOLLOW_LINKS)) return new byte[0];
@@ -155,6 +165,7 @@ public final class TextureResourceService implements AutoCloseable {
         }
     }
     public void clear() {
+        synchronized(vanillaArchives){vanillaArchives.clear();}
         epoch.incrementAndGet();pending.forEach(future->future.cancel(false));worker.getQueue().clear();synchronized(cache){cache.clear();frames.clear();}
         try { worker.execute(this::closeArchives); } catch(RejectedExecutionException ignored) { /* close() releases remaining handles. */ }
     }
