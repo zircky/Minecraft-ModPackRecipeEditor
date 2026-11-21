@@ -20,6 +20,7 @@ import java.util.*;
 public final class RecipeBrowserView extends BorderPane implements AutoCloseable {
   private final java.util.function.BiConsumer<RecipeDefinition, dev.recipeeditor.exporters.ExportFormat> exportRecipe;
   private final DiscoveryResult result;
+  private final dev.recipeeditor.registry.TextureResourceService textures=new dev.recipeeditor.registry.TextureResourceService();
   private final dev.recipeeditor.integrations.api.IntegrationContext integration;
   private Set<ResourceLocation> runtimeIds = Set.of();
   private final TextField search = new TextField();
@@ -436,6 +437,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   @Override
   public void close() {
     closed = true;
+    textures.close();
     editor.removeListener(listener);
   }
 
@@ -489,23 +491,10 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       viewer.getChildren().add(label("Semantic view unavailable. See Raw JSON and Diagnostics."));
     else {
       if (!recipe.layout().pattern().isEmpty()) {
-        final var grid = new GridPane();
-        grid.setHgap(6);
-        grid.setVgap(6);
-        for (int column = 0; column < 3; column++)
-          grid.getColumnConstraints().add(new javafx.scene.layout.ColumnConstraints(140));
-        for (int row = 0; row < recipe.layout().pattern().size(); row++) {
-          final String pattern = recipe.layout().pattern().get(row);
-          for (int col = 0; col < pattern.length(); col++) {
-            final String key = String.valueOf(pattern.charAt(col));
-            final var value = recipe.layout().slots().get(key);
-            final var cell = label(value == null ? " " : describe(value));
-            cell.setMinSize(90, 60);
-            cell.getStyleClass().add("recipe-slot");
-            grid.add(cell, col, row);
-          }
-        }
-        viewer.getChildren().add(grid);
+        final var grid=new ShapedCraftingEditorView(new RecipeFormService().grid(recipe.rawJson()),result,textures,null,null);
+        final var output=new VBox(8);
+        recipe.outputs().stream().filter(RecipeOutput.Fixed.class::isInstance).map(RecipeOutput.Fixed.class::cast).findFirst().ifPresent(value->output.getChildren().add(new RecipeSlotView(RecipeSlotContent.parse("{\"item\":\""+value.id()+"\",\"count\":"+value.count()+"}"),result,textures,64)));
+        final var layout=new HBox(16,grid,new RecipeArrowView(),output);layout.setAlignment(javafx.geometry.Pos.CENTER);viewer.getChildren().add(layout);
       }
       viewer.getChildren().add(label("Inputs:"));
       if (!recipe.layout().slots().isEmpty() && recipe.layout().pattern().isEmpty())

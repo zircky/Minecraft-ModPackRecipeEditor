@@ -34,6 +34,8 @@ public final class RecipeEditorDialog extends Dialog<Void> {
     private boolean alive=true,saving;
     private final Deque<String> draftUndo=new ArrayDeque<>(),draftRedo=new ArrayDeque<>();
     private boolean restoringDraft;
+    private int selectedCraftingSlot=-1;
+    private double slotSize=64;
     public RecipeEditorDialog(final Window owner,final DiscoveryResult discovery,final RecipeEditorService editor,final EditorTasks tasks,final RecipeEditSession session,final boolean creating, final dev.recipeeditor.integrations.api.IntegrationContext integration) {
         this.integration=integration;
         this.discovery=discovery; this.editor=editor; this.tasks=tasks; this.session=session; this.creating=creating;
@@ -44,7 +46,9 @@ public final class RecipeEditorDialog extends Dialog<Void> {
         final var format=new Button("Format JSON"); format.setOnAction(e->patch(text->forms.format(text)));
         final var apply=new Button("Validate / Apply JSON"); apply.setOnAction(e->validateDraft());
         final var rawPane=new BorderPane(raw); rawPane.setTop(new HBox(10,format,apply,new Label("Unknown types: syntax/ID checks only; no semantic adapter.")));
-        final var tabs=new TabPane(tab("Visual",new ScrollPane(visual)),tab("Advanced",new ScrollPane(advanced)),tab("Raw JSON",rawPane),tab("Diff",diff));
+        final var visualScroll=new ScrollPane(visual);visualScroll.setFitToWidth(true);
+        final var advancedScroll=new ScrollPane(advanced);advancedScroll.setFitToWidth(true);
+        final var tabs=new TabPane(tab("Visual",visualScroll),tab("Advanced",advancedScroll),tab("Raw JSON",rawPane),tab("Diff",diff));
         tabs.getSelectionModel().selectedIndexProperty().addListener((o,a,b)->session.mode(RecipeEditSession.Mode.values()[b.intValue()]));
         issues.setWrapText(true); issues.setMaxWidth(950); issues.getStyleClass().add("validation-error");
         final var warnings=new ScrollPane(issues); warnings.setFitToWidth(true); warnings.setPrefViewportHeight(100);
@@ -71,7 +75,7 @@ public final class RecipeEditorDialog extends Dialog<Void> {
         final String text=raw.getText(); final long revision=session.revision(); getDialogPane().lookupButton(save).setDisable(true);
         tasks.submit(()->new RecipeDraftPreviewService().inspect(editor.validator(),session.id(),session.source(),session.originalJson(),text),value->{
             if(!alive || revision!=session.revision()) return; preview=value;
-            issues.setText(value.validation().issues().stream().map(issue->issue.severity()+" ["+issue.field()+"] "+issue.message()).collect(java.util.stream.Collectors.joining("\n")));
+            issues.setText(new RecipeValidationPresenter().format(value));
             getDialogPane().lookupButton(save).setDisable(!value.validation().valid() || !pendingAdvanced.isEmpty()); state.setText(!pendingAdvanced.isEmpty()?"Unapplied Advanced fields: "+pendingAdvanced.keySet()+". Apply them or Reset draft before Save.":session.dirty()?"Unsaved editor changes":"Draft matches last Apply/Save · project file may still need Save Project");
             render(value); diff.setText(value.diffError().isEmpty()?value.differences().stream().map(d->d.path()+"\n- "+d.before()+"\n+ "+d.after()).collect(java.util.stream.Collectors.joining("\n\n")):value.diffError());
         },error->{if(alive && revision==session.revision()) issues.setText(error.getMessage());});
@@ -89,18 +93,29 @@ public final class RecipeEditorDialog extends Dialog<Void> {
         if(!value.visualSupported()) { visual.getChildren().add(new Label("Visual editing unavailable. Raw JSON is preserved; unknown recipes have limited semantic validation.")); advanced.getChildren().add(new Label("No adapter for this type. Inspect and edit Raw JSON explicitly.")); return; }
         final String type=value.type();
         final var layout=new RecipeLayoutProvider().find(type);
-        visual.getChildren().add(new Label(layout.map(RecipeLayoutProvider.Layout::workstation).orElse(type)));
+        final var workstationTitle=new Label(layout.map(RecipeLayoutProvider.Layout::workstation).orElse(type));workstationTitle.getStyleClass().add("section-title");
         if(layout.isPresent()&&layout.get().kind()==RecipeLayoutProvider.Kind.COOKING)visual.getChildren().add(new Label("Cooking time: "+property(value,"cookingtime")+" ticks | Experience: "+property(value,"experience")));
-        if(type.equals("minecraft:crafting_shaped")) shaped(value);
-        else if(type.equals("minecraft:crafting_shapeless")) shapeless(value);
-        else if(type.startsWith("minecraft:smithing_")) {
+        if(type.startsWith("minecraft:smithing_")) {
             final var roles=new HBox(10);for(final var role:List.of("template","base","addition")) {if(!roles.getChildren().isEmpty())roles.getChildren().add(new Label("+"));roles.getChildren().add(ingredientControl(role,value.fields().getOrDefault(role,"")));}visual.getChildren().add(roles);
         }
-        else ingredientButton("ingredient",value.fields().getOrDefault("ingredient",""));
+        else if(!type.startsWith("minecraft:crafting_")) ingredientButton("ingredient",value.fields().getOrDefault("ingredient",""));
         final var ingredientNodes=List.copyOf(visual.getChildren());visual.getChildren().clear();
         final var inputPane=new VBox(10);inputPane.getChildren().setAll(ingredientNodes);
-        final var outputPane=new RecipeOutputEditor(getDialogPane().getScene().getWindow(),discovery,value.validation().recipe(),(id,count)->patch(text->forms.result(text,id,count)),()->patch(text->forms.removeResult(text)));
-        final var workstation=new HBox(24,inputPane,new Label("→"),outputPane);workstation.setAlignment(javafx.geometry.Pos.CENTER);workstation.setMaxWidth(850);visual.setAlignment(javafx.geometry.Pos.TOP_CENTER);visual.getChildren().add(workstation);
+        final var outputPane=new RecipeOutputEditor(getDialogPane().getScene().getWindow(),discovery,value.validation().recipe(),textures,slotSize,(id,count)->patch(text->forms.result(text,id,count)));
+        visual.setAlignment(javafx.geometry.Pos.TOP_CENTER);visual.getChildren().add(workstationTitle);
+        if(type.equals("minecraft:crafting_shaped")||type.equals("minecraft:crafting_shapeless")) {
+            final boolean shaped=type.equals("minecraft:crafting_shaped");
+            final var values=new ArrayList<>(shaped?value.grid():value.shapeless());
+            final java.util.function.IntConsumer edit=index->pickIngredient(json->{if(shaped)values.set(index,json);else if(index<values.size())values.set(index,json);else values.add(json);patch(text->shaped?forms.shaped(text,List.copyOf(values)):forms.shapeless(text,List.copyOf(values)));});
+            final java.util.function.IntConsumer clear=index->{if(shaped)values.set(index,"");else if(index<values.size())values.remove(index);patch(text->shaped?forms.shaped(text,List.copyOf(values)):forms.shapeless(text,List.copyOf(values)));};
+            final var grid=shaped?new ShapedCraftingEditorView(values,discovery,textures,slotSize,edit,clear):new ShapelessCraftingEditorView(values,discovery,textures,slotSize,edit,clear,()->edit.accept(values.size()));
+            visual.getChildren().add(new CraftingRecipeEditorView(grid,values,outputPane,selectedCraftingSlot,index->selectedCraftingSlot=index,edit,clear));
+            final var scale=new Spinner<Integer>(40,80,(int)slotSize,8);scale.setPrefWidth(100);scale.setAccessibleText("Crafting slot size in pixels");
+            scale.valueProperty().addListener((o,a,b)->{slotSize=b;render(value);});
+            final var sizing=new HBox(8,new Label("Slot size"),scale);sizing.setAlignment(javafx.geometry.Pos.CENTER);visual.getChildren().add(sizing);
+        } else {
+            final var workstation=new HBox(24,inputPane,new RecipeArrowView(),outputPane);workstation.setAlignment(javafx.geometry.Pos.CENTER);workstation.setMaxWidth(850);visual.getChildren().add(workstation);
+        }
         final var fields=new ArrayList<>(List.of("group"));
         if(Set.of("minecraft:smelting","minecraft:blasting","minecraft:smoking","minecraft:campfire_cooking").contains(type)) fields.addAll(List.of("experience","cookingtime"));
         for(final var name:fields) advancedField(name,value.fields().getOrDefault(name,name.equals("group")?"\"\"":name.equals("experience")?"0":type.equals("minecraft:smelting")?"200":type.equals("minecraft:campfire_cooking")?"600":"100"));
@@ -119,20 +134,7 @@ public final class RecipeEditorDialog extends Dialog<Void> {
             raw.setText(changed);
         },failure->{if(alive)issues.setText(failure.getMessage());});
     }
-    private void shaped(final RecipeEditPreview value) {
-        final var slots=new ArrayList<>(value.grid());while(slots.size()<9)slots.add("");
-        visual.getChildren().add(new ShapedCraftingEditorView(slots,discovery,textures,
-            index->pickIngredient(json->{slots.set(index,json);patch(text->forms.shaped(text,List.copyOf(slots)));}),
-            index->{slots.set(index,"");patch(text->forms.shaped(text,List.copyOf(slots)));}));
-    }
-    private void shapeless(final RecipeEditPreview value) {
-        final var values=new ArrayList<>(value.shapeless());
-        visual.getChildren().add(new ShapelessCraftingEditorView(values,discovery,textures,
-            index->pickIngredient(json->{values.set(index,json);patch(text->forms.shapeless(text,List.copyOf(values)));}),
-            index->{values.remove(index);patch(text->forms.shapeless(text,List.copyOf(values)));},
-            ()->pickIngredient(json->{values.add(json);patch(text->forms.shapeless(text,List.copyOf(values)));})));
-    }
-    private RecipeSlotView slot(final String json) { return new RecipeSlotView(RecipeSlotContent.parse(json),discovery,textures); }
+    private RecipeSlotView slot(final String json) { return new RecipeSlotView(RecipeSlotContent.parse(json),discovery,textures,slotSize); }
     private void ingredientButton(final String field,final String value) {visual.getChildren().add(ingredientControl(field,value));}
     private VBox ingredientControl(final String field,final String value) {final var button=slot(value);button.setOnAction(e->pickIngredient(json->patch(text->forms.patch(text,field,json))));return new VBox(6,new Label(field),button);}
     private void restoreDraft(final Deque<String> from,final Deque<String> to) {

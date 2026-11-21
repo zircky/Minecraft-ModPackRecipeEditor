@@ -31,7 +31,7 @@ public final class RecipeSlotView extends ToggleButton {
         if(content.amount()>1){final var quantity=new Label(Long.toString(content.amount()));quantity.getStyleClass().add("slot-quantity");StackPane.setAlignment(quantity,Pos.BOTTOM_RIGHT);graphic.getChildren().add(quantity);}
         if(content.kind()==RecipeSlotContent.Kind.ALTERNATIVES){final var badge=new Label("◇");StackPane.setAlignment(badge,Pos.TOP_LEFT);graphic.getChildren().add(badge);}
         setGraphic(graphic);
-        final var tooltip=new StringBuilder(name).append(content.id()==null?"":"\n"+content.id()).append("\nAmount: ").append(content.amount());
+        final var tooltip=new StringBuilder(name).append(content.id()==null||name.equals(content.id().toString())?"":"\n"+content.id()).append("\nAmount: ").append(content.amount()).append("\nIngredient type: ").append(content.kind());
         entry.ifPresent(value->tooltip.append("\n").append(new ResourceBrowserViewModel(discovery.registry()).source(value)).append("\n").append(value.confidence()).append("\n").append(value.visual().status()));
         if(content.kind()==RecipeSlotContent.Kind.TAG) {
             final var members=discovery.recipes().tagIndex().members(ResourceKind.ITEM,content.id());

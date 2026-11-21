@@ -86,3 +86,5 @@
 .resource-grid, .resource-grid .list-cell, .resource-grid .list-cell:filled:selected, .resource-grid .list-cell:focused { -fx-background-color: transparent; -fx-border-color: transparent; }
 .resource-card { -fx-border-width: 1; -fx-border-color: -mre-border; -fx-background-color: -mre-surface; }
 .resource-card:selected { -fx-border-color: -mre-focus; -fx-background-color: -mre-selection; }
+.recipe-arrow { -fx-font-size: 34px; -fx-text-fill: -mre-muted; }
+.crafting-workbench { -fx-padding: 16; }
