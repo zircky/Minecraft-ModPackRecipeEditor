@@ -34,7 +34,7 @@ final class RealRecipeEditorUiTest {
             try {
                 await(()->!button(dialog,"Save to project").isDisabled());
                 final String original=fx(()->raw(dialog).getText());
-                fx(()->{final var grid=(ShapedCraftingEditorView)dialog.getDialogPane().lookup("ShapedCraftingEditorView");((RecipeSlotView)grid.getChildren().get(4)).fire();button(dialog,"Clear Selected Slot").fire();return null;});
+                fx(()->{final var grid=(ShapedCraftingEditorView)dialog.getDialogPane().lookup("ShapedCraftingEditorView");((RecipeSlotView)grid.getChildren().get(4)).getContextMenu().getItems().getFirst().fire();return null;});
                 await(()->!raw(dialog).getText().equals(original)&&!button(dialog,"Save to project").isDisabled());
                 fx(()->{button(dialog,"Undo draft").fire();return null;});await(()->raw(dialog).getText().equals(original)&&!button(dialog,"Save to project").isDisabled());
                 fx(()->{button(dialog,"Redo draft").fire();return null;});await(()->!raw(dialog).getText().equals(original)&&!button(dialog,"Save to project").isDisabled());

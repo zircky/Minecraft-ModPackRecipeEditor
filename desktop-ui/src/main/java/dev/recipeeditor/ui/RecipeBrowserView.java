@@ -524,24 +524,20 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     if (recipe.status() == RecipeParseStatus.UNSUPPORTED || recipe.status() == RecipeParseStatus.INVALID)
       viewer.getChildren().add(label("Semantic view unavailable. See Raw JSON and Diagnostics."));
     else {
-      if (!recipe.layout().pattern().isEmpty()) {
-        final var grid=new ShapedCraftingEditorView(new RecipeFormService().grid(recipe.rawJson()),result,textures,null,null);
-        final var output=new VBox(8);
-        recipe.outputs().stream().filter(RecipeOutput.Fixed.class::isInstance).map(RecipeOutput.Fixed.class::cast).findFirst().ifPresent(value->output.getChildren().add(new RecipeSlotView(RecipeSlotContent.parse("{\"item\":\""+value.id()+"\",\"count\":"+value.count()+"}"),result,textures,64)));
-        final var layout=new HBox(16,grid,new RecipeArrowView(),output);layout.setAlignment(javafx.geometry.Pos.CENTER);viewer.getChildren().add(layout);
+      final var layout=new RecipeLayoutResolver().resolve(recipe);
+      if(layout.isPresent()) {
+        final var drawing=new VBox();
+        final var scale=new Spinner<Integer>(40,80,64,8);scale.setPrefWidth(100);scale.setAccessibleText("Recipe slot size in pixels");
+        final Runnable render=()->drawing.getChildren().setAll(new RecipeLayoutRenderer(layout.get(),result,textures,scale.getValue(),language.getValue(),RecipeLayoutRenderer.Mode.VIEWER,null));
+        scale.valueProperty().addListener((o,a,b)->render.run());render.run();
+        viewer.getChildren().addAll(drawing,new HBox(8,new Label("Slot size"),scale));
+      } else {
+        viewer.getChildren().add(label("No verified visual layout. Inspect Raw JSON for inputs and outputs."));
+        recipe.properties().forEach(property->viewer.getChildren().add(label(property.name()+": "+property.rawValue())));
       }
-      viewer.getChildren().add(label("Inputs:"));
-      if (!recipe.layout().slots().isEmpty() && recipe.layout().pattern().isEmpty())
-        recipe.layout().slots().forEach((role, ingredient) -> viewer.getChildren().add(label(role + ": " + describe(ingredient))));
-      else recipe.inputs().forEach(ingredient -> viewer.getChildren().add(label(describe(ingredient))));
-      viewer.getChildren().add(label("Outputs:"));
-      recipe.outputs().forEach(output -> {
-        if (output instanceof RecipeOutput.Fixed fixed)
-          viewer.getChildren().add(label(fixed.count() + " x " + fixed.id() + (fixed.copiesBaseData() ? " (copies base stack data)" : "")));
-        else if (output instanceof RecipeOutput.Dynamic dynamic)
-          viewer.getChildren().add(label("Dynamic: " + dynamic.description()));
-      });
-      recipe.properties().forEach(property -> viewer.getChildren().add(label(property.name() + ": " + property.rawValue())));
+      final var editButton=new Button("Edit recipe");editButton.setOnAction(event->edit(recipe));
+      final var sourceButton=new Button("View Source");sourceButton.setOnAction(event->detailTabs.getSelectionModel().select(2));
+      viewer.getChildren().add(new HBox(8,editButton,sourceButton));
     }
     json.setText(recipe.rawJson());
     json.positionCaret(0);

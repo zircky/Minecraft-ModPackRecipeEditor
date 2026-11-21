@@ -35,7 +35,6 @@ public final class RecipeEditorDialog extends Dialog<Void> {
     private boolean alive=true,saving;
     private final Deque<String> draftUndo=new ArrayDeque<>(),draftRedo=new ArrayDeque<>();
     private boolean restoringDraft;
-    private int selectedCraftingSlot=-1;
     private double slotSize=64;
     public RecipeEditorDialog(final Window owner,final DiscoveryResult discovery,final RecipeEditorService editor,final EditorTasks tasks,final RecipeEditSession session,final boolean creating, final dev.recipeeditor.integrations.api.IntegrationContext integration) {
         this.integration=integration;
@@ -101,31 +100,7 @@ public final class RecipeEditorDialog extends Dialog<Void> {
             final var sizing=new HBox(8,new Label("Slot size"),scale);sizing.setAlignment(javafx.geometry.Pos.CENTER);visual.getChildren().add(sizing);
             renderAdvancedFields(value);return;
         }
-        final String type=value.type();
-        final var layout=new RecipeLayoutProvider().find(type);
-        final var workstationTitle=new Label(layout.map(RecipeLayoutProvider.Layout::workstation).orElse(type));workstationTitle.getStyleClass().add("section-title");
-        if(layout.isPresent()&&layout.get().kind()==RecipeLayoutProvider.Kind.COOKING)visual.getChildren().add(new Label("Cooking time: "+property(value,"cookingtime")+" ticks | Experience: "+property(value,"experience")));
-        if(type.startsWith("minecraft:smithing_")) {
-            final var roles=new HBox(10);for(final var role:List.of("template","base","addition")) {if(!roles.getChildren().isEmpty())roles.getChildren().add(new Label("+"));roles.getChildren().add(ingredientControl(role,value.fields().getOrDefault(role,"")));}visual.getChildren().add(roles);
-        }
-        else if(!type.startsWith("minecraft:crafting_")) ingredientButton("ingredient",value.fields().getOrDefault("ingredient",""));
-        final var ingredientNodes=List.copyOf(visual.getChildren());visual.getChildren().clear();
-        final var inputPane=new VBox(10);inputPane.getChildren().setAll(ingredientNodes);
-        final var outputPane=new RecipeOutputEditor(getDialogPane().getScene().getWindow(),discovery,value.validation().recipe(),textures,slotSize,(id,count)->patch(text->forms.result(text,id,count)));
-        visual.setAlignment(javafx.geometry.Pos.TOP_CENTER);visual.getChildren().add(workstationTitle);
-        if(type.equals("minecraft:crafting_shaped")||type.equals("minecraft:crafting_shapeless")) {
-            final boolean shaped=type.equals("minecraft:crafting_shaped");
-            final var values=new ArrayList<>(shaped?value.grid():value.shapeless());
-            final java.util.function.IntConsumer edit=index->pickIngredient(json->{if(shaped)values.set(index,json);else if(index<values.size())values.set(index,json);else values.add(json);patch(text->shaped?forms.shaped(text,List.copyOf(values)):forms.shapeless(text,List.copyOf(values)));});
-            final java.util.function.IntConsumer clear=index->{if(shaped)values.set(index,"");else if(index<values.size())values.remove(index);patch(text->shaped?forms.shaped(text,List.copyOf(values)):forms.shapeless(text,List.copyOf(values)));};
-            final var grid=shaped?new ShapedCraftingEditorView(values,discovery,textures,slotSize,edit,clear):new ShapelessCraftingEditorView(values,discovery,textures,slotSize,edit,clear,()->edit.accept(values.size()));
-            visual.getChildren().add(new CraftingRecipeEditorView(grid,values,outputPane,selectedCraftingSlot,index->selectedCraftingSlot=index,edit,clear));
-            final var scale=new Spinner<Integer>(40,80,(int)slotSize,8);scale.setPrefWidth(100);scale.setAccessibleText("Crafting slot size in pixels");
-            scale.valueProperty().addListener((o,a,b)->{slotSize=b;render(value);});
-            final var sizing=new HBox(8,new Label("Slot size"),scale);sizing.setAlignment(javafx.geometry.Pos.CENTER);visual.getChildren().add(sizing);
-        } else {
-            final var workstation=new HBox(24,inputPane,new RecipeArrowView(),outputPane);workstation.setAlignment(javafx.geometry.Pos.CENTER);workstation.setMaxWidth(850);visual.getChildren().add(workstation);
-        }
+        visual.getChildren().add(new Label("No visual adapter for this recipe. Inspect Raw JSON."));
         renderAdvancedFields(value);
     }
     private void renderAdvancedFields(final RecipeEditPreview value) {
@@ -136,9 +111,6 @@ public final class RecipeEditorDialog extends Dialog<Void> {
         advanced.getChildren().add(new Label("Other / unknown properties are preserved. Use Raw JSON for explicit changes:"));
         value.fields().forEach((name,json)->{ if(!fields.contains(name)) { final var label=new Label(name+": "+brief(json)); label.setWrapText(true); label.setMaxWidth(850); advanced.getChildren().add(label); } });
     }
-    private String property(final RecipeEditPreview value,final String key) {
-        return value.fields().getOrDefault(key,value.validation().recipe().properties().stream().filter(property->property.name().equals(key)).map(RecipeProperty::rawValue).findFirst().orElse("Unknown"));
-    }
     private void applyGregTechField(final String pointer,final String json) {
         final String key="GT"+pointer, pending=pendingAdvanced.get(key), current=raw.getText();
         final long revision=session.revision();
@@ -148,9 +120,6 @@ public final class RecipeEditorDialog extends Dialog<Void> {
             raw.setText(changed);
         },failure->{if(alive)issues.setText(failure.getMessage());});
     }
-    private RecipeSlotView slot(final String json) { return new RecipeSlotView(RecipeSlotContent.parse(json),discovery,textures,slotSize); }
-    private void ingredientButton(final String field,final String value) {visual.getChildren().add(ingredientControl(field,value));}
-    private VBox ingredientControl(final String field,final String value) {final var button=slot(value);button.setOnAction(e->pickIngredient(json->patch(text->forms.patch(text,field,json))));return new VBox(6,new Label(field),button);}
     private void chooseInput(final String role,final int index) {
         pickIngredient(json->patch(text->{
             if(role.equals("grid")){final var values=new ArrayList<>(forms.grid(text));values.set(index,json);return forms.shaped(text,values);}
