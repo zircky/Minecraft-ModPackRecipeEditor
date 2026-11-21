@@ -25,6 +25,7 @@ public final class RecipeEditorDialog extends Dialog<Void> {
     private final TextArea raw=new TextArea(),diff=new TextArea();
     private final VBox visual=new VBox(12),advanced=new VBox(10);
     private final Label state=new Label(),issues=new Label();
+    private final NotificationBanner notifications=new NotificationBanner();
     private final ButtonType save=new ButtonType("Save to project",ButtonBar.ButtonData.OTHER);
     private final PauseTransition debounce=new PauseTransition(Duration.millis(300));
     private final boolean creating;
@@ -36,7 +37,7 @@ public final class RecipeEditorDialog extends Dialog<Void> {
     public RecipeEditorDialog(final Window owner,final DiscoveryResult discovery,final RecipeEditorService editor,final EditorTasks tasks,final RecipeEditSession session,final boolean creating, final dev.recipeeditor.integrations.api.IntegrationContext integration) {
         this.integration=integration;
         this.discovery=discovery; this.editor=editor; this.tasks=tasks; this.session=session; this.creating=creating;
-        initOwner(owner); getDialogPane().getStylesheets().add(java.util.Objects.requireNonNull(getClass().getResource("theme.css")).toExternalForm()); setTitle("Recipe Editor - "+session.id()); setResizable(true); getDialogPane().setPrefSize(1050,760);
+        initOwner(owner); new UiTheme().apply(getDialogPane()); setTitle("Recipe Editor - "+session.id()); setResizable(true); getDialogPane().setPrefSize(1050,760);
         raw.setTextFormatter(new TextFormatter<String>(change->{ if(change.getControlNewText().length()>2*1024*1024) { issues.setText("Editor limit: 2 MiB characters; input rejected"); return null; } return change; }));
         raw.setText(session.rawJson()); diff.setEditable(false); diff.setWrapText(true); raw.setWrapText(true);
         visual.setPadding(new Insets(16)); advanced.setPadding(new Insets(16));
@@ -49,12 +50,13 @@ public final class RecipeEditorDialog extends Dialog<Void> {
         final var warnings=new ScrollPane(issues); warnings.setFitToWidth(true); warnings.setPrefViewportHeight(100);
         final var undoDraft=new Button("Undo draft");undoDraft.setOnAction(event->restoreDraft(draftUndo,draftRedo));
         final var redoDraft=new Button("Redo draft");redoDraft.setOnAction(event->restoreDraft(draftRedo,draftUndo));
-        final var content=new VBox(10,new Label("Recipe ID: "+session.id()+" · Source JARs remain read-only"),state,new HBox(8,undoDraft,redoDraft),tabs,warnings); VBox.setVgrow(tabs,Priority.ALWAYS); getDialogPane().setContent(content);
+        final var content=new VBox(10,new Label("Recipe ID: "+session.id()+" · Source JARs remain read-only"),notifications,state,new HBox(8,undoDraft,redoDraft),tabs,warnings); VBox.setVgrow(tabs,Priority.ALWAYS); getDialogPane().setContent(content);
         final var resetDraft=new ButtonType("Reset draft",ButtonBar.ButtonData.OTHER);
         getDialogPane().getButtonTypes().addAll(save,resetDraft,ButtonType.CLOSE);
         getDialogPane().lookupButton(resetDraft).addEventFilter(javafx.event.ActionEvent.ACTION,event->{event.consume(); pendingAdvanced.clear(); session.cancel(); raw.setText(session.rawJson()); validateDraft();});
         getDialogPane().lookupButton(save).addEventFilter(javafx.event.ActionEvent.ACTION,event->{event.consume(); save();});
         raw.textProperty().addListener((o,a,b)->{
+            notifications.dismiss();
             if(!restoringDraft&&!a.equals(b)){draftUndo.addFirst(a);while(draftUndo.size()>16)draftUndo.removeLast();draftRedo.clear();}
             try { session.setRawJson(b); preview=null; visual.getChildren().setAll(new Label("Raw JSON changed. Visual state is unavailable until validation completes.")); advanced.getChildren().clear(); getDialogPane().lookupButton(save).setDisable(true); state.setText("Unsaved editor changes"); debounce.playFromStart(); }
             catch(RuntimeException error) { issues.setText(error.getMessage()); getDialogPane().lookupButton(save).setDisable(true); }
@@ -64,7 +66,7 @@ public final class RecipeEditorDialog extends Dialog<Void> {
         setOnHidden(e->{alive=false; debounce.stop();textures.close();}); validateDraft();
     }
     private Tab tab(final String name,final javafx.scene.Node content) { final var tab=new Tab(name,content); tab.setClosable(false); return tab; }
-    private boolean confirmDiscard() { final var alert=new Alert(Alert.AlertType.CONFIRMATION,"Discard unsaved editor changes? Project changes already saved by this dialog remain in memory.",ButtonType.YES,ButtonType.NO); alert.initOwner(getDialogPane().getScene().getWindow()); return alert.showAndWait().orElse(ButtonType.NO)==ButtonType.YES; }
+    private boolean confirmDiscard() { final var alert=new UiTheme().apply(new Alert(Alert.AlertType.CONFIRMATION,"Discard unsaved editor changes? Project changes already saved by this dialog remain in memory.",ButtonType.YES,ButtonType.NO)); alert.initOwner(getDialogPane().getScene().getWindow()); return alert.showAndWait().orElse(ButtonType.NO)==ButtonType.YES; }
     private void validateDraft() {
         final String text=raw.getText(); final long revision=session.revision(); getDialogPane().lookupButton(save).setDisable(true);
         tasks.submit(()->new RecipeDraftPreviewService().inspect(editor.validator(),session.id(),session.source(),session.originalJson(),text),value->{
@@ -156,6 +158,6 @@ public final class RecipeEditorDialog extends Dialog<Void> {
         final String text=raw.getText(); saving=true; getDialogPane().lookupButton(save).setDisable(true);
         tasks.submit(()->{ final var valid=editor.validator().validate(session.id(),text,session.source()); if(!valid.valid()) throw new IllegalArgumentException(valid.issues().toString());
             if(creating && editor.effective().findById(session.id()).isEmpty()) editor.create(valid.recipe()); else editor.update(session.id(),valid.recipe()); return text;
-        },saved->{saving=false; session.markSaved(saved); validateDraft();},error->{saving=false; issues.setText(error.getMessage()); validateDraft();});
+        },saved->{saving=false; session.markSaved(saved); validateDraft();notifications.show(NotificationBanner.Kind.SUCCESS,"Recipe saved to project memory. Use Save Project to persist it to disk.");},error->{saving=false; issues.setText(error.getMessage()); validateDraft();notifications.show(NotificationBanner.Kind.ERROR,"Recipe could not be saved. Review validation details.");});
     }
 }

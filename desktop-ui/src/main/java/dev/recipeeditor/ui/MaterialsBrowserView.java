@@ -40,7 +40,7 @@ public final class MaterialsBrowserView extends BorderPane {
     this.textures = textures;
     this.navigate = navigate;
     model = new ResourceBrowserViewModel(result.registry());
-    setPadding(new Insets(18));
+    getStyleClass().add("workspace-view");
     filtered = new FilteredList<>(javafx.collections.FXCollections.observableArrayList(result.registry().materials().stream().sorted(Comparator.comparing(MaterialDefinition::id)).toList()));
     search.setPromptText("Search material ID or localized name");
     HBox.setHgrow(search, Priority.ALWAYS);
@@ -49,7 +49,8 @@ public final class MaterialsBrowserView extends BorderPane {
     final var status = new Label(filtered.isEmpty() ? "Runtime Companion required: synchronize a materials-v1 snapshot. Check Runtime diagnostics for GT version support."
         : filtered.size() + " runtime materials. Forms link only to actual registrations; availability reflects this snapshot.");
     status.setWrapText(true);
-    setTop(new VBox(10, status, new HBox(10, search, language)));
+    final var filters=new javafx.scene.layout.FlowPane(search,language);filters.getStyleClass().add("filter-row");
+    final var header=new VBox(status,filters);header.getStyleClass().add("view-header");setTop(header);
     details.setPadding(new Insets(12));
     final var scroll = new ScrollPane(details);
     scroll.setFitToWidth(true);
@@ -72,6 +73,8 @@ public final class MaterialsBrowserView extends BorderPane {
   }
 
   private Node page(final Integer number) {
+    if(filtered.isEmpty())return new EmptyStateView(result.registry().materials().isEmpty()?"No runtime materials":"No matching materials",
+        result.registry().materials().isEmpty()?"Open Runtime and synchronize a supported materials-v1 snapshot. Static resources remain available in Items, Blocks and Fluids.":"Change the search query or display language.");
     final var list = new ListView<MaterialDefinition>();
     list.setFixedCellSize(150);
     final int start = Math.min(number * 60, filtered.size());

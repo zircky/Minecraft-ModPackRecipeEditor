@@ -39,6 +39,7 @@ public final class MainWindow {
   private final StaticAnalysisService analyzer;
   private final TextureResourceService textures;
   private final BorderPane workspace = new BorderPane();
+  private final NotificationBanner notifications = new NotificationBanner();
   private final Label breadcrumb = new Label(), status = new Label("Ready"), project = new Label("No project");
   private final Button importButton = new Button("Import Modpack"), indexButton = new Button("Index resources"), diagnosticsButton = new Button("Diagnostics");
   private final Map<NavigationSection, ToggleButton> navigation = new EnumMap<>(NavigationSection.class);
@@ -103,8 +104,9 @@ public final class MainWindow {
     root.setLeft(navigation());
     root.setCenter(workspace);
     root.setBottom(statusbar());
+    workspace.setTop(notifications);
     final var scene = new Scene(root, 1320, 820);
-    scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("theme.css")).toExternalForm());
+    new UiTheme().apply(scene);
     scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
       if (busy || editor == null || event.getTarget() instanceof TextInputControl || !event.isControlDown()) return;
       if (event.getCode() == javafx.scene.input.KeyCode.Z || event.getCode() == javafx.scene.input.KeyCode.Y) {
@@ -114,7 +116,7 @@ public final class MainWindow {
           if (redo) editor.redo();
           else editor.undo();
           return true;
-        }, done -> updateProjectState(), error -> new Alert(Alert.AlertType.ERROR, rootMessage(error), ButtonType.OK).showAndWait());
+        }, done -> updateProjectState(), error -> new UiTheme().apply(new Alert(Alert.AlertType.ERROR, rootMessage(error), ButtonType.OK)).showAndWait());
       }
     });
     stage.setTitle(info.name());
@@ -125,7 +127,7 @@ public final class MainWindow {
     stage.show();
   }
 
-  private ToolBar toolbar() {
+  private VBox toolbar() {
     final var title = new Label(info.name());
     title.getStyleClass().add("brand");
     final var spacer = new Region();
@@ -148,13 +150,15 @@ public final class MainWindow {
       registry.register(new dev.recipeeditor.integrations.gregtech.GregTechIntegration());
       final var context = imported == null ? new dev.recipeeditor.integrations.api.IntegrationContext("UNKNOWN", ModLoaderType.UNKNOWN, Map.of(), Map.of()) : dev.recipeeditor.integrations.api.IntegrationContext.from(imported.modpack());
       final var value = registry.capabilities("gtceu", context);
-      final var alert = new Alert(Alert.AlertType.INFORMATION, "Detected GTCEu: " + context.mods().getOrDefault("gtceu", "NOT INSTALLED") + "\nCompatibility: " + value.compatibility() + "\nAdapter: " + value.adapterVersion() + "\nFeatures: " + value.features() + "\n" + String.join("\n", value.diagnostics()), ButtonType.OK);
+      final var alert = new UiTheme().apply(new Alert(Alert.AlertType.INFORMATION, "Detected GTCEu: " + context.mods().getOrDefault("gtceu", "NOT INSTALLED") + "\nCompatibility: " + value.compatibility() + "\nAdapter: " + value.adapterVersion() + "\nFeatures: " + value.features() + "\n" + String.join("\n", value.diagnostics()), ButtonType.OK));
       alert.initOwner(stage);
       alert.setHeaderText("GregTech capabilities for imported environment");
       alert.showAndWait();
     });
     final var secondary = new ToolBar(importButton, indexButton, diagnosticsButton, exportButton, integrationInfo);
-    return new ToolBar(new VBox(primary, secondary));
+    final var toolbar = new VBox(primary, secondary);
+    toolbar.getStyleClass().add("shell-toolbar");
+    return toolbar;
   }
 
   private VBox navigation() {
@@ -223,15 +227,13 @@ public final class MainWindow {
         return;
       }
     }
-    final var title = new Label(section.emptyTitle());
-    title.getStyleClass().add("empty-title");
-    final var description = new Label(section.description());
-    description.setWrapText(true);
-    description.setMaxWidth(520);
-    final var empty = new VBox(16, title, description);
-    empty.setAlignment(Pos.CENTER);
-    empty.setPadding(new Insets(40));
-    workspace.setCenter(empty);
+    if(section==NavigationSection.SETTINGS || section==NavigationSection.ANALYZER) {
+      workspace.setCenter(new EmptyStateView(section.emptyTitle(),section.description()));
+    } else if(section==NavigationSection.MATERIALS) {
+      workspace.setCenter(new EmptyStateView(section.emptyTitle(),section.description(),"Open Runtime",()->select(NavigationSection.RUNTIME)));
+    } else {
+      workspace.setCenter(new EmptyStateView(section.emptyTitle(),section.description(),"Import Modpack",this::choose));
+    }
   }
 
   private void choose() {
@@ -338,11 +340,13 @@ public final class MainWindow {
         select(NavigationSection.ITEMS);
         updateProjectState();
         status.setText("Completed: " + result.registry().entries().size() + " resources, " + result.recipes().recipes().size() + " recipes · " + editor.conflicts().size() + " blocked changes");
+        notifications.show(editor.conflicts().isEmpty()?NotificationBanner.Kind.SUCCESS:NotificationBanner.Kind.WARNING,status.getText());
       }, failure -> finishError(false, "Restore project", failure));
     }));
   }
 
   private OperationProgressView progressView(final String title, final String path) {
+    notifications.dismiss();
     final var view = new OperationProgressView(title, path, this::cancel);
     workspace.setCenter(view);
     return view;
@@ -375,11 +379,10 @@ public final class MainWindow {
     select(NavigationSection.PROJECTS);
     status.setText(action + (cancelled ? " cancelled" : " failed: " + error.getMessage()));
     if (!cancelled) {
-      final var message = new Label(action + " failed: " + error.getMessage());
-      message.setWrapText(true);
-      final var box = new VBox(16, message, new Label("Use Import Modpack or Index resources to retry."));
-      box.setPadding(new Insets(40));
-      workspace.setCenter(box);
+      notifications.show(NotificationBanner.Kind.ERROR,action+" failed. Use Diagnostics or the logs for details.");
+      workspace.setCenter(new EmptyStateView(action+" failed",rootMessage(error)+". Use Import Modpack or Index resources to retry.","Import Modpack",this::choose));
+    } else {
+      notifications.show(NotificationBanner.Kind.INFO,action+" cancelled");
     }
   }
 
@@ -436,7 +439,7 @@ public final class MainWindow {
     }
     final var save = new ButtonType("Save Project");
     final var discard = new ButtonType("Discard project changes");
-    final var answer = new Alert(Alert.AlertType.CONFIRMATION, "Project changes have not been saved to disk. Save before leaving to keep them.", save, discard, ButtonType.CANCEL).showAndWait().orElse(ButtonType.CANCEL);
+    final var answer = new UiTheme().apply(new Alert(Alert.AlertType.CONFIRMATION, "Project changes have not been saved to disk. Save before leaving to keep them.", save, discard, ButtonType.CANCEL)).showAndWait().orElse(ButtonType.CANCEL);
     if (answer == save) saveProject(continuation);
     else if (answer == discard) continuation.run();
   }
@@ -466,7 +469,7 @@ public final class MainWindow {
       setBusy(false);
       if (error != null) {
         status.setText("Project save failed");
-        new Alert(Alert.AlertType.ERROR, rootMessage(error), ButtonType.OK).showAndWait();
+        new UiTheme().apply(new Alert(Alert.AlertType.ERROR, rootMessage(error), ButtonType.OK)).showAndWait();
         return;
       }
       if (editor == current) {
@@ -476,6 +479,7 @@ public final class MainWindow {
         updateProjectState();
       }
       status.setText("Project saved. Source JAR files unchanged.");
+      notifications.show(NotificationBanner.Kind.SUCCESS,"Project saved to "+destination.getFileName());
       after.run();
     }));
   }
@@ -492,7 +496,7 @@ public final class MainWindow {
       if (closed) return;
       if (error != null) {
         setBusy(false);
-        new Alert(Alert.AlertType.ERROR, rootMessage(error), ButtonType.OK).showAndWait();
+        new UiTheme().apply(new Alert(Alert.AlertType.ERROR, rootMessage(error), ButtonType.OK)).showAndWait();
         return;
       }
       pendingProject = document;
@@ -582,7 +586,7 @@ public final class MainWindow {
       if (closed || request != generation) return;
       if (error != null) {
         setBusy(false);
-        new Alert(Alert.AlertType.ERROR, rootMessage(error), ButtonType.OK).showAndWait();
+        new UiTheme().apply(new Alert(Alert.AlertType.ERROR, rootMessage(error), ButtonType.OK)).showAndWait();
         return;
       }
       editorTasks.submit(() -> ((ProjectDocument) loaded[0]).materialize(current.validator(), file), saved -> {
@@ -592,10 +596,10 @@ public final class MainWindow {
         if (selected != null && !saved.changes().containsKey(selected.id())) {
           final var originals = current.originals().findById(selected.id());
           if (current.snapshot().changes().containsKey(selected.id()) || originals.size() != 1) {
-            new Alert(Alert.AlertType.WARNING, "This recipe has unsaved changes, no original, or ambiguous sources. Save the project or select one unambiguous unchanged recipe before export.", ButtonType.OK).showAndWait();
+            new UiTheme().apply(new Alert(Alert.AlertType.WARNING, "This recipe has unsaved changes, no original, or ambiguous sources. Save the project or select one unambiguous unchanged recipe before export.", ButtonType.OK)).showAndWait();
             return;
           }
-          if (new Alert(Alert.AlertType.CONFIRMATION, "Export an explicit unchanged copy of " + selected.id() + "? This does not add a project change. The original ID is preserved.", ButtonType.YES, ButtonType.NO).showAndWait().orElse(ButtonType.NO) != ButtonType.YES)
+          if (new UiTheme().apply(new Alert(Alert.AlertType.CONFIRMATION, "Export an explicit unchanged copy of " + selected.id() + "? This does not add a project change. The original ID is preserved.", ButtonType.YES, ButtonType.NO)).showAndWait().orElse(ButtonType.NO) != ButtonType.YES)
             return;
           copies.add(originals.getFirst());
         }
@@ -604,7 +608,7 @@ public final class MainWindow {
         status.setText("Export uses the project snapshot saved on disk. Unsaved edits are excluded.");
       }, failure -> {
         setBusy(false);
-        new Alert(Alert.AlertType.ERROR, rootMessage(failure), ButtonType.OK).showAndWait();
+        new UiTheme().apply(new Alert(Alert.AlertType.ERROR, rootMessage(failure), ButtonType.OK)).showAndWait();
       });
     }));
   }

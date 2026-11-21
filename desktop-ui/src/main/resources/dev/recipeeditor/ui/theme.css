@@ -1,40 +1,81 @@
-.root {
+/* JavaFX looked-up colors; spacing uses the 4/8/12/16/24 scale. */
+.root, .dialog-pane {
+    -mre-background: #1e1f22;
+    -mre-surface: #2b2d30;
+    -mre-panel: #25262a;
+    -mre-border: #43454a;
+    -mre-text: #dfe1e5;
+    -mre-muted: #a8adb8;
+    -mre-accent: #3574f0;
+    -mre-focus: #82aaff;
+    -mre-selection: #2e436e;
+    -mre-hover: #35383f;
+    -mre-error: #f28b82;
+    -mre-warning: #e6bf7a;
     -fx-font-family: "Segoe UI";
     -fx-font-size: 13px;
-    -fx-base: #2b2d30;
-    -fx-background: #1e1f22;
-    -fx-control-inner-background: #1e1f22;
-    -fx-accent: #3574f0;
-    -fx-focus-color: #548af7;
+    -fx-base: -mre-surface;
+    -fx-background: -mre-background;
+    -fx-control-inner-background: -mre-background;
+    -fx-accent: -mre-accent;
+    -fx-focus-color: -mre-focus;
+    -fx-faint-focus-color: transparent;
 }
-.label { -fx-text-fill: #dfe1e5; }
-.tool-bar { -fx-background-color: #2b2d30; -fx-padding: 12 18; -fx-spacing: 16; }
-.brand { -fx-font-weight: bold; }
-.muted { -fx-text-fill: #a8adb8; }
-.navigation { -fx-background-color: #25262a; -fx-padding: 20 10; -fx-border-color: transparent #393b40 transparent transparent; }
-.toggle-button { -fx-background-color: transparent; -fx-text-fill: #c8cbd2; -fx-padding: 12 16; -fx-background-radius: 5; -fx-cursor: hand; }
-.toggle-button:hover { -fx-background-color: #33353b; }
-.toggle-button:selected { -fx-background-color: #2e436e; -fx-text-fill: #ffffff; }
-.toggle-button:focused { -fx-border-color: #548af7; -fx-border-radius: 5; }
-.empty-title { -fx-font-size: 25px; -fx-font-weight: bold; }
-.status-bar { -fx-padding: 8 16; -fx-background-color: #2b2d30; -fx-border-color: #393b40 transparent transparent transparent; }
-.status-bar .label { -fx-text-fill: #a8adb8; -fx-font-size: 12px; }
-.button { -fx-padding: 7 12; -fx-background-radius: 4; }
-
-.text-field, .text-area { -fx-text-fill: #dfe1e5; -fx-prompt-text-fill: #9399a5; }
-.table-view { -fx-background-color: #1e1f22; -fx-table-cell-border-color: #33353b; }
-.table-row-cell { -fx-background-color: #25262a; }
-.table-row-cell:odd { -fx-background-color: #2b2d30; }
-.table-row-cell:selected { -fx-background-color: #2e436e; }
-.table-cell { -fx-text-fill: #dfe1e5; }
-
-.recipe-slot { -fx-background-color: #33353b; -fx-padding: 8; -fx-border-color: #545862; }
-
-.validation-error { -fx-text-fill: #e4aa79; }
-.dialog-pane { -fx-background-color: #2b2d30; }
+.label { -fx-text-fill: -mre-text; }
+.brand, .section-title { -fx-font-weight: bold; }
+.section-title { -fx-font-size: 16px; }
+.muted { -fx-text-fill: -mre-muted; }
+.workspace-view { -fx-padding: 16; }
+.filter-row { -fx-hgap: 8; -fx-vgap: 8; -fx-alignment: center-left; }
+.view-header { -fx-spacing: 12; -fx-padding: 0 0 12 0; }
+.detail-panel { -fx-padding: 16; -fx-spacing: 12; }
+.tool-bar { -fx-background-color: -mre-surface; -fx-padding: 8 16; -fx-spacing: 8; }
+.shell-toolbar { -fx-padding: 0; }
+.navigation { -fx-background-color: -mre-panel; -fx-padding: 12 8; -fx-spacing: 4; -fx-border-color: transparent -mre-border transparent transparent; }
+.button, .toggle-button, .combo-box-base, .choice-box { -fx-background-radius: 4; -fx-text-fill: -mre-text; }
+.button { -fx-padding: 7 12; -fx-cursor: hand; }
+.button:hover { -fx-color: -mre-hover; }
+.button:disabled, .toggle-button:disabled { -fx-opacity: 0.5; -fx-cursor: default; }
+.button:focused, .toggle-button:focused { -fx-border-color: -mre-focus; -fx-border-radius: 4; -fx-border-insets: 0; }
+.primary-action { -fx-base: -mre-accent; -fx-text-fill: white; -fx-font-weight: bold; }
+.toggle-button { -fx-padding: 8 12; }
+.navigation .toggle-button { -fx-background-color: transparent; -fx-padding: 10 12; -fx-alignment: center-left; }
+.navigation .toggle-button:hover { -fx-background-color: -mre-hover; }
+.navigation .toggle-button:selected { -fx-background-color: -mre-selection; -fx-text-fill: white; }
+.empty-state { -fx-padding: 24; -fx-spacing: 12; -fx-alignment: center; }
+.empty-state .label { -fx-text-alignment: center; -fx-alignment: center; }
+.empty-title { -fx-font-size: 22px; -fx-font-weight: bold; }
+.status-bar { -fx-padding: 6 16; -fx-background-color: -mre-surface; -fx-border-color: -mre-border transparent transparent transparent; }
+.status-bar .label { -fx-text-fill: -mre-muted; -fx-font-size: 12px; }
+.text-field, .text-area { -fx-text-fill: -mre-text; -fx-prompt-text-fill: -mre-muted; }
+.text-area .content, .scroll-pane > .viewport { -fx-background-color: -mre-background; }
+.text-field, .combo-box-base { -fx-padding: 5 8; }
+.table-view, .list-view { -fx-background-color: -mre-background; -fx-table-cell-border-color: -mre-border; }
+.table-row-cell, .list-cell { -fx-background-color: -mre-panel; -fx-text-fill: -mre-text; }
+.table-row-cell:odd, .list-cell:odd { -fx-background-color: -mre-surface; }
+.table-row-cell:selected, .list-cell:filled:selected { -fx-background-color: -mre-selection; }
+.table-cell { -fx-text-fill: -mre-text; -fx-padding: 7 8; }
+.table-view .column-header, .table-view .filler, .tab-pane .tab-header-background { -fx-background-color: -mre-surface; }
+.tab { -fx-padding: 6 12; }
+.tab-pane .tab:selected { -fx-background-color: -mre-selection; }
+.tab .tab-label { -fx-text-fill: -mre-text; }
+.split-pane { -fx-padding: 0; -fx-background-color: -mre-background; }
+.split-pane-divider { -fx-padding: 0 2; -fx-background-color: -mre-border; }
+.dialog-pane { -fx-background-color: -mre-surface; -fx-padding: 16; }
+.dialog-pane > .header-panel { -fx-background-color: -mre-panel; -fx-padding: 12 16; }
+.dialog-pane > .button-bar { -fx-padding: 12 0 0 0; }
+.tooltip { -fx-background-color: -mre-panel; -fx-text-fill: -mre-text; -fx-padding: 8 12; -fx-font-size: 12px; -fx-background-radius: 4; -fx-border-color: -mre-border; -fx-border-radius: 4; }
+.validation-error { -fx-text-fill: -mre-warning; }
+.recipe-property-card { -fx-padding: 12; -fx-border-color: -mre-border; -fx-border-radius: 4; }
+.recipe-slot { -fx-background-color: -mre-hover; -fx-padding: 8; -fx-border-color: -mre-border; }
+.notification-banner { -fx-padding: 10 16; -fx-spacing: 12; -fx-alignment: center-left; -fx-background-color: -mre-panel; -fx-border-width: 0 0 1 4; }
+.notification-info { -fx-border-color: -mre-accent; }
+.notification-success { -fx-border-color: #70b98b; }
+.notification-warning { -fx-border-color: -mre-warning; }
+.notification-error { -fx-border-color: -mre-error; }
 .minecraft-recipe-slot { -fx-padding: 2; -fx-background-color: #242528; -fx-border-color: #65676b #17181b #17181b #65676b; -fx-border-width: 2; -fx-background-radius: 0; }
 .minecraft-recipe-slot:hover { -fx-background-color: #454952; }
 .minecraft-recipe-slot:selected { -fx-border-color: #6aa5e8; }
-.minecraft-recipe-slot:invalid { -fx-border-color: #e07575; }
-.minecraft-recipe-slot:unknown { -fx-border-color: #b89960; }
+.minecraft-recipe-slot:invalid { -fx-border-color: -mre-error; }
+.minecraft-recipe-slot:unknown { -fx-border-color: -mre-warning; }
 .slot-quantity { -fx-text-fill: white; -fx-font-weight: bold; -fx-effect: dropshadow(gaussian, black, 2, 1, 1, 1); }

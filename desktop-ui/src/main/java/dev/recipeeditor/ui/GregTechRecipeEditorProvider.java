@@ -56,7 +56,7 @@ public final class GregTechRecipeEditorProvider implements RecipeEditorProvider 
 
                     final var card = new VBox(5, new Label(capability.getKey() + " #" + (index + 1)));
 
-                    card.setStyle("-fx-padding: 10; -fx-border-color: #45474b; -fx-border-radius: 4;");
+                    card.getStyleClass().add("recipe-property-card");
 
                     leaves(content, pointer, context, card);
 
@@ -124,7 +124,7 @@ public final class GregTechRecipeEditorProvider implements RecipeEditorProvider 
 
                 context.apply().accept(pointer, json);
 
-            } catch (Exception invalid) { new Alert(Alert.AlertType.ERROR, invalid.getMessage(), ButtonType.OK).showAndWait(); }
+            } catch (Exception invalid) { new UiTheme().apply(new Alert(Alert.AlertType.ERROR, invalid.getMessage(), ButtonType.OK)).showAndWait(); }
 
         });
 
