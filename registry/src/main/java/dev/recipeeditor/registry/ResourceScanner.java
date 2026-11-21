@@ -16,6 +16,11 @@ public final class ResourceScanner {
     public ResourceScanner(final DiscoveryLimits limits, final ResourceLayout layout) { this.limits=limits; this.layout=layout; }
     public ResourceScanResult scan(final ModpackDefinition pack, final Consumer<ImportProgress> progress) {
         final var state=new State();
+        final var vanilla=new VanillaAssetLocator().find(pack);state.diagnostics.addAll(vanilla.diagnostics());
+        for(final var archive:vanilla.archives())scanArchive(archive.boundary(),archive.file(),SourceType.VANILLA_ASSET,List.of(),state);
+        for(final var language:vanilla.languages())if(state.reserve(language.source()))try {
+            state.documents.add(new ResourceDocument(language.source(),state.read(new ByteArrayInputStream(language.text().getBytes(StandardCharsets.UTF_8)))));
+        }catch(IOException invalid){state.warn(language.source().container().toString(),invalid.getMessage());}
         int processed=0;
         final var seen=new HashSet<Path>();
         for (final var jar:pack.jars()) {
@@ -43,7 +48,8 @@ public final class ResourceScanner {
                     if (entry.isDirectory()) continue;
                     if (!validPath(name)) { state.warn(archive+"!"+name,"Unsafe resource path ignored"); continue; }
                     if (!relevant(name)) continue;
-                    final var source=new ResourceSource(type,mods,archive,name,"Static resource scan");
+                    if(type==SourceType.VANILLA_ASSET&&!name.startsWith("assets/minecraft/")&&!name.startsWith("data/minecraft/tags/"))continue;
+                    final var source=new ResourceSource(type,mods,archive,name,type==SourceType.VANILLA_ASSET?"Vanilla client assets; available preview, active resource order UNKNOWN":"Static resource scan");
                     if (!state.reserve(source)) break;
                     if (name.endsWith(".png")) { state.textures.add(source); continue; }
                     try {
@@ -58,6 +64,7 @@ public final class ResourceScanner {
     }
     private void scanLocal(final ModpackDefinition pack,final State state) {
         final var game=pack.gameDirectory();
+        scanPackCollection(pack.selectedDirectory(),game.resolve("resourcepacks"),state);
         scanPackCollection(pack.selectedDirectory(),game.resolve("datapacks"),state);
         scanPackCollection(pack.selectedDirectory(),game.resolve("config/openloader/data"),state);
         scanTree(pack.selectedDirectory(),game.resolve("kubejs"),SourceType.LOCAL_RESOURCE,state);

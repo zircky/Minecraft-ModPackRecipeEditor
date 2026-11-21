@@ -17,6 +17,9 @@ final class ResourceBrowserViewModelTest {
         assertEquals("Русский",model.displayName(entry(Map.of("ru_ru","Русский","en_us","English")),"ru_ru"));
         assertEquals("English",model.displayName(entry(Map.of("en_us","English")),"ru_ru"));
         assertEquals(entry(Map.of()).id().toString(),model.displayName(entry(Map.of()),"en_us"));
+        assertEquals("",model.secondaryId(entry(Map.of()),"ru_ru"));
+        assertEquals(entry(Map.of()).id().toString(),model.secondaryId(entry(Map.of("en_us","English")),"ru_ru"));
+        assertEquals(1,model.tooltip(entry(Map.of()),"en_us").split(java.util.regex.Pattern.quote(entry(Map.of()).id().toString()),-1).length-1);
     }
     @Test void namespaceAndPhysicalSourceModFiltersRemainDistinctAndDetailsAreComplete() {
         final var entry=entry(Map.of("en_us","A name"));final var model=new ResourceBrowserViewModel(new RegistryIndex(List.of(entry)));

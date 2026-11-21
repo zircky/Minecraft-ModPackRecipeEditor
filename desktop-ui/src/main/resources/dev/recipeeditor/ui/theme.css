@@ -79,3 +79,12 @@
 .minecraft-recipe-slot:invalid { -fx-border-color: -mre-error; }
 .minecraft-recipe-slot:unknown { -fx-border-color: -mre-warning; }
 .slot-quantity { -fx-text-fill: white; -fx-font-weight: bold; -fx-effect: dropshadow(gaussian, black, 2, 1, 1, 1); }
+.pagination-footer { -fx-padding: 12 0 0 0; -fx-alignment: center; }
+.pagination-controls { -fx-hgap: 6; -fx-vgap: 6; -fx-alignment: center; }
+.pagination-controls .button, .pagination-controls .toggle-button { -fx-min-width: 36; -fx-min-height: 34; -fx-padding: 6 10; }
+.pagination-controls .toggle-button:selected { -fx-background-color: -mre-selection; }
+.resource-grid, .resource-grid .list-cell, .resource-grid .list-cell:filled:selected, .resource-grid .list-cell:focused { -fx-background-color: transparent; -fx-border-color: transparent; }
+.resource-card { -fx-border-width: 1; -fx-border-color: -mre-border; -fx-background-color: -mre-surface; }
+.resource-card:selected { -fx-border-color: -mre-focus; -fx-background-color: -mre-selection; }
+.recipe-arrow { -fx-font-size: 34px; -fx-text-fill: -mre-muted; }
+.crafting-workbench { -fx-padding: 16; }

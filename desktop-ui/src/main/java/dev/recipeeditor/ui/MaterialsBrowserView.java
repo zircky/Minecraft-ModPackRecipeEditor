@@ -28,7 +28,7 @@ public final class MaterialsBrowserView extends BorderPane {
   private final Consumer<MaterialDefinition.Form> navigate;
   private final ResourceBrowserViewModel model;
   private final FilteredList<MaterialDefinition> filtered;
-  private final Pagination pages = new Pagination();
+  private final PaginationView pages = new PaginationView();
   private final VBox details = new VBox(10);
   private final TextField search = new TextField();
   private final ComboBox<String> language = new ComboBox<>();
@@ -67,7 +67,7 @@ public final class MaterialsBrowserView extends BorderPane {
     filtered.setPredicate(material -> material.id().toString().contains(query) || model.displayName(material, language.getValue()).toLowerCase(Locale.ROOT).contains(query));
     generation++;
     select(null);
-    pages.setPageCount(Math.max(1, (filtered.size() + 59) / 60));
+    pages.setPageCount((filtered.size() + 59) / 60);
     pages.setCurrentPageIndex(0);
     pages.setPageFactory(this::page);
   }

@@ -16,6 +16,14 @@ public final class ResourceBrowserViewModel {
     public String displayName(final MaterialDefinition material,final String language) {
         return material.localizedNames().getOrDefault(language,material.localizedNames().getOrDefault("en_us",material.id().toString()));
     }
+    public String secondaryId(final RegistryEntry entry,final String language) {
+        return displayName(entry,language).equals(entry.id().toString())?"":entry.id().toString();
+    }
+    public String tooltip(final RegistryEntry entry,final String language) {
+        final String name=displayName(entry,language);
+        return (name.equals(entry.id().toString())?"":name+"\n\n")+"Resource ID: "+entry.id()+"\nSource: "+source(entry)
+                +"\n"+entry.confidence()+"\n"+entry.visual().status()+": "+entry.visual().explanation();
+    }
     public String source(final RegistryEntry entry) {
         final var mods=entry.sources().stream().flatMap(s->s.modIds().stream()).distinct().sorted().toList();
         return mods.isEmpty()?"Namespace: "+entry.id().namespace():"Archive mods: "+String.join(", ",mods);

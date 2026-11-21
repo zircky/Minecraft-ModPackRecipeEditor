@@ -3,6 +3,20 @@ import dev.recipeeditor.core.ResourceLocation;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 final class RecipeSlotViewTest {
+    @org.junit.jupiter.api.Tag("integration") @Test void tagPreviewUsesAnIndexedMemberAndKeepsTagIdentity()throws Exception {
+        FxLayoutTestSupport.run(()->{
+            final var source=new dev.recipeeditor.registry.ResourceSource(dev.recipeeditor.registry.SourceType.MOD_JAR,java.util.List.of(),java.nio.file.Path.of("fixture.jar"),"data/test/tags/items/tag.json","fixture");
+            final var tags=new dev.recipeeditor.registry.TagIndex(java.util.List.of(new dev.recipeeditor.registry.ResourceDocument(source,"{\"values\":[\"test:member\"]}")));
+            final var entry=new dev.recipeeditor.registry.RegistryEntry(ResourceLocation.parse("test:member"),dev.recipeeditor.registry.ResourceKind.ITEM,"Member","item.test.member",java.util.Map.of("en_us","Member"),java.util.List.of(source),java.util.List.of(),dev.recipeeditor.registry.DiscoveryConfidence.INFERRED_FROM_RESOURCES,"fixture");
+            final var discovery=new dev.recipeeditor.recipeengine.DiscoveryResult(java.nio.file.Path.of("."),new dev.recipeeditor.registry.RegistryIndex(java.util.List.of(entry)),new dev.recipeeditor.recipeengine.RecipeIndex(java.util.List.of(),tags),java.util.List.of(),0);
+            try(final var textures=new dev.recipeeditor.registry.TextureResourceService()) {
+                final var slot=new RecipeSlotView(RecipeSlotContent.parse("{\"tag\":\"test:tag\"}"),discovery,textures,64);
+                assertTrue(slot.getTooltip().getText().startsWith("Tag #test:tag"));
+                assertTrue(slot.getTooltip().getText().contains("Preview variant (indexed member): test:member"));
+                assertTrue(slot.getTooltip().getText().contains("Ingredient type: TAG"));
+            }
+        });
+    }
     @org.junit.jupiter.api.Tag("integration") @Test void javafxSlotRendersQuantityAndHasExplicitSelectionAndDisabledStates()throws Exception {
         FxLayoutTestSupport.run(()->{
             try(final var textures=new dev.recipeeditor.registry.TextureResourceService()) {
