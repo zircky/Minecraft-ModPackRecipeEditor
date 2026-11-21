@@ -58,7 +58,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     this.result = result;
     this.editor = editor;
     this.tasks = tasks;
-    setPadding(new Insets(18));
+    getStyleClass().add("workspace-view");
     rows.setAll(editor.effective().recipes());
     editor.snapshot().changes().values().stream().filter(change -> change.type() == RecipeChangeType.DELETE).forEach(change -> rows.addAll(editor.originals().findById(change.id())));
     listener = id -> Platform.runLater(() -> refresh(id));
@@ -77,8 +77,9 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     editActions = actions();
     sourceFilter.getItems().addAll("All", "Static", "Runtime");
     sourceFilter.setValue("Static");
-    final var header = new VBox(10, new HBox(10, new Label("Source:"), sourceFilter), editActions, tracking, provenance, scope, new HBox(10, search, modMode, mod, type, modification, reset));
-    header.setPadding(new Insets(0, 0, 12, 0));
+    final var filters=new FlowPane(search,modMode,mod,type,modification,reset);filters.getStyleClass().add("filter-row");
+    final var header = new VBox(new HBox(10, new Label("Source:"), sourceFilter), editActions, tracking, provenance, scope, filters);
+    header.getStyleClass().add("view-header");
     setTop(header);
     table.getColumns().add(column("Recipe ID", r -> changePrefix(r.id()) + r.id(), 230));
     table.getColumns().add(column("Type", r -> r.type().displayId(), 180));
@@ -87,6 +88,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     final var sorted = new javafx.collections.transformation.SortedList<>(filtered);
     sorted.comparatorProperty().bind(table.comparatorProperty());
     table.setItems(sorted);
+    table.setPlaceholder(new EmptyStateView("No matching recipes","Clear the search or adjust the filters. A static index may not contain recipes created by scripts.","Show all recipes",()->{search.clear();mod.getSelectionModel().selectFirst();type.getSelectionModel().selectFirst();modification.getSelectionModel().selectFirst();all();}));
     table.setRowFactory(view -> {
       final var row = new TableRow<RecipeDefinition>();
       row.setOnMouseClicked(e -> {
@@ -253,7 +255,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     conflicts.setOnAction(e -> {
       final var ids = editor.conflicts().stream().map(SourceConflict::recipeId).toList();
       if (ids.isEmpty()) {
-        new Alert(Alert.AlertType.INFORMATION, "No blocked source changes", ButtonType.OK).showAndWait();
+        new UiTheme().apply(new Alert(Alert.AlertType.INFORMATION, "No blocked source changes", ButtonType.OK)).showAndWait();
         return;
       }
       final var choice = new ChoiceDialog<ResourceLocation>(ids.getFirst(), ids);
@@ -276,12 +278,13 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   }
 
   private void error(final Throwable error) {
-    if (!closed) new Alert(Alert.AlertType.ERROR, error.getMessage(), ButtonType.OK).showAndWait();
+    if (!closed) new UiTheme().apply(new Alert(Alert.AlertType.ERROR, error.getMessage(), ButtonType.OK)).showAndWait();
   }
 
   private Optional<ResourceLocation> newId(final String title) {
     final var dialog = new TextInputDialog();
     dialog.initOwner(getScene().getWindow());
+    new UiTheme().apply(dialog.getDialogPane());
     dialog.setTitle(title);
     dialog.setHeaderText("Unique Recipe ID: namespace:path");
     final var error = new Label();
@@ -309,6 +312,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     types.getSelectionModel().selectFirst();
     final var dialog = new Dialog<String>();
     dialog.initOwner(getScene().getWindow());
+    new UiTheme().apply(dialog.getDialogPane());
     dialog.setTitle("Recipe type");
     final var error = new Label();
     dialog.getDialogPane().setContent(new VBox(10, new Label("Choose a known type or enter a custom Resource Location"), types, error));
@@ -349,7 +353,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       return;
     }
     final var bases = editor.originals().findById(recipe.id());
-    if (bases.size() > 1 && new Alert(Alert.AlertType.CONFIRMATION, "This ID has " + bases.size() + " original sources. Saving creates one project override for all candidates; the runtime winner is unknown. Continue?", ButtonType.YES, ButtonType.NO).showAndWait().orElse(ButtonType.NO) != ButtonType.YES)
+    if (bases.size() > 1 && new UiTheme().apply(new Alert(Alert.AlertType.CONFIRMATION, "This ID has " + bases.size() + " original sources. Saving creates one project override for all candidates; the runtime winner is unknown. Continue?", ButtonType.YES, ButtonType.NO)).showAndWait().orElse(ButtonType.NO) != ButtonType.YES)
       return;
     final String baseline = bases.isEmpty() ? recipe.rawJson() : bases.stream().filter(base -> base.source().equals(recipe.source())).findFirst().orElse(bases.getFirst()).rawJson();
     final var source = new RecipeSource(SourceType.LOCAL_RESOURCE, List.of(), java.nio.file.Path.of("unsaved-project.json"), "changes/" + recipe.id(), "Unsaved project overlay (logical path)");
@@ -361,7 +365,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   }
 
   private void delete(final RecipeDefinition recipe) {
-    if (new Alert(Alert.AlertType.CONFIRMATION, "Logically delete " + recipe.id() + " from the project? Original JAR files will not change.", ButtonType.YES, ButtonType.NO).showAndWait().orElse(ButtonType.NO) == ButtonType.YES)
+    if (new UiTheme().apply(new Alert(Alert.AlertType.CONFIRMATION, "Logically delete " + recipe.id() + " from the project? Original JAR files will not change.", ButtonType.YES, ButtonType.NO)).showAndWait().orElse(ButtonType.NO) == ButtonType.YES)
       perform(() -> editor.delete(recipe.id()));
   }
 
@@ -382,7 +386,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     final var discard = new ButtonType("Discard saved change", ButtonBar.ButtonData.OTHER);
     dialog.getDialogPane().getButtonTypes().addAll(discard, ButtonType.CLOSE);
     dialog.setResultConverter(button -> button);
-    if (dialog.showAndWait().orElse(ButtonType.CLOSE) == discard && new Alert(Alert.AlertType.CONFIRMATION, "Discard this blocked saved change? Copy any JSON you need first.", ButtonType.YES, ButtonType.NO).showAndWait().orElse(ButtonType.NO) == ButtonType.YES)
+    if (dialog.showAndWait().orElse(ButtonType.CLOSE) == discard && new UiTheme().apply(new Alert(Alert.AlertType.CONFIRMATION, "Discard this blocked saved change? Copy any JSON you need first.", ButtonType.YES, ButtonType.NO)).showAndWait().orElse(ButtonType.NO) == ButtonType.YES)
       perform(() -> editor.discardConflict(id));
   }
 
@@ -477,7 +481,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     source.clear();
     diagnostics.clear();
     if (recipe == null) {
-      viewer.getChildren().add(label("No matching recipes"));
+      viewer.getChildren().add(new EmptyStateView("No recipe selected","Select a recipe to inspect its definition, source evidence and diagnostics."));
       return;
     }
     viewer.getChildren().addAll(label(recipe.id().toString()), label("Type: " + recipe.type().displayId() + "\nParse: " + recipe.status() + "\nRecipe status: " + editor.status(recipe.id()) + (editor.hasConflict(recipe.id()) ? " · SOURCE CONFLICT" : "")));

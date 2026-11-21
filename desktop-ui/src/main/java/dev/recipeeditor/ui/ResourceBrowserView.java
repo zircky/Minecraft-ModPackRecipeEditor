@@ -30,11 +30,12 @@ public final class ResourceBrowserView extends BorderPane {
     public ResourceBrowserView(final DiscoveryResult result,final TextureResourceService textures,
             final Consumer<ResourceBrowserViewModel.RecipeQuery> showRecipes,final BiPredicate<RegistryEntry,Boolean> hasRecipes) {
         this.result=result;this.textures=textures;this.showRecipes=showRecipes;this.hasRecipes=hasRecipes;model=new ResourceBrowserViewModel(result.registry());
-        setPadding(new Insets(18));search.setPromptText("Search ID or localized name");HBox.setHgrow(search,Priority.ALWAYS);
+        getStyleClass().add("workspace-view");search.setPromptText("Search ID or localized name");HBox.setHgrow(search,Priority.ALWAYS);
         mode.getItems().setAll(ResourceBrowserViewModel.FilterMode.values());mode.getSelectionModel().selectFirst();
         language.getItems().setAll("en_us","ru_ru");language.getSelectionModel().selectFirst();
         final var notice=new Label("Runtime-confirmed entries and static candidates retain separate confidence. Images are flat previews; complex Minecraft geometry is not rendered.");notice.setWrapText(true);notice.getStyleClass().add("muted");
-        final var header=new VBox(10,summary,notice,new HBox(10,search,mode,source,new Label("Language:"),language));header.setPadding(new Insets(0,0,12,0));setTop(header);
+        final var filters=new FlowPane(search,mode,source,new Label("Language:"),language);filters.getStyleClass().add("filter-row");
+        final var header=new VBox(summary,notice,filters);header.getStyleClass().add("view-header");setTop(header);
         details.setEditable(false);details.setWrapText(true);VBox.setVgrow(details,Priority.ALWAYS);previewStatus.setWrapText(true);
         selection.setPadding(new Insets(12));selection.getChildren().setAll(new Label("Select a resource to inspect its image, localization and discovery evidence."));
         final var split=new SplitPane(pages,selection);split.setDividerPositions(0.70);setCenter(split);
@@ -62,6 +63,7 @@ public final class ResourceBrowserView extends BorderPane {
     }
     private javafx.scene.Node page(final Integer number) {
         final long request=++generation;
+        if(filtered.isEmpty())return new EmptyStateView("No matching resources","Change the search or source filter. Static discovery may omit resources that require a runtime snapshot.","Clear search and source filter",()->{search.clear();source.getSelectionModel().selectFirst();});
         final var list=new ListView<List<RegistryEntry>>();list.setFixedCellSize(182);
         list.setCellFactory(view->new ListCell<>() {
             @Override protected void updateItem(final List<RegistryEntry> entries,final boolean empty) {

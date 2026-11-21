@@ -44,6 +44,7 @@ public final class ExportWizard {
     private final TextArea provenanceDetails=area();
     private final ExportSourceMapping sourceMapping=new ExportSourceMapping();
     private final Label counts = new Label(), status = new Label("Select saved changes, then build a preview. Unsaved edits are excluded.");
+    private final NotificationBanner notifications=new NotificationBanner();
     private final Button dryRun = new Button("Dry Run"), preview = new Button("Preview"), export = new Button("Export"), cancel = new Button("Cancel"), saveProfile = new Button("Save Profile"), open = new Button("Open result directory");
     private final ProgressBar progress = new ProgressBar(0);
     private final Map<ResourceLocation,ExportFormat> choices = new HashMap<>();
@@ -90,9 +91,11 @@ public final class ExportWizard {
         saveProfile.setOnAction(e->saveProfile()); open.setOnAction(e->{if(resultDirectory!=null) openDirectory.accept(resultDirectory);}); open.setDisable(true);
         cancel.setOnAction(e->{if(operation!=null) {if(operation.cancel()) status.setText("Cancellation requested before file application");} else if(!busy) stage.close();});
         reviewed.selectedProperty().addListener((o,a,b)->updateButtons()); progress.setMaxWidth(Double.MAX_VALUE);
-        final var bottom = new VBox(8,reviewed,progress,status,new HBox(10,dryRun,preview,export,saveProfile,open,cancel));
-        final var root = new BorderPane(tabs,settings,null,bottom,null); root.setPadding(new Insets(18)); BorderPane.setMargin(tabs,new Insets(12,0,12,0));
-        final var scene = new Scene(root,1120,780); scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("theme.css")).toExternalForm()); stage.setScene(scene);
+        status.setWrapText(true);
+        final var actions=new FlowPane(dryRun,preview,export,saveProfile,open,cancel);actions.getStyleClass().add("filter-row");
+        final var bottom = new VBox(8,notifications,reviewed,progress,status,actions);
+        final var root = new BorderPane(tabs,settings,null,bottom,null); root.getStyleClass().add("workspace-view"); BorderPane.setMargin(tabs,new Insets(12,0,12,0));
+        final var scene = new Scene(root,1120,780); new UiTheme().apply(scene); stage.setScene(scene);
         stage.setOnCloseRequest(e->{if(busy) {e.consume(); if(operation!=null&&!operation.applying()) operation.cancel(); status.setText("Wait for the active operation to finish; cancellation is disabled during file application.");}});
         stage.setMinWidth(900); stage.setMinHeight(600); updateButtons();
     }
@@ -146,13 +149,14 @@ public final class ExportWizard {
         resultDirectory=plan.request().context().profile().targetDirectory();setBusy(true);operation=service.export(plan,value->Platform.runLater(()->{progress.setProgress(value.fraction());status.setText(value.stage());cancel.setDisable(value.applying());}));
         operation.result().whenComplete((result,error)->Platform.runLater(()->{operation=null;if(error!=null){setBusy(false);failed(error);return;}diagnostics.appendText("\n\nRESULT: "+result.status()+"\n"+describe(result.diagnostics()));status.setText(result.status()+" — see Diagnostics. Minecraft runtime validation has not been performed.");progress.setProgress(result.status()==ExportResult.Status.SUCCESS?1:0);open.setDisable(result.status()!=ExportResult.Status.SUCCESS);reviewed.setSelected(false);export.setDisable(true);tabs.getSelectionModel().select(3);
             // Ownership information must be refreshed before the next export in this window.
+            notifications.show(result.status()==ExportResult.Status.SUCCESS?NotificationBanner.Kind.SUCCESS:result.status()==ExportResult.Status.CANCELLED?NotificationBanner.Kind.INFO:NotificationBanner.Kind.ERROR,status.getText());
             service.workspace(project).whenComplete((fresh,failure)->Platform.runLater(()->{if(failure==null)workspace=fresh;else failed(failure);plan=null;setBusy(false);updateButtons();}));}));
     }
     private String describe(final List<ExportDiagnostic> entries) {return entries.stream().map(d->d.level()+" "+d.code()+" "+d.recipeIds()+" ["+d.format()+"]\n"+d.message()+"\nAction: "+d.suggestedAction()).collect(Collectors.joining("\n\n"));}
     private void invalidate() {if(loading)return;plan=null;reviewed.setSelected(false);open.setDisable(true);status.setText("Settings or selection changed. Rebuild Preview before Export.");updateButtons();}
     private void setBusy(final boolean value) {busy=value;settings.setDisable(value);tabs.getTabs().getFirst().getContent().setDisable(value);planned.setDisable(value);updateButtons();}
     private void updateButtons() {dryRun.setDisable(busy);preview.setDisable(busy);saveProfile.setDisable(busy);export.setDisable(busy||plan==null||!plan.valid()||!reviewed.isSelected());reviewed.setDisable(busy||plan==null);cancel.setDisable(busy&&operation==null);}
-    private void failed(final Throwable error) {Throwable root=error;while(root.getCause()!=null)root=root.getCause();status.setText("Export operation failed: "+root.getMessage());diagnostics.setText(root.toString());tabs.getSelectionModel().select(3);}
+    private void failed(final Throwable error) {Throwable root=error;while(root.getCause()!=null)root=root.getCause();status.setText("Export operation failed: "+root.getMessage());diagnostics.setText(root.toString());notifications.show(NotificationBanner.Kind.ERROR,"Export operation failed. Review Diagnostics before retrying.");tabs.getSelectionModel().select(3);}
     private <T> TableColumn<T,String> column(final String title,final java.util.function.Function<T,String> text,final int width) {final var c=new TableColumn<T,String>(title);c.setCellValueFactory(value->new ReadOnlyStringWrapper(text.apply(value.getValue())));c.setPrefWidth(width);return c;}
     private ListCell<ExportProfile> profileCell() {return new ListCell<>() {@Override protected void updateItem(final ExportProfile p,final boolean empty){super.updateItem(p,empty);setText(empty||p==null?null:p.name());}};}
     private TextArea area() {final var result=new TextArea();result.setEditable(false);return result;}

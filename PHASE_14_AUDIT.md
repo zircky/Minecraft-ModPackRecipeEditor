@@ -77,3 +77,95 @@ Recommendation: **continue alpha**. This iteration does not establish Phase 14
 completion or beta/RC readiness. Historical release reports remain historical;
 in particular the old absence of Git/remote in RELEASE_READINESS.md is no longer
 current, while its unverified platform/product gates still require review.
+
+## Step 3 — Implemented UI consistency changes
+
+- `UiTheme` installs the same stylesheet on scenes and dialog panes, including
+  ownerless alerts. Explicit themes now cover editor, picker, export, creation,
+  confirmations, errors, runtime snapshot and About presentation.
+- `theme.css` defines shared JavaFX looked-up colors, 16px workspace insets,
+  header/filter/detail classes, typography, focus/disabled states, tables, tabs,
+  tooltips and notifications. Palette changes no longer require controller edits.
+  The remaining inline GT property-card style was moved to CSS.
+- The shell no longer nests two toolbars inside another toolbar. Primary controls
+  use the available width, with the existing ToolBar overflow behavior. Filter
+  and Runtime/export action rows wrap using FlowPane.
+- `EmptyStateView` is shared by shell sections, mod/recipe tables, resource and
+  material pages, Runtime registry and recipe selection. Import and Open Runtime
+  buttons call existing actions; Settings/Analyzer do not offer dummy actions.
+  Analyzer text no longer falsely claims recipe loading is unimplemented.
+- `NotificationBanner` displays one dismissible SUCCESS/INFO/WARNING/ERROR outcome.
+  It is wired to indexing/import outcomes, project save, recipe save and export
+  outcomes. Messages distinguish project memory from disk and generated export
+  files from Minecraft validation. Existing validation/diagnostic views remain.
+- Manual inspection caught About text clipping after the padding change. The
+  dialog now uses a wrapping Label with its preferred minimum height and a
+  resizable 540px layout. `AboutDialogLayoutTest` opens the actual themed dialog
+  and checks that all metadata lines fit, including `Release: NOT READY`.
+
+No recipe data model, import/export generation rules, Companion code, version,
+project/protocol formats or source JARs were changed. Filters' matching rules and
+project persistence remain the existing implementations. Reset actions on empty
+screens only clear presentation filters.
+
+### Changed files
+
+- `desktop-ui/src/main/resources/dev/recipeeditor/ui/theme.css`
+- `desktop-ui/src/main/java/dev/recipeeditor/ui/UiTheme.java` (new)
+- `desktop-ui/src/main/java/dev/recipeeditor/ui/EmptyStateView.java` (new)
+- `desktop-ui/src/main/java/dev/recipeeditor/ui/NotificationBanner.java` (new)
+- `desktop-ui/src/main/java/dev/recipeeditor/ui/MainWindow.java`
+- `desktop-ui/src/main/java/dev/recipeeditor/ui/NavigationSection.java`
+- `desktop-ui/src/main/java/dev/recipeeditor/ui/ModCatalogView.java`
+- `desktop-ui/src/main/java/dev/recipeeditor/ui/RecipeBrowserView.java`
+- `desktop-ui/src/main/java/dev/recipeeditor/ui/ResourceBrowserView.java`
+- `desktop-ui/src/main/java/dev/recipeeditor/ui/MaterialsBrowserView.java`
+- `desktop-ui/src/main/java/dev/recipeeditor/ui/RuntimeIntegrationView.java`
+- `desktop-ui/src/main/java/dev/recipeeditor/ui/RecipeEditorDialog.java`
+- `desktop-ui/src/main/java/dev/recipeeditor/ui/IngredientPicker.java`
+- `desktop-ui/src/main/java/dev/recipeeditor/ui/ExportWizard.java`
+- `desktop-ui/src/main/java/dev/recipeeditor/ui/GregTechRecipeEditorProvider.java`
+- `app/src/main/java/dev/recipeeditor/app/release/ReleaseInformationView.java`
+- `desktop-ui/src/test/java/dev/recipeeditor/ui/UiConsistencyTest.java` (new)
+- `app/src/test/java/dev/recipeeditor/app/release/AboutDialogLayoutTest.java` (new)
+- `PHASE_14_AUDIT.md` (new)
+
+The CSS uses JavaFX property lookup, not browser CSS variables; reference:
+[JavaFX 21 CSS Reference](https://openjfx.io/javadoc/21/javafx.graphics/javafx/scene/doc-files/cssref.html).
+
+## Final validation of Steps 2–3
+
+| Check | Actual result |
+|---|---|
+| Final `gradlew.bat clean build` | BUILD SUCCESSFUL, 2m 20s, 82 executed tasks |
+| Separate `gradlew.bat test` | BUILD SUCCESSFUL, 2s, tasks up-to-date after clean build |
+| Unit/component suite | 311 tests: 309 passed, 2 Windows symlink skips, zero failures/errors |
+| Integration suite | 45 passed, zero skips/failures/errors |
+| JavaFX tests within integration | 10 passed: 9 desktop-ui cases and 1 actual About-dialog layout case |
+| New Step 3 regression cases | 7: empty-state action, banner replacement/dismissal, dialog palette/control metrics, three logical window widths, About text bounds |
+| `gradlew.bat :app:run` | Final application started with desktop 1.1.0-alpha.1 / protocol 1 / Companion 0.1.0 / project format 1 |
+| Manual graphical smoke | Projects empty screen, Materials missing-runtime state and working Open Runtime action, disconnected Runtime screen, Analyzer/Settings unavailable states, final About with every metadata line visible |
+| CSS/startup diagnostics | No new CSS or startup exceptions observed; existing unnamed-module JavaFX warning remains |
+| `git diff --check` | Passed |
+| Live Minecraft / export reload | NOT_VERIFIED in this iteration |
+| Profiling / memory / throughput | NOT_VERIFIED; no performance claims |
+| Windows packaging / installation | NOT_VERIFIED in this iteration; deferred Step 8 |
+| Windows 10 / other system DPI settings | NOT_VERIFIED |
+
+The three JavaFX width cases are scene-graph tests at 1280, 1920 and 2560 logical
+pixels; they are not full-screen acceptance tests or OS-DPI tests. Manual inspection
+used the actual 1322x852 captured desktop window. Attempted border dragging did not
+change its dimensions, so a manual 1280x720 resize is not claimed. UI tests ran in
+this real Windows graphical environment; no TestFX or other dependency was added.
+
+Local evidence: `.manual-tests/phase14-audit-build.log`, `phase14-build.log`,
+`phase14-test.log`, `phase14-ui-tests.log`, `phase14-about-test.log`,
+`phase14-baseline-run.log`, `phase14-run.log`. Final XML/HTML results are in each
+module's `build/test-results` / `build/reports/tests`; aggregate HTML is
+`build/reports/tests/all/index.html`. Local logs are not included in source commits.
+
+Step 2 audit commit: `f4b4262` (`docs(audit): assess phase 11-13 implementation and validation gaps`).
+Step 3 is a separate `style(ui): unify application layouts and visual components`
+commit, identifiable in this branch's Git history. Both steps are complete for
+this iteration. Overall Phase 14 remains incomplete: Steps 4–8 are deferred.
+Release recommendation remains **continue alpha / NOT READY for stable release**.

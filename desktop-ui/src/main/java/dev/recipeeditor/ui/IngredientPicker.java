@@ -15,7 +15,7 @@ import javafx.stage.Window;
 public final class IngredientPicker extends Dialog<IngredientPicker.Selection> {
     public record Selection(ResourceLocation id,boolean tag,int amount,String json) { }
     public IngredientPicker(final Window owner,final DiscoveryResult result,final ResourceKind kind,final boolean allowTag,final boolean allowAmount) {
-        initOwner(owner); getDialogPane().getStylesheets().add(java.util.Objects.requireNonNull(getClass().getResource("theme.css")).toExternalForm()); setTitle(kind==ResourceKind.FLUID?"Pick fluid reference":"Pick ingredient"); setResizable(true);
+        initOwner(owner); new UiTheme().apply(getDialogPane()); setTitle(kind==ResourceKind.FLUID?"Pick fluid reference":"Pick ingredient"); setResizable(true);
         final var search=new TextField(); search.setPromptText("Search name / ID");
         final var mods=new ComboBox<String>(); mods.getItems().add("All mods"); result.registry().entries(kind).stream().flatMap(e->e.sources().stream()).flatMap(s->s.modIds().stream()).distinct().sorted().forEach(mods.getItems()::add); mods.getSelectionModel().selectFirst();
         final var textures=new TextureResourceService();

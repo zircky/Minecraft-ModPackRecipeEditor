@@ -24,7 +24,7 @@ public final class ModCatalogView extends VBox {
     private ModpackImportResult result;
 
     public ModCatalogView() {
-        setSpacing(14); setPadding(new Insets(24));
+        setSpacing(14); getStyleClass().add("workspace-view");
         summary.getStyleClass().add("brand");
         summary.setWrapText(true);
         search.setPromptText("Search by mod name or ID");
@@ -45,7 +45,8 @@ public final class ModCatalogView extends VBox {
         final var split = new SplitPane(table,createDetailTabs());
         split.setDividerPositions(0.62);
         VBox.setVgrow(split,Priority.ALWAYS);
-        getChildren().addAll(summary,new HBox(12,search,statusFilter,loaderFilter),split);
+        final var filters=new FlowPane(search,statusFilter,loaderFilter);filters.getStyleClass().add("filter-row");
+        getChildren().addAll(summary,filters,split);
     }
     private void configureTable() {
         table.getColumns().add(column("Name",Row::name,190));
@@ -53,7 +54,7 @@ public final class ModCatalogView extends VBox {
         table.getColumns().add(column("Version",Row::version,120));
         table.getColumns().add(column("Loader",Row::loader,100));
         table.getColumns().add(column("Status",Row::status,100));
-        table.setPlaceholder(new Label("No matching mods or JARs"));
+        table.setPlaceholder(new EmptyStateView("No matching mods","Change the search, status or loader filter. If the instance has no mod JARs, check its mods directory."));
         table.getSelectionModel().selectedItemProperty().addListener((obs,oldValue,row) -> describe(row));
     }
     private TableColumn<Row,String> column(final String title, final Function<Row,String> value, final int width) {

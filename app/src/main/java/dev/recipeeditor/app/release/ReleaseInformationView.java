@@ -32,12 +32,23 @@ public final class ReleaseInformationView {
     }
 
     private void showAbout(final Stage stage) {
-        final var dialog = new Alert(Alert.AlertType.INFORMATION, metadata.diagnosticSummary(), ButtonType.CLOSE);
+        aboutDialog(stage).showAndWait();
+    }
+
+    Alert aboutDialog(final Stage stage) {
+        final var dialog = new Alert(Alert.AlertType.INFORMATION, "", ButtonType.CLOSE);
         dialog.initOwner(stage);
+        new dev.recipeeditor.ui.UiTheme().apply(dialog.getDialogPane());
         dialog.setTitle("About " + metadata.name());
         dialog.setHeaderText("Alpha build — stable release is NOT READY");
         dialog.setGraphic(new ImageView(icon(48)));
-        dialog.showAndWait();
+        final var details=new Label(metadata.diagnosticSummary());
+        details.setWrapText(true);
+        details.setMinHeight(Region.USE_PREF_SIZE);
+        dialog.getDialogPane().setContent(details);
+        dialog.getDialogPane().setPrefWidth(540);
+        dialog.setResizable(true);
+        return dialog;
     }
 
     private Image icon(final int size) {
