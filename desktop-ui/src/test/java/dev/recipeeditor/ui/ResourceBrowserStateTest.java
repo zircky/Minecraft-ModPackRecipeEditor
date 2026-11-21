@@ -12,7 +12,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Tag("integration")
 final class ResourceBrowserStateTest {
-    @Test void languageChangeKeepsSourceFilterAndSelectedResourceAndSearchResetsPagination()throws Exception {
+    @org.junit.jupiter.params.ParameterizedTest @org.junit.jupiter.params.provider.ValueSource(ints={1280,1920,2560})
+    void languageChangeKeepsSourceFilterAndSelectedResourceAndSearchResetsPagination(final int width)throws Exception {
         FxLayoutTestSupport.run(()->{
             final var entries=new ArrayList<RegistryEntry>();
             for(int i=0;i<121;i++)entries.add(new RegistryEntry(ResourceLocation.parse("test:item_"+i),ResourceKind.ITEM,"English "+i,"item.test.item_"+i,
@@ -20,7 +21,7 @@ final class ResourceBrowserStateTest {
             final var base=FxLayoutTestSupport.discovery();final var discovery=new DiscoveryResult(base.selectedRoot(),new RegistryIndex(entries),base.recipes(),List.of(),0);
             try(final var textures=new TextureResourceService()) {
                 final var view=new ResourceBrowserView(discovery,textures,q->{},(entry,uses)->false);
-                new UiTheme().apply(new Scene(view,1280,720));view.show(ResourceKind.ITEM);view.applyCss();view.layout();view.applyCss();view.layout();
+                new UiTheme().apply(new Scene(view,width,width==1280?720:width==1920?1080:1440));view.show(ResourceKind.ITEM);view.applyCss();view.layout();view.applyCss();view.layout();
                 assertNull(((ListView<?>)view.lookup(".resource-grid")).getSelectionModel());
                 final var card=(ResourceCardView)view.lookupAll(".resource-card").iterator().next();card.fire();
                 final var id=card.getUserData();

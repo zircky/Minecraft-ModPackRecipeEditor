@@ -41,7 +41,7 @@ public final class RecipeEditorDialog extends Dialog<Void> {
         this.discovery=discovery; this.editor=editor; this.tasks=tasks; this.session=session; this.creating=creating;
         initOwner(owner); new UiTheme().apply(getDialogPane()); setTitle("Recipe Editor - "+session.id()); setResizable(true); getDialogPane().setPrefSize(1050,760);
         raw.setTextFormatter(new TextFormatter<String>(change->{ if(change.getControlNewText().length()>2*1024*1024) { issues.setText("Editor limit: 2 MiB characters; input rejected"); return null; } return change; }));
-        raw.setText(session.rawJson()); diff.setEditable(false); diff.setWrapText(true); raw.setWrapText(true);
+        raw.setId("recipe-raw-json");raw.setText(session.rawJson()); diff.setEditable(false); diff.setWrapText(true); raw.setWrapText(true);
         visual.setPadding(new Insets(16)); advanced.setPadding(new Insets(16));
         final var format=new Button("Format JSON"); format.setOnAction(e->patch(text->forms.format(text)));
         final var apply=new Button("Validate / Apply JSON"); apply.setOnAction(e->validateDraft());
