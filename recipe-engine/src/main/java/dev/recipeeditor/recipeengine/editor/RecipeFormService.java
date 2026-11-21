@@ -36,7 +36,11 @@ public final class RecipeFormService {
         if(count<1) throw new IllegalArgumentException("Positive output count required");
         final var root=object(raw); final String type=ResourceLocation.parse(type(raw)).path();
         if(type.equals("smithing_trim")) throw new IllegalArgumentException("Trim output is dynamic");
-        if(type.equals("stonecutting")) { root.put("result",item.toString()); root.put("count",count); }
+        if(Set.of("smelting","blasting","smoking","campfire_cooking").contains(type) && !root.path("result").isObject()) {
+            if(count!=1)throw new IllegalArgumentException("Minecraft 1.20.1 cooking recipes produce one item");
+            root.put("result",item.toString());
+        }
+        else if(type.equals("stonecutting")) { root.put("result",item.toString()); root.put("count",count); }
         else {
             final var previous=root.get("result");
             final ObjectNode output=previous!=null&&previous.isObject()?((ObjectNode)previous).deepCopy():mapper.createObjectNode();

@@ -5,6 +5,6 @@ import java.util.*;
 public final class ProjectRecipeParsers {
     public List<RecipeParser> parsers() {
         final var parsers = new ArrayList<>(new Vanilla1201Parsers().parsers());
-        parsers.add(new GregTechRecipeParser()); return List.copyOf(parsers);
+        parsers.add(new GregTechRecipeParser()); parsers.add(new ProjectRecipeAdapters().registry()); return List.copyOf(parsers);
     }
 }

@@ -1,0 +1,35 @@
+> Task :exporters:processResources NO-SOURCE
+> Task :integrations:processResources NO-SOURCE
+> Task :recipe-engine:processResources NO-SOURCE
+> Task :exporters:processTestResources NO-SOURCE
+> Task :core:compileJava UP-TO-DATE
+> Task :registry:processResources NO-SOURCE
+> Task :core:processResources NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :core:jar UP-TO-DATE
+> Task :companion-protocol:compileJava UP-TO-DATE
+> Task :companion-protocol:generateCompanionIdentity UP-TO-DATE
+> Task :companion-protocol:processResources UP-TO-DATE
+> Task :companion-protocol:classes UP-TO-DATE
+> Task :companion-protocol:jar UP-TO-DATE
+> Task :registry:compileJava UP-TO-DATE
+> Task :registry:classes UP-TO-DATE
+> Task :registry:jar UP-TO-DATE
+> Task :recipe-engine:compileJava UP-TO-DATE
+> Task :recipe-engine:classes UP-TO-DATE
+> Task :recipe-engine:jar UP-TO-DATE
+> Task :integrations:compileJava UP-TO-DATE
+> Task :integrations:classes UP-TO-DATE
+> Task :integrations:jar UP-TO-DATE
+> Task :exporters:compileJava
+> Task :exporters:classes
+> Task :exporters:compileTestJava
+> Task :exporters:testClasses
+
+> Task :exporters:test
+
+ExportFileWriterTest > symbolicLinkAncestorIsRejectedWhenSupported() SKIPPED
+
+BUILD SUCCESSFUL in 16s
+15 actionable tasks: 3 executed, 12 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.0/userguide/configuration_cache_enabling.html

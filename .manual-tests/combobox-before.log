@@ -1,0 +1,56 @@
+> Task :companion-client:processResources NO-SOURCE
+> Task :desktop-ui:processResources UP-TO-DATE
+> Task :desktop-ui:processTestResources NO-SOURCE
+> Task :core:compileJava UP-TO-DATE
+> Task :exporters:processResources NO-SOURCE
+> Task :integrations:processResources NO-SOURCE
+> Task :core:processResources NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :recipe-engine:processResources NO-SOURCE
+> Task :core:jar UP-TO-DATE
+> Task :companion-protocol:compileJava UP-TO-DATE
+> Task :companion-protocol:generateCompanionIdentity UP-TO-DATE
+> Task :companion-protocol:processResources UP-TO-DATE
+> Task :companion-protocol:classes UP-TO-DATE
+> Task :companion-protocol:jar UP-TO-DATE
+> Task :registry:compileJava UP-TO-DATE
+> Task :registry:processResources NO-SOURCE
+> Task :registry:classes UP-TO-DATE
+> Task :registry:jar UP-TO-DATE
+> Task :recipe-engine:compileJava UP-TO-DATE
+> Task :recipe-engine:classes UP-TO-DATE
+> Task :recipe-engine:jar UP-TO-DATE
+> Task :integrations:compileJava UP-TO-DATE
+> Task :integrations:classes UP-TO-DATE
+> Task :companion-client:compileJava UP-TO-DATE
+> Task :companion-client:classes UP-TO-DATE
+> Task :integrations:jar UP-TO-DATE
+> Task :companion-client:jar UP-TO-DATE
+> Task :exporters:compileJava UP-TO-DATE
+> Task :exporters:classes UP-TO-DATE
+> Task :exporters:jar UP-TO-DATE
+> Task :desktop-ui:compileJava UP-TO-DATE
+> Task :desktop-ui:classes UP-TO-DATE
+> Task :desktop-ui:compileTestJava
+> Task :desktop-ui:testClasses
+
+> Task :desktop-ui:integrationTest
+
+ComboBoxThemeTest > closedSelectedValueDoesNotInheritListSelectionBackground() FAILED
+    org.opentest4j.AssertionFailedError at ComboBoxThemeTest.java:18
+
+1 test completed, 1 failed
+
+> Task :desktop-ui:integrationTest FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':desktop-ui:integrationTest'.
+> There were failing tests. See the report at: file:///L:/My%20Add/RecipeEditor/desktop-ui/build/reports/tests/integrationTest/index.html
+
+* Try:
+> Run with --scan to generate a Build Scan (powered by Develocity).
+
+BUILD FAILED in 10s
+20 actionable tasks: 2 executed, 18 up-to-date

@@ -3,7 +3,7 @@ import java.util.*;
 
 /** Exact Vanilla type mapping. Mod recipes require their own adapter, never a generic crafting grid. */
 public final class RecipeLayoutProvider {
-    public enum Kind { SHAPED, SHAPELESS, COOKING, STONECUTTING, SMITHING_TRANSFORM, SMITHING_TRIM }
+    public enum Kind { SHAPED, SHAPELESS, COOKING, STONECUTTING, SMITHING_TRANSFORM, SMITHING_TRIM, PROCESSING }
     public record Layout(Kind kind,String workstation,List<String> inputs) { public Layout {inputs=List.copyOf(inputs);} }
     public Optional<Layout> find(final String type) {
         return switch(type){

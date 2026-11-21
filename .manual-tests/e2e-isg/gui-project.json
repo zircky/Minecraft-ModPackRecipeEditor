@@ -1,29 +1,8 @@
 {
   "formatVersion" : 1,
-  "sha256" : "1e50f3df0f7e60add0a292a7facc9246f3c481a33af9b2488848842c600471e9",
+  "sha256" : "37a19275df266e372c79980d58ed4338f01544a99a2594bebe94ccb1dd221a53",
   "project" : {
     "modpackDirectory" : "G:\\PrismLauncher\\instances\\ISG-0.6.0-alpha.1-harsh",
-    "changes" : [ {
-      "id" : "minecraft:tnt",
-      "type" : "UPDATE",
-      "timestamp" : "2026-11-18T08:10:06.594817600Z",
-      "originals" : [ {
-        "hash" : "aa56447ab88becff1db35cd5c6add8a0bfea29a57c9c9cc8f81fdc23ad2efa63",
-        "sourceType" : "MOD_JAR",
-        "modIds" : [ "biomesoplenty" ],
-        "archivePath" : "G:\\PrismLauncher\\instances\\ISG-0.6.0-alpha.1-harsh\\minecraft\\mods\\BiomesOPlenty-1.20.1-18.0.0.592.jar",
-        "internalPath" : "data/minecraft/recipes/tnt.json",
-        "method" : "Static resource scan"
-      } ],
-      "replacementSources" : [ {
-        "sourceType" : "LOCAL_RESOURCE",
-        "modIds" : [ ],
-        "archivePath" : "L:\\My Add\\RecipeEditor\\.manual-tests\\e2e-isg\\gui-project.json",
-        "internalPath" : "changes/minecraft:tnt",
-        "method" : "User project overlay"
-      } ],
-      "replacementJson" : [ "{\"type\":\"minecraft:crafting_shaped\",\"pattern\":[\"X#X\",\"#X#\",\"X#X\"],\"key\":{\"#\":{\"tag\":\"minecraft:sand\"},\"X\":{\"item\":\"minecraft:gunpowder\"}},\"result\":{\"item\":\"minecraft:tnt\",\"count\":2}}" ],
-      "metadata" : { }
-    } ]
+    "changes" : [ ]
   }
 }

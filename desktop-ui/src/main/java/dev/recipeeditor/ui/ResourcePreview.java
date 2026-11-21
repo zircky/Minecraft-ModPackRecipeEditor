@@ -16,6 +16,12 @@ final class ResourcePreview extends StackPane {
         setMinSize(size,size);setPrefSize(size,size);setMaxSize(size,size);
         final var placeholder=new Label("?");getChildren().add(placeholder);
         Tooltip.install(this,new Tooltip(visual.status()+"\n"+visual.explanation()));
+        sceneProperty().addListener((observable,oldScene,newScene)->{
+            if(newScene!=null)load(visual,root,textures,size,current,completed);
+        });
+    }
+    private void load(final ResourceVisual visual,final Path root,final TextureResourceService textures,
+            final int size,final BooleanSupplier current,final Consumer<TextureResourceService.Preview> completed) {
         textures.previewAsync(visual,root).thenAccept(preview->{
             final byte[] bytes=preview.png();
             final var image=bytes.length==0?null:new Image(new ByteArrayInputStream(bytes),size,size,true,false);

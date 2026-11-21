@@ -49,6 +49,7 @@ public final class StandardDependencyAdapter implements RecipeDependencyAdapter 
                 fixed.copiesBaseData() ? new CanonicalJson().hash(fixed.rawDetails()) : "");
       else if (output instanceof RecipeOutput.Capability capability)
         ingredient = ingredients.describe(capability.ingredient(), false);
+      else if(output instanceof RecipeOutput.Brew brew)ingredient=ingredients.opaque("Brew registry reference: "+brew.definition().id());
       else ingredient = ingredients.opaque(((RecipeOutput.Dynamic) output).description());
       outputs.add(
           new RecipePort(

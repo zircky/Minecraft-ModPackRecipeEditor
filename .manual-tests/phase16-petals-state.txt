@@ -1,0 +1,735 @@
+Compiled from "PetalsRecipe.java"
+public class vazkii.botania.common.crafting.PetalsRecipe$Serializer implements net.minecraft.world.item.crafting.RecipeSerializer<vazkii.botania.common.crafting.PetalsRecipe> {
+  public vazkii.botania.common.crafting.PetalsRecipe$Serializer();
+    Code:
+       0: aload_0
+       1: invokespecial #15                 // Method java/lang/Object."<init>":()V
+       4: return
+
+  public vazkii.botania.common.crafting.PetalsRecipe fromJson(net.minecraft.resources.ResourceLocation, com.google.gson.JsonObject);
+    Code:
+       0: aload_2
+       1: ldc           #22                 // String output
+       3: invokestatic  #28                 // Method net/minecraft/util/GsonHelper.m_13930_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)Lcom/google/gson/JsonObject;
+       6: invokestatic  #34                 // Method net/minecraft/world/item/crafting/ShapedRecipe.m_151274_:(Lcom/google/gson/JsonObject;)Lnet/minecraft/world/item/ItemStack;
+       9: astore_3
+      10: aload_2
+      11: ldc           #36                 // String reagent
+      13: invokevirtual #42                 // Method com/google/gson/JsonObject.get:(Ljava/lang/String;)Lcom/google/gson/JsonElement;
+      16: invokestatic  #48                 // Method net/minecraft/world/item/crafting/Ingredient.m_43917_:(Lcom/google/gson/JsonElement;)Lnet/minecraft/world/item/crafting/Ingredient;
+      19: astore        4
+      21: aload_2
+      22: ldc           #50                 // String ingredients
+      24: invokestatic  #54                 // Method net/minecraft/util/GsonHelper.m_13933_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)Lcom/google/gson/JsonArray;
+      27: astore        5
+      29: new           #56                 // class java/util/ArrayList
+      32: dup
+      33: invokespecial #57                 // Method java/util/ArrayList."<init>":()V
+      36: astore        6
+      38: aload         5
+      40: invokevirtual #63                 // Method com/google/gson/JsonArray.iterator:()Ljava/util/Iterator;
+      43: astore        7
+      45: aload         7
+      47: invokeinterface #75,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z
+      52: ifeq          83
+      55: aload         7
+      57: invokeinterface #79,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      62: checkcast     #81                 // class com/google/gson/JsonElement
+      65: astore        8
+      67: aload         6
+      69: aload         8
+      71: invokestatic  #48                 // Method net/minecraft/world/item/crafting/Ingredient.m_43917_:(Lcom/google/gson/JsonElement;)Lnet/minecraft/world/item/crafting/Ingredient;
+      74: invokeinterface #85,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+      79: pop
+      80: goto          45
+      83: new           #10                 // class vazkii/botania/common/crafting/PetalsRecipe
+      86: dup
+      87: aload_1
+      88: aload_3
+      89: aload         4
+      91: aload         6
+      93: iconst_0
+      94: anewarray     #44                 // class net/minecraft/world/item/crafting/Ingredient
+      97: invokeinterface #89,  2           // InterfaceMethod java/util/List.toArray:([Ljava/lang/Object;)[Ljava/lang/Object;
+     102: checkcast     #91                 // class "[Lnet/minecraft/world/item/crafting/Ingredient;"
+     105: invokespecial #94                 // Method vazkii/botania/common/crafting/PetalsRecipe."<init>":(Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/crafting/Ingredient;[Lnet/minecraft/world/item/crafting/Ingredient;)V
+     108: areturn
+
+  public vazkii.botania.common.crafting.PetalsRecipe fromNetwork(net.minecraft.resources.ResourceLocation, net.minecraft.network.FriendlyByteBuf);
+    Code:
+       0: aload_2
+       1: invokevirtual #115                // Method net/minecraft/network/FriendlyByteBuf.m_130242_:()I
+       4: anewarray     #44                 // class net/minecraft/world/item/crafting/Ingredient
+       7: astore_3
+       8: iconst_0
+       9: istore        4
+      11: iload         4
+      13: aload_3
+      14: arraylength
+      15: if_icmpge     32
+      18: aload_3
+      19: iload         4
+      21: aload_2
+      22: invokestatic  #119                // Method net/minecraft/world/item/crafting/Ingredient.m_43940_:(Lnet/minecraft/network/FriendlyByteBuf;)Lnet/minecraft/world/item/crafting/Ingredient;
+      25: aastore
+      26: iinc          4, 1
+      29: goto          11
+      32: aload_2
+      33: invokestatic  #119                // Method net/minecraft/world/item/crafting/Ingredient.m_43940_:(Lnet/minecraft/network/FriendlyByteBuf;)Lnet/minecraft/world/item/crafting/Ingredient;
+      36: astore        4
+      38: aload_2
+      39: invokevirtual #123                // Method net/minecraft/network/FriendlyByteBuf.m_130267_:()Lnet/minecraft/world/item/ItemStack;
+      42: astore        5
+      44: new           #10                 // class vazkii/botania/common/crafting/PetalsRecipe
+      47: dup
+      48: aload_1
+      49: aload         5
+      51: aload         4
+      53: aload_3
+      54: invokespecial #94                 // Method vazkii/botania/common/crafting/PetalsRecipe."<init>":(Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/crafting/Ingredient;[Lnet/minecraft/world/item/crafting/Ingredient;)V
+      57: areturn
+
+  public void toNetwork(net.minecraft.network.FriendlyByteBuf, vazkii.botania.common.crafting.PetalsRecipe);
+    Code:
+       0: aload_1
+       1: aload_2
+       2: invokevirtual #133                // Method vazkii/botania/common/crafting/PetalsRecipe.m_7527_:()Lnet/minecraft/core/NonNullList;
+       5: invokevirtual #138                // Method net/minecraft/core/NonNullList.size:()I
+       8: invokevirtual #142                // Method net/minecraft/network/FriendlyByteBuf.m_130130_:(I)Lnet/minecraft/network/FriendlyByteBuf;
+      11: pop
+      12: aload_2
+      13: invokevirtual #133                // Method vazkii/botania/common/crafting/PetalsRecipe.m_7527_:()Lnet/minecraft/core/NonNullList;
+      16: invokevirtual #143                // Method net/minecraft/core/NonNullList.iterator:()Ljava/util/Iterator;
+      19: astore_3
+      20: aload_3
+      21: invokeinterface #75,  1           // InterfaceMethod java/util/Iterator.hasNext:()Z
+      26: ifeq          49
+      29: aload_3
+      30: invokeinterface #79,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      35: checkcast     #44                 // class net/minecraft/world/item/crafting/Ingredient
+      38: astore        4
+      40: aload         4
+      42: aload_1
+      43: invokevirtual #147                // Method net/minecraft/world/item/crafting/Ingredient.m_43923_:(Lnet/minecraft/network/FriendlyByteBuf;)V
+      46: goto          20
+      49: aload_2
+      50: getfield      #149                // Field vazkii/botania/common/crafting/PetalsRecipe.reagent:Lnet/minecraft/world/item/crafting/Ingredient;
+      53: aload_1
+      54: invokevirtual #147                // Method net/minecraft/world/item/crafting/Ingredient.m_43923_:(Lnet/minecraft/network/FriendlyByteBuf;)V
+      57: aload_1
+      58: aload_2
+      59: getfield      #151                // Field vazkii/botania/common/crafting/PetalsRecipe.output:Lnet/minecraft/world/item/ItemStack;
+      62: invokevirtual #155                // Method net/minecraft/network/FriendlyByteBuf.m_130055_:(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/network/FriendlyByteBuf;
+      65: pop
+      66: return
+
+  public void m_6178_(net.minecraft.network.FriendlyByteBuf, net.minecraft.world.item.crafting.Recipe);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: checkcast     #10                 // class vazkii/botania/common/crafting/PetalsRecipe
+       6: invokevirtual #162                // Method toNetwork:(Lnet/minecraft/network/FriendlyByteBuf;Lvazkii/botania/common/crafting/PetalsRecipe;)V
+       9: return
+
+  public net.minecraft.world.item.crafting.Recipe m_8005_(net.minecraft.resources.ResourceLocation, net.minecraft.network.FriendlyByteBuf);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: invokevirtual #166                // Method fromNetwork:(Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/network/FriendlyByteBuf;)Lvazkii/botania/common/crafting/PetalsRecipe;
+       6: areturn
+
+  public net.minecraft.world.item.crafting.Recipe m_6729_(net.minecraft.resources.ResourceLocation, com.google.gson.JsonObject);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: invokevirtual #170                // Method fromJson:(Lnet/minecraft/resources/ResourceLocation;Lcom/google/gson/JsonObject;)Lvazkii/botania/common/crafting/PetalsRecipe;
+       6: areturn
+}
+Compiled from "StateIngredientHelper.java"
+public class vazkii.botania.common.crafting.StateIngredientHelper {
+  public vazkii.botania.common.crafting.StateIngredientHelper();
+    Code:
+       0: aload_0
+       1: invokespecial #19                 // Method java/lang/Object."<init>":()V
+       4: return
+
+  public static vazkii.botania.api.recipe.StateIngredient of(net.minecraft.world.level.block.Block);
+    Code:
+       0: new           #25                 // class vazkii/botania/common/crafting/BlockStateIngredient
+       3: dup
+       4: aload_0
+       5: invokespecial #28                 // Method vazkii/botania/common/crafting/BlockStateIngredient."<init>":(Lnet/minecraft/world/level/block/Block;)V
+       8: areturn
+
+  public static vazkii.botania.api.recipe.StateIngredient of(net.minecraft.world.level.block.state.BlockState);
+    Code:
+       0: new           #33                 // class vazkii/botania/common/crafting/BlockStateStateIngredient
+       3: dup
+       4: aload_0
+       5: invokespecial #36                 // Method vazkii/botania/common/crafting/BlockStateStateIngredient."<init>":(Lnet/minecraft/world/level/block/state/BlockState;)V
+       8: areturn
+
+  public static vazkii.botania.api.recipe.StateIngredient of(net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block>);
+    Code:
+       0: aload_0
+       1: invokevirtual #46                 // Method net/minecraft/tags/TagKey.f_203868_:()Lnet/minecraft/resources/ResourceLocation;
+       4: invokestatic  #49                 // Method of:(Lnet/minecraft/resources/ResourceLocation;)Lvazkii/botania/api/recipe/StateIngredient;
+       7: areturn
+
+  public static vazkii.botania.api.recipe.StateIngredient of(net.minecraft.resources.ResourceLocation);
+    Code:
+       0: new           #54                 // class vazkii/botania/common/crafting/TagStateIngredient
+       3: dup
+       4: aload_0
+       5: invokespecial #57                 // Method vazkii/botania/common/crafting/TagStateIngredient."<init>":(Lnet/minecraft/resources/ResourceLocation;)V
+       8: areturn
+
+  public static vazkii.botania.api.recipe.StateIngredient of(java.util.Collection<net.minecraft.world.level.block.Block>);
+    Code:
+       0: new           #63                 // class vazkii/botania/common/crafting/BlocksStateIngredient
+       3: dup
+       4: aload_0
+       5: invokespecial #66                 // Method vazkii/botania/common/crafting/BlocksStateIngredient."<init>":(Ljava/util/Collection;)V
+       8: areturn
+
+  public static vazkii.botania.api.recipe.StateIngredient compound(java.util.Collection<vazkii.botania.api.recipe.StateIngredient>);
+    Code:
+       0: new           #73                 // class vazkii/botania/common/crafting/CompoundStateIngredient
+       3: dup
+       4: aload_0
+       5: invokespecial #74                 // Method vazkii/botania/common/crafting/CompoundStateIngredient."<init>":(Ljava/util/Collection;)V
+       8: areturn
+
+  public static vazkii.botania.api.recipe.StateIngredient combine(vazkii.botania.api.recipe.StateIngredient, vazkii.botania.api.recipe.StateIngredient);
+    Code:
+       0: new           #80                 // class java/util/ArrayList
+       3: dup
+       4: invokespecial #81                 // Method java/util/ArrayList."<init>":()V
+       7: astore_2
+       8: aload_0
+       9: instanceof    #73                 // class vazkii/botania/common/crafting/CompoundStateIngredient
+      12: ifeq          34
+      15: aload_0
+      16: checkcast     #73                 // class vazkii/botania/common/crafting/CompoundStateIngredient
+      19: astore_3
+      20: aload_2
+      21: aload_3
+      22: invokevirtual #85                 // Method vazkii/botania/common/crafting/CompoundStateIngredient.getIngredients:()Lcom/google/common/collect/ImmutableSet;
+      25: invokeinterface #91,  2           // InterfaceMethod java/util/List.addAll:(Ljava/util/Collection;)Z
+      30: pop
+      31: goto          42
+      34: aload_2
+      35: aload_0
+      36: invokeinterface #95,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+      41: pop
+      42: aload_1
+      43: instanceof    #73                 // class vazkii/botania/common/crafting/CompoundStateIngredient
+      46: ifeq          68
+      49: aload_1
+      50: checkcast     #73                 // class vazkii/botania/common/crafting/CompoundStateIngredient
+      53: astore_3
+      54: aload_2
+      55: aload_3
+      56: invokevirtual #85                 // Method vazkii/botania/common/crafting/CompoundStateIngredient.getIngredients:()Lcom/google/common/collect/ImmutableSet;
+      59: invokeinterface #91,  2           // InterfaceMethod java/util/List.addAll:(Ljava/util/Collection;)Z
+      64: pop
+      65: goto          76
+      68: aload_2
+      69: aload_1
+      70: invokeinterface #95,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+      75: pop
+      76: new           #73                 // class vazkii/botania/common/crafting/CompoundStateIngredient
+      79: dup
+      80: aload_2
+      81: invokespecial #74                 // Method vazkii/botania/common/crafting/CompoundStateIngredient."<init>":(Ljava/util/Collection;)V
+      84: areturn
+
+  public static vazkii.botania.api.recipe.StateIngredient tagExcluding(net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block>, vazkii.botania.api.recipe.StateIngredient...);
+    Code:
+       0: new           #106                // class vazkii/botania/common/crafting/TagExcludingStateIngredient
+       3: dup
+       4: aload_0
+       5: invokevirtual #46                 // Method net/minecraft/tags/TagKey.f_203868_:()Lnet/minecraft/resources/ResourceLocation;
+       8: aload_1
+       9: invokestatic  #109                // InterfaceMethod java/util/List.of:([Ljava/lang/Object;)Ljava/util/List;
+      12: invokespecial #112                // Method vazkii/botania/common/crafting/TagExcludingStateIngredient."<init>":(Lnet/minecraft/resources/ResourceLocation;Ljava/util/Collection;)V
+      15: areturn
+
+  public static vazkii.botania.api.recipe.StateIngredient deserialize(com.google.gson.JsonObject);
+    Code:
+       0: aload_0
+       1: ldc           #118                // String type
+       3: invokestatic  #124                // Method net/minecraft/util/GsonHelper.m_13906_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)Ljava/lang/String;
+       6: astore_1
+       7: iconst_m1
+       8: istore_2
+       9: aload_1
+      10: invokevirtual #130                // Method java/lang/String.hashCode:()I
+      13: lookupswitch  { // 6
+
+           -1386164858: 114
+
+            -599340629: 142
+
+            -244027982: 128
+
+                114586: 72
+
+              93832333: 86
+
+             109757585: 100
+               default: 153
+          }
+      72: aload_1
+      73: ldc           #131                // String tag
+      75: invokevirtual #134                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+      78: ifeq          153
+      81: iconst_0
+      82: istore_2
+      83: goto          153
+      86: aload_1
+      87: ldc           #135                // String block
+      89: invokevirtual #134                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+      92: ifeq          153
+      95: iconst_1
+      96: istore_2
+      97: goto          153
+     100: aload_1
+     101: ldc           #136                // String state
+     103: invokevirtual #134                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+     106: ifeq          153
+     109: iconst_2
+     110: istore_2
+     111: goto          153
+     114: aload_1
+     115: ldc           #137                // String blocks
+     117: invokevirtual #134                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+     120: ifeq          153
+     123: iconst_3
+     124: istore_2
+     125: goto          153
+     128: aload_1
+     129: ldc           #139                // String tag_excluding
+     131: invokevirtual #134                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+     134: ifeq          153
+     137: iconst_4
+     138: istore_2
+     139: goto          153
+     142: aload_1
+     143: ldc           #140                // String compound
+     145: invokevirtual #134                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+     148: ifeq          153
+     151: iconst_5
+     152: istore_2
+     153: iload_2
+     154: tableswitch   { // 0 to 5
+
+                     0: 192
+
+                     1: 213
+
+                     2: 245
+
+                     3: 257
+
+                     4: 340
+
+                     5: 430
+               default: 527
+          }
+     192: new           #54                 // class vazkii/botania/common/crafting/TagStateIngredient
+     195: dup
+     196: new           #142                // class net/minecraft/resources/ResourceLocation
+     199: dup
+     200: aload_0
+     201: ldc           #131                // String tag
+     203: invokestatic  #124                // Method net/minecraft/util/GsonHelper.m_13906_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)Ljava/lang/String;
+     206: invokespecial #145                // Method net/minecraft/resources/ResourceLocation."<init>":(Ljava/lang/String;)V
+     209: invokespecial #57                 // Method vazkii/botania/common/crafting/TagStateIngredient."<init>":(Lnet/minecraft/resources/ResourceLocation;)V
+     212: areturn
+     213: new           #25                 // class vazkii/botania/common/crafting/BlockStateIngredient
+     216: dup
+     217: getstatic     #151                // Field net/minecraft/core/registries/BuiltInRegistries.f_256975_:Lnet/minecraft/core/DefaultedRegistry;
+     220: new           #142                // class net/minecraft/resources/ResourceLocation
+     223: dup
+     224: aload_0
+     225: ldc           #135                // String block
+     227: invokestatic  #124                // Method net/minecraft/util/GsonHelper.m_13906_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)Ljava/lang/String;
+     230: invokespecial #145                // Method net/minecraft/resources/ResourceLocation."<init>":(Ljava/lang/String;)V
+     233: invokeinterface #157,  2          // InterfaceMethod net/minecraft/core/DefaultedRegistry.m_7745_:(Lnet/minecraft/resources/ResourceLocation;)Ljava/lang/Object;
+     238: checkcast     #159                // class net/minecraft/world/level/block/Block
+     241: invokespecial #28                 // Method vazkii/botania/common/crafting/BlockStateIngredient."<init>":(Lnet/minecraft/world/level/block/Block;)V
+     244: areturn
+     245: new           #33                 // class vazkii/botania/common/crafting/BlockStateStateIngredient
+     248: dup
+     249: aload_0
+     250: invokestatic  #163                // Method readBlockState:(Lcom/google/gson/JsonObject;)Lnet/minecraft/world/level/block/state/BlockState;
+     253: invokespecial #36                 // Method vazkii/botania/common/crafting/BlockStateStateIngredient."<init>":(Lnet/minecraft/world/level/block/state/BlockState;)V
+     256: areturn
+     257: new           #80                 // class java/util/ArrayList
+     260: dup
+     261: invokespecial #81                 // Method java/util/ArrayList."<init>":()V
+     264: astore_3
+     265: aload_0
+     266: ldc           #137                // String blocks
+     268: invokestatic  #167                // Method net/minecraft/util/GsonHelper.m_13933_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)Lcom/google/gson/JsonArray;
+     271: invokevirtual #173                // Method com/google/gson/JsonArray.iterator:()Ljava/util/Iterator;
+     274: astore        4
+     276: aload         4
+     278: invokeinterface #179,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     283: ifeq          331
+     286: aload         4
+     288: invokeinterface #183,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     293: checkcast     #185                // class com/google/gson/JsonElement
+     296: astore        5
+     298: aload_3
+     299: getstatic     #151                // Field net/minecraft/core/registries/BuiltInRegistries.f_256975_:Lnet/minecraft/core/DefaultedRegistry;
+     302: new           #142                // class net/minecraft/resources/ResourceLocation
+     305: dup
+     306: aload         5
+     308: invokevirtual #189                // Method com/google/gson/JsonElement.getAsString:()Ljava/lang/String;
+     311: invokespecial #145                // Method net/minecraft/resources/ResourceLocation."<init>":(Ljava/lang/String;)V
+     314: invokeinterface #157,  2          // InterfaceMethod net/minecraft/core/DefaultedRegistry.m_7745_:(Lnet/minecraft/resources/ResourceLocation;)Ljava/lang/Object;
+     319: checkcast     #159                // class net/minecraft/world/level/block/Block
+     322: invokeinterface #95,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     327: pop
+     328: goto          276
+     331: new           #63                 // class vazkii/botania/common/crafting/BlocksStateIngredient
+     334: dup
+     335: aload_3
+     336: invokespecial #66                 // Method vazkii/botania/common/crafting/BlocksStateIngredient."<init>":(Ljava/util/Collection;)V
+     339: areturn
+     340: new           #142                // class net/minecraft/resources/ResourceLocation
+     343: dup
+     344: aload_0
+     345: ldc           #131                // String tag
+     347: invokestatic  #124                // Method net/minecraft/util/GsonHelper.m_13906_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)Ljava/lang/String;
+     350: invokespecial #145                // Method net/minecraft/resources/ResourceLocation."<init>":(Ljava/lang/String;)V
+     353: astore        4
+     355: new           #80                 // class java/util/ArrayList
+     358: dup
+     359: invokespecial #81                 // Method java/util/ArrayList."<init>":()V
+     362: astore        5
+     364: aload_0
+     365: ldc           #191                // String exclude
+     367: invokestatic  #167                // Method net/minecraft/util/GsonHelper.m_13933_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)Lcom/google/gson/JsonArray;
+     370: invokevirtual #173                // Method com/google/gson/JsonArray.iterator:()Ljava/util/Iterator;
+     373: astore        6
+     375: aload         6
+     377: invokeinterface #179,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     382: ifeq          418
+     385: aload         6
+     387: invokeinterface #183,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     392: checkcast     #185                // class com/google/gson/JsonElement
+     395: astore        7
+     397: aload         5
+     399: aload         7
+     401: ldc           #195                // String exclude entry
+     403: invokestatic  #199                // Method net/minecraft/util/GsonHelper.m_13918_:(Lcom/google/gson/JsonElement;Ljava/lang/String;)Lcom/google/gson/JsonObject;
+     406: invokestatic  #201                // Method deserialize:(Lcom/google/gson/JsonObject;)Lvazkii/botania/api/recipe/StateIngredient;
+     409: invokeinterface #95,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     414: pop
+     415: goto          375
+     418: new           #106                // class vazkii/botania/common/crafting/TagExcludingStateIngredient
+     421: dup
+     422: aload         4
+     424: aload         5
+     426: invokespecial #112                // Method vazkii/botania/common/crafting/TagExcludingStateIngredient."<init>":(Lnet/minecraft/resources/ResourceLocation;Ljava/util/Collection;)V
+     429: areturn
+     430: new           #80                 // class java/util/ArrayList
+     433: dup
+     434: invokespecial #81                 // Method java/util/ArrayList."<init>":()V
+     437: astore        6
+     439: aload_0
+     440: ldc           #202                // String ingredients
+     442: invokestatic  #167                // Method net/minecraft/util/GsonHelper.m_13933_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)Lcom/google/gson/JsonArray;
+     445: invokevirtual #173                // Method com/google/gson/JsonArray.iterator:()Ljava/util/Iterator;
+     448: astore        7
+     450: aload         7
+     452: invokeinterface #179,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     457: ifeq          517
+     460: aload         7
+     462: invokeinterface #183,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     467: checkcast     #185                // class com/google/gson/JsonElement
+     470: astore        8
+     472: aload         8
+     474: invokevirtual #205                // Method com/google/gson/JsonElement.isJsonObject:()Z
+     477: ifne          498
+     480: new           #207                // class com/google/gson/JsonParseException
+     483: dup
+     484: aload         8
+     486: invokestatic  #211                // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+     489: invokedynamic #223,  0            // InvokeDynamic #0:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+     494: invokespecial #224                // Method com/google/gson/JsonParseException."<init>":(Ljava/lang/String;)V
+     497: athrow
+     498: aload         6
+     500: aload         8
+     502: invokevirtual #228                // Method com/google/gson/JsonElement.getAsJsonObject:()Lcom/google/gson/JsonObject;
+     505: invokestatic  #201                // Method deserialize:(Lcom/google/gson/JsonObject;)Lvazkii/botania/api/recipe/StateIngredient;
+     508: invokeinterface #95,  2           // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     513: pop
+     514: goto          450
+     517: new           #73                 // class vazkii/botania/common/crafting/CompoundStateIngredient
+     520: dup
+     521: aload         6
+     523: invokespecial #74                 // Method vazkii/botania/common/crafting/CompoundStateIngredient."<init>":(Ljava/util/Collection;)V
+     526: areturn
+     527: new           #207                // class com/google/gson/JsonParseException
+     530: dup
+     531: ldc           #230                // String Unknown type!
+     533: invokespecial #224                // Method com/google/gson/JsonParseException."<init>":(Ljava/lang/String;)V
+     536: athrow
+
+  public static vazkii.botania.api.recipe.StateIngredient tryDeserialize(com.google.gson.JsonObject);
+    Code:
+       0: aload_0
+       1: invokestatic  #201                // Method deserialize:(Lcom/google/gson/JsonObject;)Lvazkii/botania/api/recipe/StateIngredient;
+       4: invokestatic  #244                // Method clearTheAir:(Lvazkii/botania/api/recipe/StateIngredient;)Lvazkii/botania/api/recipe/StateIngredient;
+       7: areturn
+
+  public static vazkii.botania.api.recipe.StateIngredient clearTheAir(vazkii.botania.api.recipe.StateIngredient);
+    Code:
+       0: aload_0
+       1: instanceof    #25                 // class vazkii/botania/common/crafting/BlockStateIngredient
+       4: ifne          14
+       7: aload_0
+       8: instanceof    #33                 // class vazkii/botania/common/crafting/BlockStateStateIngredient
+      11: ifeq          31
+      14: aload_0
+      15: getstatic     #249                // Field net/minecraft/world/level/block/Blocks.f_50016_:Lnet/minecraft/world/level/block/Block;
+      18: invokevirtual #253                // Method net/minecraft/world/level/block/Block.m_49966_:()Lnet/minecraft/world/level/block/state/BlockState;
+      21: invokeinterface #259,  2          // InterfaceMethod vazkii/botania/api/recipe/StateIngredient.test:(Lnet/minecraft/world/level/block/state/BlockState;)Z
+      26: ifeq          155
+      29: aconst_null
+      30: areturn
+      31: aload_0
+      32: instanceof    #63                 // class vazkii/botania/common/crafting/BlocksStateIngredient
+      35: ifeq          94
+      38: aload_0
+      39: checkcast     #63                 // class vazkii/botania/common/crafting/BlocksStateIngredient
+      42: astore_1
+      43: aload_1
+      44: getfield      #262                // Field vazkii/botania/common/crafting/BlocksStateIngredient.blocks:Lcom/google/common/collect/ImmutableSet;
+      47: astore_3
+      48: new           #80                 // class java/util/ArrayList
+      51: dup
+      52: aload_3
+      53: invokespecial #263                // Method java/util/ArrayList."<init>":(Ljava/util/Collection;)V
+      56: astore        4
+      58: aload         4
+      60: invokedynamic #280,  0            // InvokeDynamic #1:test:()Ljava/util/function/Predicate;
+      65: invokeinterface #284,  2          // InterfaceMethod java/util/List.removeIf:(Ljava/util/function/Predicate;)Z
+      70: ifeq          91
+      73: aload         4
+      75: invokeinterface #287,  1          // InterfaceMethod java/util/List.size:()I
+      80: ifne          85
+      83: aconst_null
+      84: areturn
+      85: aload         4
+      87: invokestatic  #291                // Method of:(Ljava/util/Collection;)Lvazkii/botania/api/recipe/StateIngredient;
+      90: areturn
+      91: goto          155
+      94: aload_0
+      95: instanceof    #73                 // class vazkii/botania/common/crafting/CompoundStateIngredient
+      98: ifeq          155
+     101: aload_0
+     102: checkcast     #73                 // class vazkii/botania/common/crafting/CompoundStateIngredient
+     105: astore_2
+     106: aload_2
+     107: invokevirtual #85                 // Method vazkii/botania/common/crafting/CompoundStateIngredient.getIngredients:()Lcom/google/common/collect/ImmutableSet;
+     110: invokevirtual #297                // Method com/google/common/collect/ImmutableSet.stream:()Ljava/util/stream/Stream;
+     113: invokedynamic #305,  0            // InvokeDynamic #2:apply:()Ljava/util/function/Function;
+     118: invokeinterface #311,  2          // InterfaceMethod java/util/stream/Stream.map:(Ljava/util/function/Function;)Ljava/util/stream/Stream;
+     123: invokedynamic #320,  0            // InvokeDynamic #3:test:()Ljava/util/function/Predicate;
+     128: invokeinterface #324,  2          // InterfaceMethod java/util/stream/Stream.filter:(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;
+     133: invokeinterface #328,  1          // InterfaceMethod java/util/stream/Stream.toList:()Ljava/util/List;
+     138: astore_3
+     139: aload_3
+     140: invokeinterface #331,  1          // InterfaceMethod java/util/List.isEmpty:()Z
+     145: ifeq          150
+     148: aconst_null
+     149: areturn
+     150: aload_3
+     151: invokestatic  #333                // Method compound:(Ljava/util/Collection;)Lvazkii/botania/api/recipe/StateIngredient;
+     154: areturn
+     155: aload_0
+     156: areturn
+
+  public static vazkii.botania.api.recipe.StateIngredient read(net.minecraft.network.FriendlyByteBuf);
+    Code:
+       0: aload_0
+       1: invokevirtual #345                // Method net/minecraft/network/FriendlyByteBuf.m_130242_:()I
+       4: tableswitch   { // 0 to 3
+
+                     0: 36
+
+                     1: 101
+
+                     2: 124
+
+                     3: 139
+               default: 190
+          }
+      36: aload_0
+      37: invokevirtual #345                // Method net/minecraft/network/FriendlyByteBuf.m_130242_:()I
+      40: istore_1
+      41: new           #347                // class java/util/HashSet
+      44: dup
+      45: invokespecial #348                // Method java/util/HashSet."<init>":()V
+      48: astore_2
+      49: iconst_0
+      50: istore_3
+      51: iload_3
+      52: iload_1
+      53: if_icmpge     92
+      56: aload_0
+      57: invokevirtual #345                // Method net/minecraft/network/FriendlyByteBuf.m_130242_:()I
+      60: istore        4
+      62: getstatic     #151                // Field net/minecraft/core/registries/BuiltInRegistries.f_256975_:Lnet/minecraft/core/DefaultedRegistry;
+      65: iload         4
+      67: invokeinterface #354,  2          // InterfaceMethod net/minecraft/core/DefaultedRegistry.m_7942_:(I)Ljava/lang/Object;
+      72: checkcast     #159                // class net/minecraft/world/level/block/Block
+      75: astore        5
+      77: aload_2
+      78: aload         5
+      80: invokeinterface #355,  2          // InterfaceMethod java/util/Set.add:(Ljava/lang/Object;)Z
+      85: pop
+      86: iinc          3, 1
+      89: goto          51
+      92: new           #63                 // class vazkii/botania/common/crafting/BlocksStateIngredient
+      95: dup
+      96: aload_2
+      97: invokespecial #66                 // Method vazkii/botania/common/crafting/BlocksStateIngredient."<init>":(Ljava/util/Collection;)V
+     100: areturn
+     101: new           #25                 // class vazkii/botania/common/crafting/BlockStateIngredient
+     104: dup
+     105: getstatic     #151                // Field net/minecraft/core/registries/BuiltInRegistries.f_256975_:Lnet/minecraft/core/DefaultedRegistry;
+     108: aload_0
+     109: invokevirtual #345                // Method net/minecraft/network/FriendlyByteBuf.m_130242_:()I
+     112: invokeinterface #354,  2          // InterfaceMethod net/minecraft/core/DefaultedRegistry.m_7942_:(I)Ljava/lang/Object;
+     117: checkcast     #159                // class net/minecraft/world/level/block/Block
+     120: invokespecial #28                 // Method vazkii/botania/common/crafting/BlockStateIngredient."<init>":(Lnet/minecraft/world/level/block/Block;)V
+     123: areturn
+     124: new           #33                 // class vazkii/botania/common/crafting/BlockStateStateIngredient
+     127: dup
+     128: aload_0
+     129: invokevirtual #345                // Method net/minecraft/network/FriendlyByteBuf.m_130242_:()I
+     132: invokestatic  #359                // Method net/minecraft/world/level/block/Block.m_49803_:(I)Lnet/minecraft/world/level/block/state/BlockState;
+     135: invokespecial #36                 // Method vazkii/botania/common/crafting/BlockStateStateIngredient."<init>":(Lnet/minecraft/world/level/block/state/BlockState;)V
+     138: areturn
+     139: aload_0
+     140: invokevirtual #345                // Method net/minecraft/network/FriendlyByteBuf.m_130242_:()I
+     143: istore_3
+     144: new           #347                // class java/util/HashSet
+     147: dup
+     148: invokespecial #348                // Method java/util/HashSet."<init>":()V
+     151: astore        4
+     153: iconst_0
+     154: istore        5
+     156: iload         5
+     158: iload_3
+     159: if_icmpge     180
+     162: aload         4
+     164: aload_0
+     165: invokestatic  #361                // Method read:(Lnet/minecraft/network/FriendlyByteBuf;)Lvazkii/botania/api/recipe/StateIngredient;
+     168: invokeinterface #355,  2          // InterfaceMethod java/util/Set.add:(Ljava/lang/Object;)Z
+     173: pop
+     174: iinc          5, 1
+     177: goto          156
+     180: new           #73                 // class vazkii/botania/common/crafting/CompoundStateIngredient
+     183: dup
+     184: aload         4
+     186: invokespecial #74                 // Method vazkii/botania/common/crafting/CompoundStateIngredient."<init>":(Ljava/util/Collection;)V
+     189: areturn
+     190: new           #363                // class java/lang/IllegalArgumentException
+     193: dup
+     194: ldc_w         #365                // String Unknown input discriminator!
+     197: invokespecial #366                // Method java/lang/IllegalArgumentException."<init>":(Ljava/lang/String;)V
+     200: athrow
+
+  public static com.google.gson.JsonObject serializeBlockState(net.minecraft.world.level.block.state.BlockState);
+    Code:
+       0: aload_0
+       1: invokestatic  #385                // Method net/minecraft/nbt/NbtUtils.m_129202_:(Lnet/minecraft/world/level/block/state/BlockState;)Lnet/minecraft/nbt/CompoundTag;
+       4: astore_1
+       5: aload_1
+       6: ldc_w         #387                // String Name
+       9: ldc_w         #389                // String name
+      12: invokestatic  #395                // Method vazkii/botania/common/helper/ItemNBTHelper.renameTag:(Lnet/minecraft/nbt/CompoundTag;Ljava/lang/String;Ljava/lang/String;)V
+      15: aload_1
+      16: ldc_w         #397                // String Properties
+      19: ldc_w         #399                // String properties
+      22: invokestatic  #395                // Method vazkii/botania/common/helper/ItemNBTHelper.renameTag:(Lnet/minecraft/nbt/CompoundTag;Ljava/lang/String;Ljava/lang/String;)V
+      25: new           #401                // class com/mojang/serialization/Dynamic
+      28: dup
+      29: getstatic     #407                // Field net/minecraft/nbt/NbtOps.f_128958_:Lnet/minecraft/nbt/NbtOps;
+      32: aload_1
+      33: invokespecial #410                // Method com/mojang/serialization/Dynamic."<init>":(Lcom/mojang/serialization/DynamicOps;Ljava/lang/Object;)V
+      36: astore_2
+      37: aload_2
+      38: getstatic     #416                // Field com/mojang/serialization/JsonOps.INSTANCE:Lcom/mojang/serialization/JsonOps;
+      41: invokevirtual #420                // Method com/mojang/serialization/Dynamic.convert:(Lcom/mojang/serialization/DynamicOps;)Lcom/mojang/serialization/Dynamic;
+      44: invokevirtual #423                // Method com/mojang/serialization/Dynamic.getValue:()Ljava/lang/Object;
+      47: checkcast     #185                // class com/google/gson/JsonElement
+      50: invokevirtual #228                // Method com/google/gson/JsonElement.getAsJsonObject:()Lcom/google/gson/JsonObject;
+      53: areturn
+
+  public static net.minecraft.world.level.block.state.BlockState readBlockState(com.google.gson.JsonObject);
+    Code:
+       0: new           #401                // class com/mojang/serialization/Dynamic
+       3: dup
+       4: getstatic     #416                // Field com/mojang/serialization/JsonOps.INSTANCE:Lcom/mojang/serialization/JsonOps;
+       7: aload_0
+       8: invokespecial #410                // Method com/mojang/serialization/Dynamic."<init>":(Lcom/mojang/serialization/DynamicOps;Ljava/lang/Object;)V
+      11: getstatic     #407                // Field net/minecraft/nbt/NbtOps.f_128958_:Lnet/minecraft/nbt/NbtOps;
+      14: invokevirtual #420                // Method com/mojang/serialization/Dynamic.convert:(Lcom/mojang/serialization/DynamicOps;)Lcom/mojang/serialization/Dynamic;
+      17: invokevirtual #423                // Method com/mojang/serialization/Dynamic.getValue:()Ljava/lang/Object;
+      20: checkcast     #430                // class net/minecraft/nbt/CompoundTag
+      23: astore_1
+      24: aload_1
+      25: ldc_w         #389                // String name
+      28: ldc_w         #387                // String Name
+      31: invokestatic  #395                // Method vazkii/botania/common/helper/ItemNBTHelper.renameTag:(Lnet/minecraft/nbt/CompoundTag;Ljava/lang/String;Ljava/lang/String;)V
+      34: aload_1
+      35: ldc_w         #399                // String properties
+      38: ldc_w         #397                // String Properties
+      41: invokestatic  #395                // Method vazkii/botania/common/helper/ItemNBTHelper.renameTag:(Lnet/minecraft/nbt/CompoundTag;Ljava/lang/String;Ljava/lang/String;)V
+      44: aload_1
+      45: ldc_w         #387                // String Name
+      48: invokevirtual #433                // Method net/minecraft/nbt/CompoundTag.m_128461_:(Ljava/lang/String;)Ljava/lang/String;
+      51: astore_2
+      52: aload_2
+      53: invokestatic  #437                // Method net/minecraft/resources/ResourceLocation.m_135820_:(Ljava/lang/String;)Lnet/minecraft/resources/ResourceLocation;
+      56: astore_3
+      57: aload_3
+      58: ifnull        76
+      61: getstatic     #151                // Field net/minecraft/core/registries/BuiltInRegistries.f_256975_:Lnet/minecraft/core/DefaultedRegistry;
+      64: aload_3
+      65: invokeinterface #441,  2          // InterfaceMethod net/minecraft/core/DefaultedRegistry.m_6612_:(Lnet/minecraft/resources/ResourceLocation;)Ljava/util/Optional;
+      70: invokevirtual #444                // Method java/util/Optional.isEmpty:()Z
+      73: ifeq          90
+      76: new           #363                // class java/lang/IllegalArgumentException
+      79: dup
+      80: aload_2
+      81: invokedynamic #447,  0            // InvokeDynamic #4:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+      86: invokespecial #366                // Method java/lang/IllegalArgumentException."<init>":(Ljava/lang/String;)V
+      89: athrow
+      90: getstatic     #151                // Field net/minecraft/core/registries/BuiltInRegistries.f_256975_:Lnet/minecraft/core/DefaultedRegistry;
+      93: invokeinterface #451,  1          // InterfaceMethod net/minecraft/core/DefaultedRegistry.m_255303_:()Lnet/minecraft/core/HolderLookup$RegistryLookup;
+      98: aload_1
+      99: invokestatic  #455                // Method net/minecraft/nbt/NbtUtils.m_247651_:(Lnet/minecraft/core/HolderGetter;Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/world/level/block/state/BlockState;
+     102: areturn
+
+  private static boolean lambda$clearTheAir$0(net.minecraft.world.level.block.Block);
+    Code:
+       0: aload_0
+       1: getstatic     #249                // Field net/minecraft/world/level/block/Blocks.f_50016_:Lnet/minecraft/world/level/block/Block;
+       4: if_acmpne     11
+       7: iconst_1
+       8: goto          12
+      11: iconst_0
+      12: ireturn
+}

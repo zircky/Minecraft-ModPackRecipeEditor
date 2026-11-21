@@ -53,7 +53,8 @@ public final class DefaultStaticAnalysisService implements StaticAnalysisService
         report(progress,"Indexing fluids...",0.72);
         resources.addAll(new FluidResourceIndexer().index(scan,localization,tags,"en_us",diagnostics));
         report(progress,"Parsing recipes...",0.8);
-        final var recipes=new StaticRecipeScanner(integration.parsers(),integration.layout()).scan(scan.documents(),diagnostics);
+        final var semanticNames=new RecipeSemanticLocalization();
+        final var recipes=new StaticRecipeScanner(integration.parsers(),integration.layout()).scan(scan.documents(),diagnostics).stream().map(recipe->semanticNames.localize(recipe,localization)).toList();
         report(progress,"Building search indexes...",0.95);
         final var index=new RecipeIndex(recipes,tags);
         index.conflicts().forEach((id,values)->diagnostics.add(new ImportDiagnostic(ScanStatus.WARNING,id.toString(),

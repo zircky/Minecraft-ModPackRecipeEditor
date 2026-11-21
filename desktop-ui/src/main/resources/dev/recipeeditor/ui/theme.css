@@ -10,6 +10,8 @@
     -mre-focus: #82aaff;
     -mre-selection: #2e436e;
     -mre-hover: #35383f;
+    -mre-combo-selection: #484b52;
+    -mre-combo-focus: #737780;
     -mre-error: #f28b82;
     -mre-warning: #e6bf7a;
     -fx-font-family: "Segoe UI";
@@ -54,6 +56,48 @@
 .table-row-cell, .list-cell { -fx-background-color: -mre-panel; -fx-text-fill: -mre-text; }
 .table-row-cell:odd, .list-cell:odd { -fx-background-color: -mre-surface; }
 .table-row-cell:selected, .list-cell:filled:selected { -fx-background-color: -mre-selection; }
+/* ComboBox display cells share ListCell's selected/odd states, but not list selection paint. */
+.combo-box-base {
+    -fx-background-color: -mre-surface;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4;
+    -fx-border-color: -mre-border;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+}
+.combo-box-base:hover, .combo-box-base:showing { -fx-background-color: -mre-hover; }
+.combo-box-base:focused {
+    -fx-background-insets: 0;
+    -fx-border-color: -mre-combo-focus;
+}
+.combo-box-base:disabled { -fx-opacity: 0.5; -fx-background-color: -mre-panel; }
+.combo-box .list-cell,
+.combo-box .list-cell:odd,
+.combo-box .list-cell:filled:hover,
+.combo-box .list-cell:filled:selected {
+    -fx-background-color: transparent;
+    -fx-text-fill: -mre-text;
+}
+.combo-box .arrow-button { -fx-background-color: transparent; -fx-background-insets: 0; }
+.combo-box .arrow-button .arrow { -fx-background-color: -mre-text; }
+.combo-box-popup .list-view {
+    -fx-background-color: -mre-surface;
+    -fx-border-color: -mre-border;
+    -fx-border-width: 1;
+    -fx-selection-bar: -mre-combo-selection;
+    -fx-selection-bar-non-focused: -mre-combo-selection;
+    -fx-cell-focus-inner-border: -mre-combo-focus;
+}
+.combo-box-popup .list-cell, .combo-box-popup .list-cell:odd {
+    -fx-background-color: -mre-surface;
+    -fx-text-fill: -mre-text;
+}
+.combo-box-popup .list-cell:filled:hover { -fx-background-color: -mre-hover; }
+.combo-box-popup .list-cell:filled:selected {
+    -fx-background-color: -mre-combo-selection;
+    -fx-text-fill: white;
+}
+.combo-box-popup .list-cell:filled:selected:hover { -fx-background-color: #535760; }
 .table-cell { -fx-text-fill: -mre-text; -fx-padding: 7 8; }
 .table-view .column-header, .table-view .filler, .tab-pane .tab-header-background { -fx-background-color: -mre-surface; }
 .tab { -fx-padding: 6 12; }

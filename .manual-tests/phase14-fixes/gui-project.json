@@ -1,0 +1,36 @@
+{
+  "formatVersion" : 1,
+  "sha256" : "7283035f94de8566734021d7cf9026a33e5b2eba5c7ea9a31e82f7a7077de835",
+  "project" : {
+    "modpackDirectory" : "G:\\PrismLauncher\\instances\\ISG-0.6.0-alpha.1-harsh",
+    "changes" : [ {
+      "id" : "minecraft:tnt",
+      "type" : "UPDATE",
+      "timestamp" : "2026-11-21T15:58:08.190139200Z",
+      "originals" : [ {
+        "hash" : "aa56447ab88becff1db35cd5c6add8a0bfea29a57c9c9cc8f81fdc23ad2efa63",
+        "sourceType" : "MOD_JAR",
+        "modIds" : [ "biomesoplenty" ],
+        "archivePath" : "G:\\PrismLauncher\\instances\\ISG-0.6.0-alpha.1-harsh\\minecraft\\mods\\BiomesOPlenty-1.20.1-18.0.0.592.jar",
+        "internalPath" : "data/minecraft/recipes/tnt.json",
+        "method" : "Static resource scan"
+      }, {
+        "hash" : "37e7ba01055a96fac7bef179ef79f01898c1a6984d51d2eb48f310486d3fe38c",
+        "sourceType" : "DATAPACK",
+        "modIds" : [ ],
+        "archivePath" : "G:\\PrismLauncher\\instances\\ISG-0.6.0-alpha.1-harsh\\minecraft\\saves\\MRE E2E 20261118\\datapacks\\recipe_editor_147a0422c59e453fb2b269415304ae8d",
+        "internalPath" : "data/minecraft/recipes/tnt.json",
+        "method" : "Local static resource scan"
+      } ],
+      "replacementSources" : [ {
+        "sourceType" : "MOD_JAR",
+        "modIds" : [ "biomesoplenty" ],
+        "archivePath" : "G:\\PrismLauncher\\instances\\ISG-0.6.0-alpha.1-harsh\\minecraft\\mods\\BiomesOPlenty-1.20.1-18.0.0.592.jar",
+        "internalPath" : "data/minecraft/recipes/tnt.json",
+        "method" : "Static resource scan"
+      } ],
+      "replacementJson" : [ "{\n  \"type\" : \"minecraft:crafting_shaped\",\n  \"pattern\" : [ \"X#X\", \"#X#\", \"X#X\" ],\n  \"key\" : {\n    \"#\" : {\n      \"tag\" : \"minecraft:sand\"\n    },\n    \"X\" : {\n      \"item\" : \"minecraft:gunpowder\"\n    }\n  },\n  \"result\" : {\n    \"item\" : \"minecraft:tnt\",\n    \"count\" : 2\n  }\n}" ],
+      "metadata" : { }
+    } ]
+  }
+}

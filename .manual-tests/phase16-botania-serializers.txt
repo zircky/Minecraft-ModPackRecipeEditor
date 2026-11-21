@@ -1,0 +1,340 @@
+Compiled from "BotanicalBreweryRecipe.java"
+public class vazkii.botania.common.crafting.BotanicalBreweryRecipe$Serializer implements net.minecraft.world.item.crafting.RecipeSerializer<vazkii.botania.common.crafting.BotanicalBreweryRecipe> {
+  public vazkii.botania.common.crafting.BotanicalBreweryRecipe$Serializer();
+    Code:
+       0: aload_0
+       1: invokespecial #20                 // Method java/lang/Object."<init>":()V
+       4: return
+
+  public vazkii.botania.common.crafting.BotanicalBreweryRecipe fromJson(net.minecraft.resources.ResourceLocation, com.google.gson.JsonObject);
+    Code:
+       0: aload_2
+       1: ldc           #27                 // String brew
+       3: invokestatic  #33                 // Method net/minecraft/util/GsonHelper.m_13906_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)Ljava/lang/String;
+       6: astore_3
+       7: aload_3
+       8: invokestatic  #39                 // Method net/minecraft/resources/ResourceLocation.m_135820_:(Ljava/lang/String;)Lnet/minecraft/resources/ResourceLocation;
+      11: astore        4
+      13: invokestatic  #45                 // InterfaceMethod vazkii/botania/api/BotaniaAPI.instance:()Lvazkii/botania/api/BotaniaAPI;
+      16: invokeinterface #49,  1           // InterfaceMethod vazkii/botania/api/BotaniaAPI.getBrewRegistry:()Lnet/minecraft/core/Registry;
+      21: aload         4
+      23: invokeinterface #55,  2           // InterfaceMethod net/minecraft/core/Registry.m_6612_:(Lnet/minecraft/resources/ResourceLocation;)Ljava/util/Optional;
+      28: aload_3
+      29: invokedynamic #75,  0             // InvokeDynamic #0:get:(Ljava/lang/String;)Ljava/util/function/Supplier;
+      34: invokevirtual #81                 // Method java/util/Optional.orElseThrow:(Ljava/util/function/Supplier;)Ljava/lang/Object;
+      37: checkcast     #83                 // class vazkii/botania/api/brew/Brew
+      40: astore        5
+      42: aload_2
+      43: ldc           #85                 // String ingredients
+      45: invokestatic  #89                 // Method net/minecraft/util/GsonHelper.m_13933_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)Lcom/google/gson/JsonArray;
+      48: astore        6
+      50: new           #91                 // class java/util/ArrayList
+      53: dup
+      54: invokespecial #92                 // Method java/util/ArrayList."<init>":()V
+      57: astore        7
+      59: aload         6
+      61: invokevirtual #98                 // Method com/google/gson/JsonArray.iterator:()Ljava/util/Iterator;
+      64: astore        8
+      66: aload         8
+      68: invokeinterface #110,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+      73: ifeq          104
+      76: aload         8
+      78: invokeinterface #113,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      83: checkcast     #115                // class com/google/gson/JsonElement
+      86: astore        9
+      88: aload         7
+      90: aload         9
+      92: invokestatic  #121                // Method net/minecraft/world/item/crafting/Ingredient.m_43917_:(Lcom/google/gson/JsonElement;)Lnet/minecraft/world/item/crafting/Ingredient;
+      95: invokeinterface #125,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     100: pop
+     101: goto          66
+     104: new           #10                 // class vazkii/botania/common/crafting/BotanicalBreweryRecipe
+     107: dup
+     108: aload_1
+     109: aload         5
+     111: aload         7
+     113: iconst_0
+     114: anewarray     #117                // class net/minecraft/world/item/crafting/Ingredient
+     117: invokeinterface #129,  2          // InterfaceMethod java/util/List.toArray:([Ljava/lang/Object;)[Ljava/lang/Object;
+     122: checkcast     #131                // class "[Lnet/minecraft/world/item/crafting/Ingredient;"
+     125: invokespecial #134                // Method vazkii/botania/common/crafting/BotanicalBreweryRecipe."<init>":(Lnet/minecraft/resources/ResourceLocation;Lvazkii/botania/api/brew/Brew;[Lnet/minecraft/world/item/crafting/Ingredient;)V
+     128: areturn
+
+  public vazkii.botania.common.crafting.BotanicalBreweryRecipe fromNetwork(net.minecraft.resources.ResourceLocation, net.minecraft.network.FriendlyByteBuf);
+    Code:
+       0: aload_2
+       1: invokevirtual #157                // Method net/minecraft/network/FriendlyByteBuf.m_130281_:()Lnet/minecraft/resources/ResourceLocation;
+       4: astore_3
+       5: invokestatic  #45                 // InterfaceMethod vazkii/botania/api/BotaniaAPI.instance:()Lvazkii/botania/api/BotaniaAPI;
+       8: invokeinterface #49,  1           // InterfaceMethod vazkii/botania/api/BotaniaAPI.getBrewRegistry:()Lnet/minecraft/core/Registry;
+      13: aload_3
+      14: invokeinterface #161,  2          // InterfaceMethod net/minecraft/core/Registry.m_7745_:(Lnet/minecraft/resources/ResourceLocation;)Ljava/lang/Object;
+      19: checkcast     #83                 // class vazkii/botania/api/brew/Brew
+      22: astore        4
+      24: aload_2
+      25: invokevirtual #165                // Method net/minecraft/network/FriendlyByteBuf.m_130242_:()I
+      28: anewarray     #117                // class net/minecraft/world/item/crafting/Ingredient
+      31: astore        5
+      33: iconst_0
+      34: istore        6
+      36: iload         6
+      38: aload         5
+      40: arraylength
+      41: if_icmpge     59
+      44: aload         5
+      46: iload         6
+      48: aload_2
+      49: invokestatic  #169                // Method net/minecraft/world/item/crafting/Ingredient.m_43940_:(Lnet/minecraft/network/FriendlyByteBuf;)Lnet/minecraft/world/item/crafting/Ingredient;
+      52: aastore
+      53: iinc          6, 1
+      56: goto          36
+      59: new           #10                 // class vazkii/botania/common/crafting/BotanicalBreweryRecipe
+      62: dup
+      63: aload_1
+      64: aload         4
+      66: aload         5
+      68: invokespecial #134                // Method vazkii/botania/common/crafting/BotanicalBreweryRecipe."<init>":(Lnet/minecraft/resources/ResourceLocation;Lvazkii/botania/api/brew/Brew;[Lnet/minecraft/world/item/crafting/Ingredient;)V
+      71: areturn
+
+  public void toNetwork(net.minecraft.network.FriendlyByteBuf, vazkii.botania.common.crafting.BotanicalBreweryRecipe);
+    Code:
+       0: invokestatic  #45                 // InterfaceMethod vazkii/botania/api/BotaniaAPI.instance:()Lvazkii/botania/api/BotaniaAPI;
+       3: invokeinterface #49,  1           // InterfaceMethod vazkii/botania/api/BotaniaAPI.getBrewRegistry:()Lnet/minecraft/core/Registry;
+       8: aload_2
+       9: invokevirtual #179                // Method vazkii/botania/common/crafting/BotanicalBreweryRecipe.getBrew:()Lvazkii/botania/api/brew/Brew;
+      12: invokeinterface #183,  2          // InterfaceMethod net/minecraft/core/Registry.m_7981_:(Ljava/lang/Object;)Lnet/minecraft/resources/ResourceLocation;
+      17: astore_3
+      18: aload_1
+      19: aload_3
+      20: invokevirtual #187                // Method net/minecraft/network/FriendlyByteBuf.m_130085_:(Lnet/minecraft/resources/ResourceLocation;)Lnet/minecraft/network/FriendlyByteBuf;
+      23: pop
+      24: aload_1
+      25: aload_2
+      26: invokevirtual #191                // Method vazkii/botania/common/crafting/BotanicalBreweryRecipe.m_7527_:()Lnet/minecraft/core/NonNullList;
+      29: invokevirtual #196                // Method net/minecraft/core/NonNullList.size:()I
+      32: invokevirtual #200                // Method net/minecraft/network/FriendlyByteBuf.m_130130_:(I)Lnet/minecraft/network/FriendlyByteBuf;
+      35: pop
+      36: aload_2
+      37: invokevirtual #191                // Method vazkii/botania/common/crafting/BotanicalBreweryRecipe.m_7527_:()Lnet/minecraft/core/NonNullList;
+      40: invokevirtual #201                // Method net/minecraft/core/NonNullList.iterator:()Ljava/util/Iterator;
+      43: astore        4
+      45: aload         4
+      47: invokeinterface #110,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+      52: ifeq          76
+      55: aload         4
+      57: invokeinterface #113,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      62: checkcast     #117                // class net/minecraft/world/item/crafting/Ingredient
+      65: astore        5
+      67: aload         5
+      69: aload_1
+      70: invokevirtual #205                // Method net/minecraft/world/item/crafting/Ingredient.m_43923_:(Lnet/minecraft/network/FriendlyByteBuf;)V
+      73: goto          45
+      76: return
+
+  public void m_6178_(net.minecraft.network.FriendlyByteBuf, net.minecraft.world.item.crafting.Recipe);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: checkcast     #10                 // class vazkii/botania/common/crafting/BotanicalBreweryRecipe
+       6: invokevirtual #213                // Method toNetwork:(Lnet/minecraft/network/FriendlyByteBuf;Lvazkii/botania/common/crafting/BotanicalBreweryRecipe;)V
+       9: return
+
+  public net.minecraft.world.item.crafting.Recipe m_8005_(net.minecraft.resources.ResourceLocation, net.minecraft.network.FriendlyByteBuf);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: invokevirtual #217                // Method fromNetwork:(Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/network/FriendlyByteBuf;)Lvazkii/botania/common/crafting/BotanicalBreweryRecipe;
+       6: areturn
+
+  public net.minecraft.world.item.crafting.Recipe m_6729_(net.minecraft.resources.ResourceLocation, com.google.gson.JsonObject);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: invokevirtual #221                // Method fromJson:(Lnet/minecraft/resources/ResourceLocation;Lcom/google/gson/JsonObject;)Lvazkii/botania/common/crafting/BotanicalBreweryRecipe;
+       6: areturn
+
+  private static com.google.gson.JsonParseException lambda$fromJson$0(java.lang.String);
+    Code:
+       0: new           #223                // class com/google/gson/JsonParseException
+       3: dup
+       4: aload_0
+       5: invokedynamic #235,  0            // InvokeDynamic #1:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+      10: invokespecial #238                // Method com/google/gson/JsonParseException."<init>":(Ljava/lang/String;)V
+      13: areturn
+}
+Error: class not found: vazkii.botania.common.crafting.PetalApothecaryRecipe$Serializer
+Compiled from "ManaInfusionRecipe.java"
+public class vazkii.botania.common.crafting.ManaInfusionRecipe$Serializer implements net.minecraft.world.item.crafting.RecipeSerializer<vazkii.botania.common.crafting.ManaInfusionRecipe> {
+  public vazkii.botania.common.crafting.ManaInfusionRecipe$Serializer();
+    Code:
+       0: aload_0
+       1: invokespecial #15                 // Method java/lang/Object."<init>":()V
+       4: return
+
+  public vazkii.botania.common.crafting.ManaInfusionRecipe fromJson(net.minecraft.resources.ResourceLocation, com.google.gson.JsonObject);
+    Code:
+       0: aload_2
+       1: ldc           #22                 // String input
+       3: invokevirtual #28                 // Method com/google/gson/JsonObject.get:(Ljava/lang/String;)Lcom/google/gson/JsonElement;
+       6: invokestatic  #34                 // Method java/util/Objects.requireNonNull:(Ljava/lang/Object;)Ljava/lang/Object;
+       9: checkcast     #36                 // class com/google/gson/JsonElement
+      12: astore_3
+      13: aload_3
+      14: invokestatic  #42                 // Method net/minecraft/world/item/crafting/Ingredient.m_43917_:(Lcom/google/gson/JsonElement;)Lnet/minecraft/world/item/crafting/Ingredient;
+      17: astore        4
+      19: aload_2
+      20: ldc           #44                 // String output
+      22: invokestatic  #50                 // Method net/minecraft/util/GsonHelper.m_13930_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)Lcom/google/gson/JsonObject;
+      25: invokestatic  #56                 // Method net/minecraft/world/item/crafting/ShapedRecipe.m_151274_:(Lcom/google/gson/JsonObject;)Lnet/minecraft/world/item/ItemStack;
+      28: astore        5
+      30: aload_2
+      31: ldc           #58                 // String mana
+      33: invokestatic  #62                 // Method net/minecraft/util/GsonHelper.m_13927_:(Lcom/google/gson/JsonObject;Ljava/lang/String;)I
+      36: istore        6
+      38: aload_2
+      39: ldc           #64                 // String group
+      41: ldc           #66                 // String
+      43: invokestatic  #70                 // Method net/minecraft/util/GsonHelper.m_13851_:(Lcom/google/gson/JsonObject;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+      46: astore        7
+      48: aconst_null
+      49: astore        8
+      51: aload_2
+      52: ldc           #72                 // String catalyst
+      54: invokevirtual #76                 // Method com/google/gson/JsonObject.has:(Ljava/lang/String;)Z
+      57: ifeq          109
+      60: aload_2
+      61: ldc           #72                 // String catalyst
+      63: invokevirtual #28                 // Method com/google/gson/JsonObject.get:(Ljava/lang/String;)Lcom/google/gson/JsonElement;
+      66: astore        9
+      68: aload         9
+      70: invokevirtual #80                 // Method com/google/gson/JsonElement.isJsonObject:()Z
+      73: ifeq          89
+      76: aload         9
+      78: invokevirtual #84                 // Method com/google/gson/JsonElement.getAsJsonObject:()Lcom/google/gson/JsonObject;
+      81: ldc           #86                 // String type
+      83: invokevirtual #76                 // Method com/google/gson/JsonObject.has:(Ljava/lang/String;)Z
+      86: ifne          99
+      89: new           #96                 // class com/google/gson/JsonParseException
+      92: dup
+      93: ldc           #98                 // String Legacy mana infusion catalyst syntax used
+      95: invokespecial #101                // Method com/google/gson/JsonParseException."<init>":(Ljava/lang/String;)V
+      98: athrow
+      99: aload         9
+     101: invokevirtual #84                 // Method com/google/gson/JsonElement.getAsJsonObject:()Lcom/google/gson/JsonObject;
+     104: invokestatic  #107                // Method vazkii/botania/common/crafting/StateIngredientHelper.deserialize:(Lcom/google/gson/JsonObject;)Lvazkii/botania/api/recipe/StateIngredient;
+     107: astore        8
+     109: new           #10                 // class vazkii/botania/common/crafting/ManaInfusionRecipe
+     112: dup
+     113: aload_1
+     114: aload         5
+     116: aload         4
+     118: iload         6
+     120: aload         7
+     122: aload         8
+     124: invokespecial #110                // Method vazkii/botania/common/crafting/ManaInfusionRecipe."<init>":(Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/crafting/Ingredient;ILjava/lang/String;Lvazkii/botania/api/recipe/StateIngredient;)V
+     127: areturn
+
+  public vazkii.botania.common.crafting.ManaInfusionRecipe fromNetwork(net.minecraft.resources.ResourceLocation, net.minecraft.network.FriendlyByteBuf);
+    Code:
+       0: aload_2
+       1: invokestatic  #129                // Method net/minecraft/world/item/crafting/Ingredient.m_43940_:(Lnet/minecraft/network/FriendlyByteBuf;)Lnet/minecraft/world/item/crafting/Ingredient;
+       4: astore_3
+       5: aload_2
+       6: invokevirtual #135                // Method net/minecraft/network/FriendlyByteBuf.m_130267_:()Lnet/minecraft/world/item/ItemStack;
+       9: astore        4
+      11: aload_2
+      12: invokevirtual #139                // Method net/minecraft/network/FriendlyByteBuf.m_130242_:()I
+      15: istore        5
+      17: aconst_null
+      18: astore        6
+      20: aload_2
+      21: invokevirtual #142                // Method net/minecraft/network/FriendlyByteBuf.readBoolean:()Z
+      24: ifeq          33
+      27: aload_2
+      28: invokestatic  #146                // Method vazkii/botania/common/crafting/StateIngredientHelper.read:(Lnet/minecraft/network/FriendlyByteBuf;)Lvazkii/botania/api/recipe/StateIngredient;
+      31: astore        6
+      33: aload_2
+      34: invokevirtual #150                // Method net/minecraft/network/FriendlyByteBuf.m_130277_:()Ljava/lang/String;
+      37: astore        7
+      39: new           #10                 // class vazkii/botania/common/crafting/ManaInfusionRecipe
+      42: dup
+      43: aload_1
+      44: aload         4
+      46: aload_3
+      47: iload         5
+      49: aload         7
+      51: aload         6
+      53: invokespecial #110                // Method vazkii/botania/common/crafting/ManaInfusionRecipe."<init>":(Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/crafting/Ingredient;ILjava/lang/String;Lvazkii/botania/api/recipe/StateIngredient;)V
+      56: areturn
+
+  public void toNetwork(net.minecraft.network.FriendlyByteBuf, vazkii.botania.common.crafting.ManaInfusionRecipe);
+    Code:
+       0: aload_2
+       1: invokevirtual #158                // Method vazkii/botania/common/crafting/ManaInfusionRecipe.m_7527_:()Lnet/minecraft/core/NonNullList;
+       4: iconst_0
+       5: invokevirtual #163                // Method net/minecraft/core/NonNullList.get:(I)Ljava/lang/Object;
+       8: checkcast     #38                 // class net/minecraft/world/item/crafting/Ingredient
+      11: aload_1
+      12: invokevirtual #167                // Method net/minecraft/world/item/crafting/Ingredient.m_43923_:(Lnet/minecraft/network/FriendlyByteBuf;)V
+      15: aload_1
+      16: aload_2
+      17: getfield      #169                // Field vazkii/botania/common/crafting/ManaInfusionRecipe.output:Lnet/minecraft/world/item/ItemStack;
+      20: invokevirtual #173                // Method net/minecraft/network/FriendlyByteBuf.m_130055_:(Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/network/FriendlyByteBuf;
+      23: pop
+      24: aload_1
+      25: aload_2
+      26: invokevirtual #176                // Method vazkii/botania/common/crafting/ManaInfusionRecipe.getManaToConsume:()I
+      29: invokevirtual #180                // Method net/minecraft/network/FriendlyByteBuf.m_130130_:(I)Lnet/minecraft/network/FriendlyByteBuf;
+      32: pop
+      33: aload_2
+      34: invokevirtual #184                // Method vazkii/botania/common/crafting/ManaInfusionRecipe.getRecipeCatalyst:()Lvazkii/botania/api/recipe/StateIngredient;
+      37: ifnull        44
+      40: iconst_1
+      41: goto          45
+      44: iconst_0
+      45: istore_3
+      46: aload_1
+      47: iload_3
+      48: invokevirtual #188                // Method net/minecraft/network/FriendlyByteBuf.writeBoolean:(Z)Lio/netty/buffer/ByteBuf;
+      51: pop
+      52: iload_3
+      53: ifeq          66
+      56: aload_2
+      57: invokevirtual #184                // Method vazkii/botania/common/crafting/ManaInfusionRecipe.getRecipeCatalyst:()Lvazkii/botania/api/recipe/StateIngredient;
+      60: aload_1
+      61: invokeinterface #191,  2          // InterfaceMethod vazkii/botania/api/recipe/StateIngredient.write:(Lnet/minecraft/network/FriendlyByteBuf;)V
+      66: aload_1
+      67: aload_2
+      68: invokevirtual #194                // Method vazkii/botania/common/crafting/ManaInfusionRecipe.m_6076_:()Ljava/lang/String;
+      71: invokevirtual #198                // Method net/minecraft/network/FriendlyByteBuf.m_130070_:(Ljava/lang/String;)Lnet/minecraft/network/FriendlyByteBuf;
+      74: pop
+      75: return
+
+  public void m_6178_(net.minecraft.network.FriendlyByteBuf, net.minecraft.world.item.crafting.Recipe);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: checkcast     #10                 // class vazkii/botania/common/crafting/ManaInfusionRecipe
+       6: invokevirtual #206                // Method toNetwork:(Lnet/minecraft/network/FriendlyByteBuf;Lvazkii/botania/common/crafting/ManaInfusionRecipe;)V
+       9: return
+
+  public net.minecraft.world.item.crafting.Recipe m_8005_(net.minecraft.resources.ResourceLocation, net.minecraft.network.FriendlyByteBuf);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: invokevirtual #210                // Method fromNetwork:(Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/network/FriendlyByteBuf;)Lvazkii/botania/common/crafting/ManaInfusionRecipe;
+       6: areturn
+
+  public net.minecraft.world.item.crafting.Recipe m_6729_(net.minecraft.resources.ResourceLocation, com.google.gson.JsonObject);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: invokevirtual #214                // Method fromJson:(Lnet/minecraft/resources/ResourceLocation;Lcom/google/gson/JsonObject;)Lvazkii/botania/common/crafting/ManaInfusionRecipe;
+       6: areturn
+}

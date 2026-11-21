@@ -1,0 +1,15 @@
+> Task :registry:processResources NO-SOURCE
+> Task :registry:processTestResources NO-SOURCE
+> Task :core:compileJava UP-TO-DATE
+> Task :core:processResources NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :core:jar UP-TO-DATE
+> Task :registry:compileJava
+> Task :registry:classes
+> Task :registry:compileTestJava UP-TO-DATE
+> Task :registry:testClasses UP-TO-DATE
+> Task :registry:test
+
+BUILD SUCCESSFUL in 17s
+5 actionable tasks: 2 executed, 3 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.0/userguide/configuration_cache_enabling.html

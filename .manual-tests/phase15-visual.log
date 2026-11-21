@@ -1,0 +1,59 @@
+> Task :app:generateBuildInfo UP-TO-DATE
+> Task :companion-client:processResources NO-SOURCE
+> Task :core:compileJava UP-TO-DATE
+> Task :app:processResources UP-TO-DATE
+> Task :desktop-ui:processResources UP-TO-DATE
+> Task :app:processTestResources NO-SOURCE
+> Task :app:processTestFixturesResources NO-SOURCE
+> Task :core:processResources NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :core:jar UP-TO-DATE
+> Task :companion-protocol:compileJava UP-TO-DATE
+> Task :exporters:processResources NO-SOURCE
+> Task :companion-protocol:generateCompanionIdentity UP-TO-DATE
+> Task :companion-protocol:processResources UP-TO-DATE
+> Task :integrations:processResources NO-SOURCE
+> Task :companion-protocol:classes UP-TO-DATE
+> Task :modpack-parser:compileJava UP-TO-DATE
+> Task :companion-protocol:jar UP-TO-DATE
+> Task :modpack-parser:processResources NO-SOURCE
+> Task :registry:compileJava UP-TO-DATE
+> Task :modpack-parser:classes UP-TO-DATE
+> Task :recipe-analyzer:processResources NO-SOURCE
+> Task :registry:processResources NO-SOURCE
+> Task :registry:classes UP-TO-DATE
+> Task :modpack-parser:jar UP-TO-DATE
+> Task :registry:jar UP-TO-DATE
+> Task :recipe-engine:compileJava UP-TO-DATE
+> Task :recipe-engine:processResources NO-SOURCE
+> Task :recipe-engine:classes UP-TO-DATE
+> Task :recipe-engine:jar UP-TO-DATE
+> Task :companion-client:compileJava UP-TO-DATE
+> Task :companion-client:classes UP-TO-DATE
+> Task :integrations:compileJava UP-TO-DATE
+> Task :integrations:classes UP-TO-DATE
+> Task :companion-client:jar UP-TO-DATE
+> Task :integrations:jar UP-TO-DATE
+> Task :exporters:compileJava UP-TO-DATE
+> Task :exporters:classes UP-TO-DATE
+> Task :recipe-analyzer:compileJava UP-TO-DATE
+> Task :recipe-analyzer:classes UP-TO-DATE
+> Task :exporters:jar UP-TO-DATE
+> Task :recipe-analyzer:jar UP-TO-DATE
+> Task :desktop-ui:compileJava UP-TO-DATE
+> Task :desktop-ui:classes UP-TO-DATE
+> Task :app:compileJava UP-TO-DATE
+> Task :app:compileTestFixturesJava UP-TO-DATE
+> Task :app:compileTestJava UP-TO-DATE
+> Task :app:classes UP-TO-DATE
+> Task :app:jar UP-TO-DATE
+> Task :app:testClasses UP-TO-DATE
+> Task :app:testFixturesClasses UP-TO-DATE
+> Task :app:testFixturesJar UP-TO-DATE
+> Task :desktop-ui:jar
+
+> Task :app:previewResources
+Nov 21, 2026 10:03:37 PM com.sun.javafx.application.PlatformImpl startup
+WARNING: Unsupported JavaFX configuration: classes were loaded from 'unnamed module @46ca46b4'
+22:03:44.376 INFO  d.r.m.DefaultModpackImportService - Imported G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh: Minecraft 1.20.1, loader FORGE, 71 JARs, 72 mod definitions
+22:04:11.439 INFO  d.r.app.DefaultStaticAnalysisService - Indexed G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh: 29096 resources, 11490 recipes, 1 conflicts in 26800 ms

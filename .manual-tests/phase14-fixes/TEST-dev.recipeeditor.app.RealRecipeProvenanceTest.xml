@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.recipeeditor.app.RealRecipeProvenanceTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-11-21T15:58:08.503Z" hostname="ZIRCKY" time="13.763">
+  <properties/>
+  <testcase name="minecraftTntIsPhysicallyDiscoveredInBiomesOPlentyWithoutInferringAuthorOrWinner()" classname="dev.recipeeditor.app.RealRecipeProvenanceTest" time="13.763"/>
+  <system-out><![CDATA[18:58:09.386 INFO  d.r.m.DefaultModpackImportService - Imported G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh: Minecraft 1.20.1, loader FORGE, 71 JARs, 72 mod definitions
+18:58:21.570 INFO  d.r.app.DefaultStaticAnalysisService - Indexed G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh: 29096 resources, 11490 recipes, 1 conflicts in 12164 ms
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

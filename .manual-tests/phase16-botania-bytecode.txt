@@ -1,0 +1,169 @@
+Error: class not found: vazkii.botania.api.recipe.BotanicalBreweryRecipe$Serializer
+Error: class not found: vazkii.botania.api.recipe.PetalApothecaryRecipe$Serializer
+Error: class not found: vazkii.botania.api.recipe.ManaInfusionRecipe$Serializer
+Compiled from "Brew.java"
+public class vazkii.botania.api.brew.Brew {
+  private final java.util.function.Supplier<java.lang.Integer> color;
+
+  private final int cost;
+
+  private final java.util.function.Supplier<java.util.List<net.minecraft.world.effect.MobEffectInstance>> effects;
+
+  private boolean canInfuseBloodPendant;
+
+  private boolean canInfuseIncense;
+
+  public vazkii.botania.api.brew.Brew(int, int, net.minecraft.world.effect.MobEffectInstance...);
+    Code:
+       0: aload_0
+       1: invokespecial #25                 // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: iconst_1
+       6: putfield      #27                 // Field canInfuseBloodPendant:Z
+       9: aload_0
+      10: iconst_1
+      11: putfield      #29                 // Field canInfuseIncense:Z
+      14: aload_0
+      15: iload_1
+      16: invokedynamic #49,  0             // InvokeDynamic #0:get:(I)Ljava/util/function/Supplier;
+      21: putfield      #51                 // Field color:Ljava/util/function/Supplier;
+      24: aload_0
+      25: iload_2
+      26: putfield      #53                 // Field cost:I
+      29: aload_3
+      30: invokestatic  #59                 // Method com/google/common/collect/ImmutableList.copyOf:([Ljava/lang/Object;)Lcom/google/common/collect/ImmutableList;
+      33: astore        4
+      35: aload_0
+      36: aload         4
+      38: invokedynamic #69,  0             // InvokeDynamic #1:get:(Ljava/util/List;)Ljava/util/function/Supplier;
+      43: putfield      #71                 // Field effects:Ljava/util/function/Supplier;
+      46: return
+
+  public vazkii.botania.api.brew.Brew(int, java.util.function.Supplier<java.util.List<net.minecraft.world.effect.MobEffectInstance>>);
+    Code:
+       0: aload_0
+       1: invokespecial #25                 // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: iconst_1
+       6: putfield      #27                 // Field canInfuseBloodPendant:Z
+       9: aload_0
+      10: iconst_1
+      11: putfield      #29                 // Field canInfuseIncense:Z
+      14: aload_0
+      15: aload_2
+      16: invokedynamic #87,  0             // InvokeDynamic #2:get:(Ljava/util/function/Supplier;)Ljava/util/function/Supplier;
+      21: putfield      #51                 // Field color:Ljava/util/function/Supplier;
+      24: aload_0
+      25: iload_1
+      26: putfield      #53                 // Field cost:I
+      29: aload_0
+      30: aload_2
+      31: putfield      #71                 // Field effects:Ljava/util/function/Supplier;
+      34: return
+
+  public vazkii.botania.api.brew.Brew setNotBloodPendantInfusable();
+    Code:
+       0: aload_0
+       1: iconst_0
+       2: putfield      #27                 // Field canInfuseBloodPendant:Z
+       5: aload_0
+       6: areturn
+
+  public vazkii.botania.api.brew.Brew setNotIncenseInfusable();
+    Code:
+       0: aload_0
+       1: iconst_0
+       2: putfield      #29                 // Field canInfuseIncense:Z
+       5: aload_0
+       6: areturn
+
+  public boolean canInfuseBloodPendant();
+    Code:
+       0: aload_0
+       1: getfield      #27                 // Field canInfuseBloodPendant:Z
+       4: ireturn
+
+  public boolean canInfuseIncense();
+    Code:
+       0: aload_0
+       1: getfield      #29                 // Field canInfuseIncense:Z
+       4: ireturn
+
+  public java.lang.String getTranslationKey();
+    Code:
+       0: invokestatic  #99                 // InterfaceMethod vazkii/botania/api/BotaniaAPI.instance:()Lvazkii/botania/api/BotaniaAPI;
+       3: invokeinterface #103,  1          // InterfaceMethod vazkii/botania/api/BotaniaAPI.getBrewRegistry:()Lnet/minecraft/core/Registry;
+       8: aload_0
+       9: invokeinterface #109,  2          // InterfaceMethod net/minecraft/core/Registry.m_7981_:(Ljava/lang/Object;)Lnet/minecraft/resources/ResourceLocation;
+      14: astore_1
+      15: ldc           #111                // String %s.brew.%s
+      17: iconst_2
+      18: anewarray     #4                  // class java/lang/Object
+      21: dup
+      22: iconst_0
+      23: aload_1
+      24: invokevirtual #116                // Method net/minecraft/resources/ResourceLocation.m_135827_:()Ljava/lang/String;
+      27: aastore
+      28: dup
+      29: iconst_1
+      30: aload_1
+      31: invokevirtual #119                // Method net/minecraft/resources/ResourceLocation.m_135815_:()Ljava/lang/String;
+      34: aastore
+      35: invokestatic  #125                // Method java/lang/String.format:(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;
+      38: areturn
+
+  public java.lang.String getTranslationKey(net.minecraft.world.item.ItemStack);
+    Code:
+       0: aload_0
+       1: invokevirtual #130                // Method getTranslationKey:()Ljava/lang/String;
+       4: areturn
+
+  public int getColor(net.minecraft.world.item.ItemStack);
+    Code:
+       0: aload_0
+       1: getfield      #51                 // Field color:Ljava/util/function/Supplier;
+       4: invokeinterface #138,  1          // InterfaceMethod java/util/function/Supplier.get:()Ljava/lang/Object;
+       9: checkcast     #140                // class java/lang/Integer
+      12: invokevirtual #144                // Method java/lang/Integer.intValue:()I
+      15: ireturn
+
+  public int getManaCost();
+    Code:
+       0: aload_0
+       1: getfield      #53                 // Field cost:I
+       4: ireturn
+
+  public int getManaCost(net.minecraft.world.item.ItemStack);
+    Code:
+       0: aload_0
+       1: invokevirtual #147                // Method getManaCost:()I
+       4: ireturn
+
+  public java.util.List<net.minecraft.world.effect.MobEffectInstance> getPotionEffects(net.minecraft.world.item.ItemStack);
+    Code:
+       0: aload_0
+       1: getfield      #71                 // Field effects:Ljava/util/function/Supplier;
+       4: invokeinterface #138,  1          // InterfaceMethod java/util/function/Supplier.get:()Ljava/lang/Object;
+       9: checkcast     #152                // class java/util/List
+      12: areturn
+
+  private static java.lang.Integer lambda$new$2(java.util.function.Supplier);
+    Code:
+       0: aload_0
+       1: invokeinterface #138,  1          // InterfaceMethod java/util/function/Supplier.get:()Ljava/lang/Object;
+       6: checkcast     #154                // class java/util/Collection
+       9: invokestatic  #160                // Method net/minecraft/world/item/alchemy/PotionUtils.m_43564_:(Ljava/util/Collection;)I
+      12: invokestatic  #163                // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
+      15: areturn
+
+  private static java.util.List lambda$new$1(java.util.List);
+    Code:
+       0: aload_0
+       1: areturn
+
+  private static java.lang.Integer lambda$new$0(int);
+    Code:
+       0: iload_0
+       1: invokestatic  #163                // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
+       4: areturn
+}
