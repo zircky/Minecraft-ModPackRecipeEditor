@@ -1,0 +1,138 @@
+[ {
+  "scope" : "static",
+  "images" : 7898,
+  "diagnostics" : {
+    "RESOURCE_RENDERER_UNSUPPORTED" : 4331,
+    "RESOURCE_TRANSLATION_MISSING" : 8090,
+    "RESOURCE_INVALID_TEXTURE" : 2,
+    "RESOURCE_TEXTURE_NOT_FOUND" : 757,
+    "RESOURCE_SOURCE_AMBIGUOUS" : 2,
+    "RESOURCE_RUNTIME_REQUIRED" : 722
+  },
+  "names_en_us" : 3957,
+  "kind" : "ITEM",
+  "preview_statuses" : {
+    "AMBIGUOUS_SOURCE" : 2,
+    "INVALID_TEXTURE" : 13,
+    "READY" : 4756,
+    "RENDERING_UNSUPPORTED" : 1672,
+    "RUNTIME_TEXTURE_REQUIRED" : 722,
+    "TEXTURE_NOT_FOUND" : 757,
+    "TEXTURE_SAMPLE" : 1470,
+    "UNSUPPORTED_RENDERER" : 2657
+  },
+  "runtime_confirmed" : 0,
+  "resources" : 12049,
+  "names_ru_ru_with_en_fallback" : 3959
+}, {
+  "scope" : "static",
+  "images" : 8025,
+  "diagnostics" : {
+    "RESOURCE_RUNTIME_REQUIRED" : 371,
+    "RESOURCE_TRANSLATION_MISSING" : 7909,
+    "RESOURCE_RENDERER_UNSUPPORTED" : 10549,
+    "RESOURCE_TEXTURE_NOT_FOUND" : 222,
+    "RESOURCE_INVALID_TEXTURE" : 1
+  },
+  "names_en_us" : 5179,
+  "kind" : "BLOCK",
+  "preview_statuses" : {
+    "INVALID_TEXTURE" : 1,
+    "RENDERING_UNSUPPORTED" : 8288,
+    "RUNTIME_TEXTURE_REQUIRED" : 371,
+    "TEXTURE_NOT_FOUND" : 222,
+    "TEXTURE_SAMPLE" : 1949,
+    "UNSUPPORTED_RENDERER" : 2261
+  },
+  "runtime_confirmed" : 0,
+  "resources" : 13092,
+  "names_ru_ru_with_en_fallback" : 5183
+}, {
+  "scope" : "static",
+  "images" : 0,
+  "diagnostics" : {
+    "RESOURCE_RUNTIME_REQUIRED" : 551,
+    "RESOURCE_TRANSLATION_MISSING" : 549
+  },
+  "names_en_us" : 2,
+  "kind" : "FLUID",
+  "preview_statuses" : {
+    "RUNTIME_TEXTURE_REQUIRED" : 551
+  },
+  "runtime_confirmed" : 0,
+  "resources" : 551,
+  "names_ru_ru_with_en_fallback" : 2
+}, {
+  "scope" : "runtime",
+  "images" : 23700,
+  "diagnostics" : {
+    "RESOURCE_RUNTIME_REQUIRED" : 184,
+    "RESOURCE_TRANSLATION_MISSING" : 1821,
+    "RESOURCE_RENDERER_UNSUPPORTED" : 7231,
+    "RESOURCE_TEXTURE_NOT_FOUND" : 6665,
+    "RESOURCE_INVALID_TEXTURE" : 2
+  },
+  "names_en_us" : 16557,
+  "kind" : "ITEM",
+  "preview_statuses" : {
+    "INVALID_TEXTURE" : 62,
+    "READY" : 17188,
+    "RENDERING_UNSUPPORTED" : 6507,
+    "RUNTIME_TEXTURE_REQUIRED" : 184,
+    "TEXTURE_NOT_FOUND" : 6665,
+    "TEXTURE_SAMPLE" : 5,
+    "UNSUPPORTED_RENDERER" : 721
+  },
+  "runtime_confirmed" : 29442,
+  "resources" : 31332,
+  "names_ru_ru_with_en_fallback" : 29511
+}, {
+  "scope" : "runtime",
+  "images" : 11773,
+  "diagnostics" : {
+    "RESOURCE_RUNTIME_REQUIRED" : 422,
+    "RESOURCE_TRANSLATION_MISSING" : 7211,
+    "RESOURCE_RENDERER_UNSUPPORTED" : 13356,
+    "RESOURCE_TEXTURE_NOT_FOUND" : 3488,
+    "RESOURCE_INVALID_TEXTURE" : 1
+  },
+  "names_en_us" : 8068,
+  "kind" : "BLOCK",
+  "preview_statuses" : {
+    "INVALID_TEXTURE" : 5,
+    "RENDERING_UNSUPPORTED" : 11091,
+    "RUNTIME_TEXTURE_REQUIRED" : 422,
+    "TEXTURE_NOT_FOUND" : 3488,
+    "TEXTURE_SAMPLE" : 696,
+    "UNSUPPORTED_RENDERER" : 2261
+  },
+  "runtime_confirmed" : 11286,
+  "resources" : 17963,
+  "names_ru_ru_with_en_fallback" : 10752
+}, {
+  "scope" : "runtime",
+  "images" : 5214,
+  "diagnostics" : {
+    "RESOURCE_TRANSLATION_MISSING" : 8,
+    "RESOURCE_TEXTURE_NOT_FOUND" : 20,
+    "RESOURCE_RUNTIME_REQUIRED" : 7
+  },
+  "names_en_us" : 1932,
+  "kind" : "FLUID",
+  "preview_statuses" : {
+    "RUNTIME_TEXTURE_REQUIRED" : 7,
+    "TEXTURE_NOT_FOUND" : 20,
+    "TEXTURE_SAMPLE" : 5214
+  },
+  "runtime_confirmed" : 5235,
+  "resources" : 5241,
+  "names_ru_ru_with_en_fallback" : 5233
+}, {
+  "runtime_confirmed" : 3083,
+  "resources" : 3083,
+  "images" : 3076,
+  "names_en_us" : 657,
+  "scope" : "runtime",
+  "names_ru_ru_with_en_fallback" : 3083,
+  "kind" : "MATERIAL"
+} ]
