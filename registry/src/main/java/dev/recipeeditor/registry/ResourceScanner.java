@@ -48,7 +48,7 @@ public final class ResourceScanner {
                     if (entry.isDirectory()) continue;
                     if (!validPath(name)) { state.warn(archive+"!"+name,"Unsafe resource path ignored"); continue; }
                     if (!relevant(name)) continue;
-                    if(type==SourceType.VANILLA_ASSET&&!name.startsWith("assets/minecraft/"))continue;
+                    if(type==SourceType.VANILLA_ASSET&&!name.startsWith("assets/minecraft/")&&!name.startsWith("data/minecraft/tags/"))continue;
                     final var source=new ResourceSource(type,mods,archive,name,type==SourceType.VANILLA_ASSET?"Vanilla client assets; available preview, active resource order UNKNOWN":"Static resource scan");
                     if (!state.reserve(source)) break;
                     if (name.endsWith(".png")) { state.textures.add(source); continue; }
