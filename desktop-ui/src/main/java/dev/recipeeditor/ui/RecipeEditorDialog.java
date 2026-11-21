@@ -121,7 +121,8 @@ public final class RecipeEditorDialog extends Dialog<Void> {
         },failure->{if(alive)issues.setText(failure.getMessage());});
     }
     private void chooseInput(final String role,final int index) {
-        pickIngredient(json->patch(text->{
+        final String initial=role.equals("grid")?forms.grid(raw.getText()).get(index):role.equals("shapeless")?(index<forms.ingredientList(raw.getText()).size()?forms.ingredientList(raw.getText()).get(index):""):forms.fields(raw.getText()).getOrDefault(role,"");
+        pickIngredient(initial,json->patch(text->{
             if(role.equals("grid")){final var values=new ArrayList<>(forms.grid(text));values.set(index,json);return forms.shaped(text,values);}
             if(role.equals("shapeless")){final var values=new ArrayList<>(forms.ingredientList(text));if(index<values.size())values.set(index,json);else values.add(json);return forms.shapeless(text,values);}
             return forms.patch(text,role,json);
@@ -134,15 +135,15 @@ public final class RecipeEditorDialog extends Dialog<Void> {
     }
     private void chooseOutput() {
         final boolean cooking=new CookingRecipeLayoutProvider().find(forms.type(raw.getText())).isPresent();
-        new IngredientPicker(getDialogPane().getScene().getWindow(),discovery,ResourceKind.ITEM,false,!cooking).showAndWait().ifPresent(value->patch(text->forms.result(text,value.id(),value.amount())));
+        new IngredientPicker(getDialogPane().getScene().getWindow(),discovery,ResourceKind.ITEM,false,!cooking,forms.fields(raw.getText()).getOrDefault("result","")).showAndWait().ifPresent(value->patch(text->forms.result(text,value.id(),value.amount())));
     }
     private void restoreDraft(final Deque<String> from,final Deque<String> to) {
         if(saving||from.isEmpty())return;
         if(!pendingAdvanced.isEmpty()){issues.setText("Apply Advanced fields or Reset draft before Undo/Redo.");return;}
         to.addFirst(raw.getText());restoringDraft=true;try{raw.setText(from.removeFirst());}finally{restoringDraft=false;}
     }
-    private void pickIngredient(final java.util.function.Consumer<String> selected) {
-        new IngredientPicker(getDialogPane().getScene().getWindow(),discovery,ResourceKind.ITEM,true,false).showAndWait().ifPresent(value->selected.accept(value.json()));
+    private void pickIngredient(final String initial,final java.util.function.Consumer<String> selected) {
+        new IngredientPicker(getDialogPane().getScene().getWindow(),discovery,ResourceKind.ITEM,true,false,initial).showAndWait().ifPresent(value->selected.accept(value.json()));
     }
     private void advancedField(final String name,final String value) {
         final var input=new TextField(pendingAdvanced.getOrDefault(name,value));

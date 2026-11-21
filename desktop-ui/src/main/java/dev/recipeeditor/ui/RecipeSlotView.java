@@ -13,6 +13,10 @@ public final class RecipeSlotView extends ToggleButton {
     private final RecipeSlotState baseState;
     public RecipeSlotView(final RecipeSlotContent content,final DiscoveryResult discovery,final TextureResourceService textures) { this(content,discovery,textures,36); }
     public RecipeSlotView(final RecipeSlotContent content,final DiscoveryResult discovery,final TextureResourceService textures,final double size) {
+        this(content,discovery,textures,size,Locale.getDefault().getLanguage().equals("ru")?"ru_ru":"en_us");
+    }
+    public RecipeSlotView(final RecipeSlotContent content,final DiscoveryResult discovery,final TextureResourceService textures,final double size,final String language) {
+        setUserData(content);
         if(size<24||size>144)throw new IllegalArgumentException("Slot size must be 24..144");
         getStyleClass().add("minecraft-recipe-slot");setMinSize(size,size);setPrefSize(size,size);setMaxSize(size,size);setMnemonicParsing(false);
         final var graphic=new StackPane();graphic.setMinSize(size-8,size-8);
@@ -30,7 +34,6 @@ public final class RecipeSlotView extends ToggleButton {
         baseState=content.state()==RecipeSlotState.FILLED&&entry.isEmpty()&&content.kind()!=RecipeSlotContent.Kind.TAG&&content.kind()!=RecipeSlotContent.Kind.ALTERNATIVES?RecipeSlotState.UNKNOWN:content.state();
         String name=content.kind().name();
         if(entry.isPresent()) {
-            final String language=Locale.getDefault().getLanguage().equals("ru")?"ru_ru":"en_us";
             name=content.kind()==RecipeSlotContent.Kind.TAG?"Tag #"+content.id():new ResourceBrowserViewModel(discovery.registry()).displayName(entry.get(),language);
             graphic.getChildren().add(new ResourcePreview(entry.get().visual(),discovery.selectedRoot(),textures,(int)size-8,()->getScene()!=null,preview->{}));
         } else if(content.kind()!=RecipeSlotContent.Kind.EMPTY)graphic.getChildren().add(new Label(content.kind()==RecipeSlotContent.Kind.TAG?"#":content.kind()==RecipeSlotContent.Kind.CHEMICAL?"C":"?"));

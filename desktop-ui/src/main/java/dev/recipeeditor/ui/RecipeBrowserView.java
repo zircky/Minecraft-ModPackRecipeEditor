@@ -20,6 +20,8 @@ import java.util.*;
 public final class RecipeBrowserView extends BorderPane implements AutoCloseable {
   private final java.util.function.BiConsumer<RecipeDefinition, dev.recipeeditor.exporters.ExportFormat> exportRecipe;
   private final DiscoveryResult result;
+  private java.util.function.BiConsumer<dev.recipeeditor.registry.ResourceKind,ResourceLocation> resourceNavigation=(kind,id)->{};
+  public void resourceNavigation(final java.util.function.BiConsumer<dev.recipeeditor.registry.ResourceKind,ResourceLocation> action){resourceNavigation=Objects.requireNonNull(action);}
   private final dev.recipeeditor.registry.TextureResourceService textures=new dev.recipeeditor.registry.TextureResourceService();
   private final dev.recipeeditor.integrations.api.IntegrationContext integration;
   private final RecipeTypeDisplayNameResolver typeNames=new RecipeTypeDisplayNameResolver();
@@ -528,7 +530,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       if(layout.isPresent()) {
         final var drawing=new VBox();
         final var scale=new Spinner<Integer>(40,80,64,8);scale.setPrefWidth(100);scale.setAccessibleText("Recipe slot size in pixels");
-        final Runnable render=()->drawing.getChildren().setAll(new RecipeLayoutRenderer(layout.get(),result,textures,scale.getValue(),language.getValue(),RecipeLayoutRenderer.Mode.VIEWER,null));
+        final Runnable render=()->{final var view=new RecipeLayoutRenderer(layout.get(),result,textures,scale.getValue(),language.getValue(),RecipeLayoutRenderer.Mode.VIEWER,null);view.resourceNavigation(resourceNavigation);drawing.getChildren().setAll(view);};
         scale.valueProperty().addListener((o,a,b)->render.run());render.run();
         viewer.getChildren().addAll(drawing,new HBox(8,new Label("Slot size"),scale));
       } else {
@@ -539,6 +541,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       final var sourceButton=new Button("View Source");sourceButton.setOnAction(event->detailTabs.getSelectionModel().select(2));
       viewer.getChildren().add(new HBox(8,editButton,sourceButton));
     }
+    viewer.getChildren().add(label("Physical source: "+recipe.source().physicalSource()+" · "+recipe.source().confidence()));
     json.setText(recipe.rawJson());
     json.positionCaret(0);
     final var savedChange = editor.persistentSnapshot().changes().get(recipe.id());

@@ -27,39 +27,51 @@ public final class RecipeLayoutRenderer extends VBox {
         final Node input;
         if(model.kind()==RecipeLayoutProvider.Kind.SHAPED||model.kind()==RecipeLayoutProvider.Kind.SHAPELESS) {
             final var values=model.inputs().stream().map(RecipeLayoutModel.Input::json).toList();
-            if(model.kind()==RecipeLayoutProvider.Kind.SHAPED)input=new ShapedCraftingEditorView(values,discovery,textures,size,editable?i->actions.chooseInput().accept("grid",i):null,editable?i->actions.clearInput().accept("grid",i):null);
-            else {final var occupied=values.stream().takeWhile(value->!value.isBlank()).toList();input=new ShapelessCraftingEditorView(occupied,discovery,textures,size,editable?i->actions.chooseInput().accept("shapeless",i):null,editable?i->actions.clearInput().accept("shapeless",i):null,editable?()->actions.chooseInput().accept("shapeless",occupied.size()):null);}
+            if(model.kind()==RecipeLayoutProvider.Kind.SHAPED)input=new ShapedCraftingEditorView(values,discovery,textures,size,language,editable?i->actions.chooseInput().accept("grid",i):null,editable?i->actions.clearInput().accept("grid",i):null);
+            else {final var occupied=values.stream().takeWhile(value->!value.isBlank()).toList();input=new ShapelessCraftingEditorView(occupied,discovery,textures,size,language,editable?i->actions.chooseInput().accept("shapeless",i):null,editable?i->actions.clearInput().accept("shapeless",i):null,editable?()->actions.chooseInput().accept("shapeless",occupied.size()):null);}
             row.add(new Label("INPUTS"),0,0);
         } else {
-            final var roles=new GridPane();roles.setHgap(12);roles.setVgap(8);roles.setAlignment(Pos.CENTER);
             int column=0;
             for(final var value:model.inputs()) {
-                if(column>0){roles.add(new Label("+"),column++,1);}
-                final var label=new Label(value.role().toUpperCase(Locale.ROOT));roles.add(label,column,0);GridPane.setHalignment(label,HPos.CENTER);
-                final var slot=slot(RecipeSlotContent.parse(value.json()),discovery,textures,size);
+                if(column>0){row.add(new Label("+"),column++,1);}
+                final var label=new Label(value.role().toUpperCase(Locale.ROOT));row.add(label,column,0);GridPane.setHalignment(label,HPos.CENTER);
+                final var slot=slot(RecipeSlotContent.parse(value.json()),discovery,textures,size,language);
                 slot.getStyleClass().add("recipe-input-slot");
                 if(editable)slot.editable(()->actions.chooseInput().accept(value.role(),value.index()),()->actions.clearInput().accept(value.role(),value.index()));
                 else slot.setOnAction(event->slot.setSelected(false));
-                roles.add(slot,column++,1);
-            }
-            // Roles share their label row with the output label, keeping slot centers on the same axis.
-            for(final Node child:List.copyOf(roles.getChildren())) {
-                final int col=Optional.ofNullable(GridPane.getColumnIndex(child)).orElse(0),r=Optional.ofNullable(GridPane.getRowIndex(child)).orElse(0);
-                roles.getChildren().remove(child);row.add(child,col,r);GridPane.setHalignment(child,HPos.CENTER);
+                row.add(slot,column++,1);
             }
             input=null;
             final int arrowColumn=column;
             row.add(new RecipeArrowView(),arrowColumn,1);row.add(new Label("RESULT"),arrowColumn+1,0);
-            row.add(output(model,discovery,textures,size,editable,actions),arrowColumn+1,1);getChildren().add(row);return;
+            row.add(output(model,discovery,textures,size,language,editable,actions),arrowColumn+1,1);finish(row,editable);return;
         }
-        row.add(input,0,1);row.add(new RecipeArrowView(),1,1);row.add(new Label("RESULT"),2,0);row.add(output(model,discovery,textures,size,editable,actions),2,1);
+        row.add(input,0,1);row.add(new RecipeArrowView(),1,1);row.add(new Label("RESULT"),2,0);row.add(output(model,discovery,textures,size,language,editable,actions),2,1);
         for(final var child:row.getChildren())GridPane.setHalignment(child,HPos.CENTER);
+        finish(row,editable);
+    }
+    private void finish(final GridPane row,final boolean editable) {
+        for(final var child:row.getChildren())GridPane.setHalignment(child,HPos.CENTER);
+        if(!editable)visitSlots(row,slot->slot.setOnAction(event->slot.setSelected(false)));
         getChildren().add(row);
     }
-    private RecipeSlotView slot(final RecipeSlotContent value,final DiscoveryResult discovery,final TextureResourceService textures,final double size){return new RecipeSlotView(value,discovery,textures,size);}
-    private Node output(final RecipeLayoutModel model,final DiscoveryResult discovery,final TextureResourceService textures,final double size,final boolean editable,final Actions actions) {
+    /** Navigation never edits ingredient JSON; tags open only an explicitly indexed preview member. */
+    public void resourceNavigation(final BiConsumer<dev.recipeeditor.registry.ResourceKind,dev.recipeeditor.core.ResourceLocation> navigate) {
+        visitSlots(this,slot->{
+            if(slot.getContextMenu()!=null)return;
+            if(!(slot.getUserData() instanceof RecipeSlotContent content))return;
+            if(content.kind()==RecipeSlotContent.Kind.ALTERNATIVES&&!content.alternatives().isEmpty())content=content.alternatives().getFirst();
+            if(content.id()==null||content.kind()==RecipeSlotContent.Kind.TAG||content.kind()==RecipeSlotContent.Kind.CHEMICAL)return;
+            final var target=content;slot.setOnAction(event->{slot.setSelected(false);navigate.accept(target.kind()==RecipeSlotContent.Kind.FLUID?dev.recipeeditor.registry.ResourceKind.FLUID:dev.recipeeditor.registry.ResourceKind.ITEM,target.id());});
+        });
+    }
+    private void visitSlots(final javafx.scene.Parent parent,final java.util.function.Consumer<RecipeSlotView> action) {
+        for(final var node:parent.getChildrenUnmodifiable())if(node instanceof RecipeSlotView slot)action.accept(slot);else if(node instanceof javafx.scene.Parent nested)visitSlots(nested,action);
+    }
+    private RecipeSlotView slot(final RecipeSlotContent value,final DiscoveryResult discovery,final TextureResourceService textures,final double size,final String language){return new RecipeSlotView(value,discovery,textures,size,language);}
+    private Node output(final RecipeLayoutModel model,final DiscoveryResult discovery,final TextureResourceService textures,final double size,final String language,final boolean editable,final Actions actions) {
         if(model.dynamicOutput()){final var label=new Label("Dynamic trim result\nDepends on base stack and trim inputs");label.setWrapText(true);label.setMaxWidth(180);return label;}
-        final var slot=slot(model.output(),discovery,textures,size);slot.getStyleClass().add("recipe-output-slot");
+        final var slot=slot(model.output(),discovery,textures,size,language);slot.getStyleClass().add("recipe-output-slot");
         if(editable){slot.setOnAction(event->{slot.setSelected(false);actions.chooseOutput().run();});final var choose=new MenuItem("Choose result / quantity");choose.setOnAction(event->actions.chooseOutput().run());slot.setContextMenu(new ContextMenu(choose));}
         else slot.setOnAction(event->slot.setSelected(false));
         return slot;
