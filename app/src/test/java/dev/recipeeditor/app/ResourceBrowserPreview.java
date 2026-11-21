@@ -21,6 +21,7 @@ public final class ResourceBrowserPreview {
         private final TextureResourceService textures=new TextureResourceService();
         private ResourceBrowserView resources;
         private MaterialsBrowserView materials;
+        private RecipeBrowserView recipeBrowser;
         private final EditorTasks editingTasks=new EditorTasks();
         private final dev.recipeeditor.app.project.FileProjectPersistence persistence=new dev.recipeeditor.app.project.FileProjectPersistence();
         @Override public void start(final Stage stage) {
@@ -46,6 +47,9 @@ public final class ResourceBrowserPreview {
             toolbar.getItems().add(new Label("Genuine runtime snapshot · "+result.registry().materials().size()+" materials"));root.setTop(toolbar);root.setCenter(resources);resources.show(ResourceKind.ITEM);
             final var validator=new dev.recipeeditor.recipeengine.editor.RecipeValidator(new dev.recipeeditor.integrations.ProjectRecipeParsers().parsers(),result.registry());
             final var editor=new dev.recipeeditor.recipeengine.editor.RecipeEditorService(result.recipes(),validator);
+            recipeBrowser=new RecipeBrowserView(result,editor,editingTasks,(recipe,format)->{},new dev.recipeeditor.integrations.api.IntegrationContext("1.20.1",dev.recipeeditor.core.importing.ModLoaderType.FORGE,Map.of(),Map.of()));
+            recipeBrowser.resourceNavigation((kind,id)->{root.setCenter(resources);resources.showResource(kind,id);});
+            final var showRecipes=new Button("Recipes");showRecipes.setOnAction(event->{resources.deactivate();materials.deactivate();root.setCenter(recipeBrowser);});toolbar.getItems().add(showRecipes);
             final var tnt=result.recipes().findById(dev.recipeeditor.core.ResourceLocation.parse("minecraft:tnt")).stream().filter(recipe->recipe.source().archiveModIds().contains("biomesoplenty")).findFirst();
             final var edit=new Button("Edit actual minecraft:tnt");edit.setDisable(tnt.isEmpty());
             edit.setOnAction(event->tnt.ifPresent(recipe->{final var current=editor.effective().findById(recipe.id()).stream().findFirst().orElse(recipe);new RecipeEditorDialog(stage,result,editor,editingTasks,new dev.recipeeditor.recipeengine.editor.RecipeEditSession(current.id(),current.source(),current.rawJson()),false,new dev.recipeeditor.integrations.api.IntegrationContext("1.20.1",dev.recipeeditor.core.importing.ModLoaderType.FORGE,Map.of(),Map.of())).showAndWait();}));
@@ -56,6 +60,6 @@ public final class ResourceBrowserPreview {
             root.setBottom(new ToolBar(edit,save,reopen,status));
             final var scene=new Scene(root,1320,820);scene.getStylesheets().add(Objects.requireNonNull(ResourceBrowserView.class.getResource("theme.css")).toExternalForm());stage.setScene(scene);
         }
-        @Override public void stop() { if(resources!=null)resources.deactivate();if(materials!=null)materials.deactivate();textures.close();editingTasks.close();persistence.close(); }
+        @Override public void stop() { if(resources!=null)resources.deactivate();if(materials!=null)materials.deactivate();if(recipeBrowser!=null)recipeBrowser.close();textures.close();editingTasks.close();persistence.close(); }
     }
 }

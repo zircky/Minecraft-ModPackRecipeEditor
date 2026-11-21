@@ -80,7 +80,7 @@ public final class IngredientPicker extends Dialog<IngredientPicker.Selection> {
         });
         addChoice.setOnAction(event->{try{selection.add(current.get());refreshChoices.run();choices.getSelectionModel().selectLast();changed[0]=false;error.setText("");}catch(RuntimeException invalid){error.setText(invalid.getMessage());}});
         applyChoice.setOnAction(event->{try{final int index=choices.getSelectionModel().getSelectedIndex();selection.replace(index,current.get());refreshChoices.run();choices.getSelectionModel().select(Math.max(0,index));changed[0]=false;error.setText("");}catch(RuntimeException invalid){error.setText(invalid.getMessage());}});
-        removeChoice.setOnAction(event->{final int index=choices.getSelectionModel().getSelectedIndex();if(index>=0){selection.remove(index);refreshChoices.run();choices.getSelectionModel().selectFirst();changed[0]=false;}});
+        removeChoice.setOnAction(event->{final int index=choices.getSelectionModel().getSelectedIndex();if(index>=0){selection.remove(index);refreshChoices.run();choices.getSelectionModel().selectFirst();if(choices.getItems().isEmpty())id.clear();changed[0]=false;}});
         if(!choices.getItems().isEmpty())choices.getSelectionModel().selectFirst();
         getDialogPane().lookupButton(ButtonType.OK).addEventFilter(javafx.event.ActionEvent.ACTION,event->{try{
             if(changed[0]||selection.choices().isEmpty())selection.replace(choices.getSelectionModel().getSelectedIndex(),current.get());
