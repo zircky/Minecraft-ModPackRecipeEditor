@@ -16,7 +16,7 @@ public final class DatapackRecipeExporter implements RecipeExporter {
         files.put(root+"pack.mcmeta","{\"pack\":{\"pack_format\":15,\"description\":\"Minecraft Recipe Editor generated recipes (1.20.1)\"}}\n");
         for(final var change:changes) {
             if(!checkCapability(change,context).supported())throw new IllegalArgumentException("Unsupported datapack operation");
-            files.put(root+"data/"+change.id().namespace()+"/recipes/"+change.id().path()+".json",change.replacement().getFirst().rawJson()+"\n");
+            files.put(root+new RecipeDataPathResolver().resolve(context.modpack().minecraftVersion().value(),change.id()),change.replacement().getFirst().rawJson()+"\n");
         } return files;
     }
 }

@@ -59,7 +59,7 @@ public final class DefaultStaticAnalysisService implements StaticAnalysisService
         index.conflicts().forEach((id,values)->diagnostics.add(new ImportDiagnostic(ScanStatus.WARNING,id.toString(),
                 "Conflicting recipe definitions: "+values.size()+"; all sources retained, active winner unknown")));
         final long elapsed=TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-start);
-        final var result=new DiscoveryResult(pack.selectedDirectory(),new RegistryIndex(resources),index,diagnostics,elapsed);
+        final var result=new DiscoveryResult(pack.selectedDirectory(),new RegistryIndex(resources,scan),index,diagnostics,elapsed);
         report(progress,"Completed.",1);
         logger.info("Indexed {}: {} resources, {} recipes, {} conflicts in {} ms",pack.selectedDirectory(),resources.size(),recipes.size(),index.conflicts().size(),elapsed);
         return result;

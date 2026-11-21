@@ -1,0 +1,28 @@
+{
+  "formatVersion": 1,
+  "sha256": "c1ad361f3b7067edd8ba2722fb3b2f3d3f70dc539205123101e837c4e349b296",
+  "project": {
+    "modpackDirectory": "G:\\PrismLauncher\\instances\\ISG-0.6.0-alpha.1-harsh",
+    "changes": [
+      {
+        "id": "mre_export_test:vanilla_lifecycle",
+        "type": "CREATE",
+        "timestamp": "1970-01-01T00:00:00Z",
+        "originals": [],
+        "replacementJson": [
+          "{\"type\":\"minecraft:crafting_shapeless\",\"ingredients\":[{\"item\":\"minecraft:dirt\"}],\"result\":{\"item\":\"minecraft:cobblestone\",\"count\":2}}"
+        ],
+        "metadata": {},
+        "replacementSources": [
+          {
+            "sourceType": "LOCAL_RESOURCE",
+            "modIds": [],
+            "archivePath": "L:\\My Add\\RecipeEditor\\.manual-tests\\kubejs-export\\ui-project.json",
+            "internalPath": "changes/mre_export_test:vanilla_lifecycle",
+            "method": "User project overlay for export UI smoke test"
+          }
+        ]
+      }
+    ]
+  }
+}

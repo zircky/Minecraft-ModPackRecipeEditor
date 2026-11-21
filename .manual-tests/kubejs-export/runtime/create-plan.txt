@@ -1,0 +1,32 @@
+KUBEJS_JAVASCRIPT
+[kubejs/server_scripts/recipe_editor_mrekubejs20261118_generated.js]
+Recipe ID: mre_export_test:vanilla_lifecycle
+Recipe Namespace: mre_export_test
+Declaring Source: UNKNOWN
+Active Source: Project overlay — runtime winner UNKNOWN
+Scope: PROJECT
+Provenance Confidence: PROJECT_OVERLAY
+Active definition location:
+  Source Mod IDs (container metadata): UNKNOWN
+  Archive Mod IDs: []
+  Declaring Source: UNKNOWN
+  Physical Source: L:\My Add\RecipeEditor\.manual-tests\kubejs-export\runtime\create-project.json
+  Source File: L:\My Add\RecipeEditor\.manual-tests\kubejs-export\runtime\create-project.json#changes/mre_export_test:vanilla_lifecycle
+  Original File: changes/mre_export_test:vanilla_lifecycle
+  Source Type: LOCAL_RESOURCE
+  Discovery Method: User project overlay; not installed into Minecraft
+  Confidence: PHYSICAL_LOCATION_ONLY
+
+All discovered / derived-from definitions (not a load-order ranking):
+Candidate:
+  Source Mod IDs (container metadata): UNKNOWN
+  Archive Mod IDs: []
+  Declaring Source: UNKNOWN
+  Physical Source: L:\My Add\RecipeEditor\.manual-tests\kubejs-export\runtime\project.json
+  Source File: L:\My Add\RecipeEditor\.manual-tests\kubejs-export\runtime\project.json#changes/mre_export_test:vanilla_lifecycle
+  Original File: changes/mre_export_test:vanilla_lifecycle
+  Source Type: LOCAL_RESOURCE
+  Discovery Method: Explicit runtime test project overlay
+  Confidence: PHYSICAL_LOCATION_ONLY
+
+Overridden definitions in PROJECT: 0

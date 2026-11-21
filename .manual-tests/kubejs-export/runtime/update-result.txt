@@ -1,0 +1,6 @@
+Actual Minecraft 1.20.1 Forge 47.4.28 KubeJS 2001.6.5-build.26
+Stage=update
+Recipes=98939
+Assertions passed against live Server RecipeManager
+{"group":"","sourceJsonAvailable":false,"ingredients":[{"item":"minecraft:dirt"}],"category":"misc","result":{"item":"minecraft:cobblestone","empty":false,"count":2}}
+Planks={"group":"planks","sourceJsonAvailable":false,"ingredients":[{"tag":"biomesoplenty:jacaranda_logs"}],"category":"misc","result":{"item":"biomesoplenty:jacaranda_planks","empty":false,"count":5}}

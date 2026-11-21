@@ -1,0 +1,29 @@
+{
+  "version" : 1,
+  "sha256" : "86a326ada11d0be9e71825e8416d2d0857eaaab7b59e579723aad142cfb69de9",
+  "workspace" : {
+    "profiles" : [ {
+      "id" : "mrekubejs20261118",
+      "name" : "Runtime create",
+      "target" : "L:\\My Add\\RecipeEditor\\.manual-tests\\kubejs-export\\runtime\\create",
+      "format" : "KUBEJS",
+      "overwrite" : "REFUSE",
+      "backups" : true,
+      "minecraft" : "1.20.1",
+      "loader" : "FORGE",
+      "kubeJsMode" : "JAVASCRIPT"
+    } ],
+    "manifests" : [ {
+      "profile" : "mrekubejs20261118",
+      "target" : "L:\\My Add\\RecipeEditor\\.manual-tests\\kubejs-export\\runtime\\create",
+      "minecraft" : "1.20.1",
+      "timestamp" : "2026-11-18T14:07:27.215052400Z",
+      "status" : "GENERATED_RUNTIME_UNVERIFIED",
+      "formats" : [ "KUBEJS" ],
+      "hashes" : {
+        "kubejs/server_scripts/recipe_editor_mrekubejs20261118_generated.js" : "67c92c6977ef664d738e5ff86f1177711b9814bd777e4c9179d1749f41963d57"
+      },
+      "recipeIds" : [ "mre_export_test:vanilla_lifecycle" ]
+    } ]
+  }
+}

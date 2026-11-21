@@ -45,13 +45,25 @@ tasks.processResources { dependsOn(generateBuildInfo) }
 
 tasks.test {
     dependsOn(":companion-server:classes")
+    if(providers.gradleProperty("realModpack").isPresent) maxHeapSize="1536m"
     systemProperty("architectureRoot", rootProject.projectDir.absolutePath)
     systemProperty("expectedDesktopVersion", project.version.toString())
     providers.gradleProperty("realModpack").orNull?.let { systemProperty("realModpack", it) }
+    providers.gradleProperty("kubeJsExportDirectory").orNull?.let { systemProperty("kubeJsExportDirectory", it) }
+    listOf("resourceAuditDirectory","resourceAuditSnapshot","resourceAuditLabel").forEach { key -> providers.gradleProperty(key).orNull?.let { systemProperty(key,it) } }
     testLogging { events("failed", "skipped") }
 }
 
 // Manual UI probe lives exclusively on the test classpath and reads a real snapshot.
+tasks.register<JavaExec>("previewResources") {
+    group="verification"
+    dependsOn(tasks.testClasses)
+    classpath=sourceSets.test.get().runtimeClasspath
+    mainClass.set("dev.recipeeditor.app.ResourceBrowserPreview")
+    maxHeapSize="1536m"
+    args(providers.gradleProperty("realModpack").getOrElse(""),providers.gradleProperty("runtimeSnapshotFile").getOrElse(""))
+}
+
 tasks.register<JavaExec>("previewGregTech") {
     group = "verification"
     dependsOn(tasks.testClasses)

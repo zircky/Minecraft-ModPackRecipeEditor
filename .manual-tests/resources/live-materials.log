@@ -1,0 +1,57 @@
+Starting a Gradle Daemon, 2 busy and 1 incompatible and 2 stopped Daemons could not be reused, use --status for details
+> Task :companion-client:processResources NO-SOURCE
+> Task :companion-server:processResources NO-SOURCE
+> Task :exporters:processResources NO-SOURCE
+> Task :integrations:processResources NO-SOURCE
+> Task :recipe-engine:processResources NO-SOURCE
+> Task :registry:processResources NO-SOURCE
+> Task :companion-client:processTestResources NO-SOURCE
+> Task :core:compileJava UP-TO-DATE
+> Task :core:processResources NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :core:jar UP-TO-DATE
+> Task :companion-protocol:compileJava UP-TO-DATE
+> Task :companion-protocol:generateCompanionIdentity UP-TO-DATE
+> Task :companion-protocol:processResources UP-TO-DATE
+> Task :companion-protocol:classes UP-TO-DATE
+> Task :companion-protocol:jar UP-TO-DATE
+> Task :registry:compileJava UP-TO-DATE
+> Task :registry:classes UP-TO-DATE
+> Task :registry:jar UP-TO-DATE
+> Task :companion-server:compileJava UP-TO-DATE
+> Task :companion-server:classes UP-TO-DATE
+> Task :companion-server:jar UP-TO-DATE
+> Task :recipe-engine:compileJava UP-TO-DATE
+> Task :recipe-engine:classes UP-TO-DATE
+> Task :recipe-engine:jar UP-TO-DATE
+> Task :companion-client:compileJava UP-TO-DATE
+> Task :companion-client:classes UP-TO-DATE
+> Task :integrations:compileJava UP-TO-DATE
+> Task :integrations:classes UP-TO-DATE
+> Task :integrations:jar UP-TO-DATE
+> Task :exporters:compileJava UP-TO-DATE
+> Task :exporters:classes UP-TO-DATE
+> Task :exporters:jar UP-TO-DATE
+> Task :companion-client:compileTestJava
+> Task :companion-client:testClasses
+> Task :companion-client:externalTest
+
+GregTechMaterialCollectorTest > verifyMaterialCollectorAgainstActualIsgClient() FAILED
+    java.util.concurrent.ExecutionException at GregTechMaterialCollectorTest.java:34
+        Caused by: java.net.SocketTimeoutException at CompanionConnectionService.java:69
+
+1 test completed, 1 failed
+
+> Task :companion-client:externalTest FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':companion-client:externalTest'.
+> There were failing tests. See the report at: file:///L:/My%20Add/RecipeEditor/companion-client/build/reports/tests/externalTest/index.html
+
+* Try:
+> Run with --scan to generate a Build Scan (powered by Develocity).
+
+BUILD FAILED in 3m 19s
+19 actionable tasks: 2 executed, 17 up-to-date

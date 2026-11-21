@@ -1,0 +1,14 @@
+  public final transient dev.latvian.mods.kubejs.recipe.RecipeTypeFunction vanillaShaped;
+  public final transient dev.latvian.mods.kubejs.recipe.RecipeTypeFunction vanillaShapeless;
+  public final dev.latvian.mods.kubejs.recipe.RecipeTypeFunction shaped;
+  public final dev.latvian.mods.kubejs.recipe.RecipeTypeFunction shapeless;
+  public final dev.latvian.mods.kubejs.recipe.RecipeTypeFunction smelting;
+  public final dev.latvian.mods.kubejs.recipe.RecipeTypeFunction blasting;
+  public final dev.latvian.mods.kubejs.recipe.RecipeTypeFunction smoking;
+  public final dev.latvian.mods.kubejs.recipe.RecipeTypeFunction campfireCooking;
+  public final dev.latvian.mods.kubejs.recipe.RecipeTypeFunction stonecutting;
+  public final dev.latvian.mods.kubejs.recipe.RecipeTypeFunction smithing;
+  public final dev.latvian.mods.kubejs.recipe.RecipeTypeFunction smithingTrim;
+  public void remove(dev.latvian.mods.kubejs.recipe.filter.RecipeFilter);
+  public dev.latvian.mods.kubejs.recipe.RecipeTypeFunction getRecipeFunction(java.lang.String);
+  public dev.latvian.mods.kubejs.recipe.RecipeJS custom(com.google.gson.JsonObject);

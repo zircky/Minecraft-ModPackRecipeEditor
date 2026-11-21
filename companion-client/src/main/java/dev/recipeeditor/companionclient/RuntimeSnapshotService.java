@@ -19,8 +19,9 @@ public final class RuntimeSnapshotService {
         final var temp=Files.createTempFile(parent,".mre-snapshot-",".tmp");
         try {
             try(final var zip=new ZipOutputStream(Files.newOutputStream(temp))) {
-                final var manifest=new com.google.gson.JsonObject();manifest.addProperty("schemaVersion",1);manifest.addProperty("protocolVersion",1);manifest.addProperty("snapshotId",snapshot.snapshotId());manifest.addProperty("complete",true);manifest.add("environment",ProtocolCodec.GSON.toJsonTree(snapshot.environment()));manifest.add("diagnostics",ProtocolCodec.GSON.toJsonTree(snapshot.diagnostics()));final var hashes=new com.google.gson.JsonObject();long total=0;
-                for(final var entry:Map.<String,List<?>>of("registries",snapshot.registries(),"tags",snapshot.tags(),"recipes",snapshot.recipes(),"mods",snapshot.mods()).entrySet()) {
+                final var manifest=new com.google.gson.JsonObject();manifest.addProperty("schemaVersion",snapshot.schemaVersion());manifest.addProperty("protocolVersion",1);manifest.addProperty("snapshotId",snapshot.snapshotId());manifest.addProperty("complete",true);manifest.add("environment",ProtocolCodec.GSON.toJsonTree(snapshot.environment()));manifest.add("diagnostics",ProtocolCodec.GSON.toJsonTree(snapshot.diagnostics()));final var hashes=new com.google.gson.JsonObject();long total=0;
+                final var datasets=new LinkedHashMap<String,List<?>>();datasets.put("registries",snapshot.registries());datasets.put("tags",snapshot.tags());datasets.put("recipes",snapshot.recipes());datasets.put("mods",snapshot.mods());if(snapshot.schemaVersion()==2)datasets.put("materials",snapshot.materials());
+                for(final var entry:datasets.entrySet()) {
                     zip.putNextEntry(new ZipEntry(entry.getKey()+".jsonl"));final var digest=digest();
                     for(final var row:entry.getValue()){final byte[] bytes=(ProtocolCodec.GSON.toJson(row)+"\n").getBytes(StandardCharsets.UTF_8);if(bytes.length>ProtocolCodec.MAX_RECORD_BYTES||(total+=bytes.length)>maxBytes)throw new IOException("Snapshot byte limit");zip.write(bytes);digest.update(bytes);}zip.closeEntry();hashes.addProperty(entry.getKey(),HexFormat.of().formatHex(digest.digest()));
                 }
@@ -35,11 +36,13 @@ public final class RuntimeSnapshotService {
     public Snapshot load(final Path path)throws IOException {
         checkPath(path);if(!Files.isRegularFile(path)||Files.size(path)>maxBytes)throw new IOException("Invalid snapshot file");
         try(final var zip=new ZipFile(path.toFile())) {
-            if(zip.size()!=5)throw new IOException("Unexpected snapshot entries");final var names=new HashSet<String>();zip.stream().forEach(e->names.add(e.getName()));if(!names.equals(Set.of("manifest.json","registries.jsonl","tags.jsonl","recipes.jsonl","mods.jsonl")))throw new IOException("Invalid snapshot entry names");
+            if(zip.size()!=5&&zip.size()!=6)throw new IOException("Unexpected snapshot entries");final var names=new HashSet<String>();zip.stream().forEach(e->names.add(e.getName()));if(names.size()!=zip.size()||!names.contains("manifest.json"))throw new IOException("Duplicate/missing snapshot entries");
             final long[] total={0};final var manifest=ProtocolCodec.parse(read(zip,zip.getEntry("manifest.json"),ProtocolCodec.MAX_FRAME_BYTES,total)).getAsJsonObject();
-            if(!manifest.get("protocolVersion").getAsString().equals("1")||!manifest.get("schemaVersion").getAsString().equals("1")||!manifest.get("complete").getAsBoolean())throw new IOException("Incomplete/unsupported snapshot");
+            final int schema=manifest.get("schemaVersion").getAsInt();
+            if(!manifest.get("protocolVersion").getAsString().equals("1")||(schema!=1&&schema!=2)||!manifest.get("complete").getAsBoolean())throw new IOException("Incomplete/unsupported snapshot");
+            final var expectedNames=new HashSet<>(Set.of("manifest.json","registries.jsonl","tags.jsonl","recipes.jsonl","mods.jsonl"));if(schema==2)expectedNames.add("materials.jsonl");if(!names.equals(expectedNames))throw new IOException("Invalid snapshot entry names");
             final var hashes=manifest.getAsJsonObject("hashes");final String expectedHash=manifest.remove("dataHash").getAsString();if(!expectedHash.equals(HexFormat.of().formatHex(digest().digest(manifest.toString().getBytes(StandardCharsets.UTF_8)))))throw new IOException("Snapshot manifest checksum mismatch");
-            return new Snapshot(1,ProtocolCodec.required(manifest,"snapshotId"),true,ProtocolCodec.GSON.fromJson(manifest.get("environment"),Environment.class),rows(zip,"registries",Registry.class,hashes,total),rows(zip,"tags",Tag.class,hashes,total),rows(zip,"recipes",Recipe.class,hashes,total),rows(zip,"mods",Mod.class,hashes,total),strings(manifest.getAsJsonArray("diagnostics")));
+            return new Snapshot(schema,ProtocolCodec.required(manifest,"snapshotId"),true,ProtocolCodec.GSON.fromJson(manifest.get("environment"),Environment.class),rows(zip,"registries",Registry.class,hashes,total),rows(zip,"tags",Tag.class,hashes,total),rows(zip,"recipes",Recipe.class,hashes,total),rows(zip,"mods",Mod.class,hashes,total),strings(manifest.getAsJsonArray("diagnostics")),schema==2?rows(zip,"materials",Material.class,hashes,total):List.of());
         }catch(RuntimeException bad){throw new IOException("Invalid snapshot data",bad);}
     }
     private <T> List<T> rows(final ZipFile zip,final String name,final Class<T> type,final com.google.gson.JsonObject hashes,final long[] total)throws IOException {

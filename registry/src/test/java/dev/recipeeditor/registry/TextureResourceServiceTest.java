@@ -15,6 +15,7 @@ final class TextureResourceServiceTest {
         try(final var service=new TextureResourceService()) {
             final var data=service.load(source("a.png"),root); assertTrue(data.length>0);
             Files.writeString(path,"corrupt"); assertArrayEquals(data,service.load(source("a.png"),root));
+            service.clear();assertEquals(0,service.load(source("a.png"),root).length);
         }
         try(final var service=new TextureResourceService()) { assertEquals(0,service.load(source("a.png"),root).length); }
     }

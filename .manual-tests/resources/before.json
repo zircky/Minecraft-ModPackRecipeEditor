@@ -1,0 +1,43 @@
+[ {
+  "names_ru_ru_with_en_fallback" : 3978,
+  "names_en_us" : 3976,
+  "images" : 5247,
+  "resources" : 12049,
+  "kind" : "ITEM",
+  "scope" : "static"
+}, {
+  "names_ru_ru_with_en_fallback" : 5183,
+  "names_en_us" : 5179,
+  "images" : 1444,
+  "resources" : 13092,
+  "kind" : "BLOCK",
+  "scope" : "static"
+}, {
+  "names_ru_ru_with_en_fallback" : 2,
+  "names_en_us" : 2,
+  "images" : 0,
+  "resources" : 551,
+  "kind" : "FLUID",
+  "scope" : "static"
+}, {
+  "names_ru_ru_with_en_fallback" : 84,
+  "names_en_us" : 83,
+  "images" : 5247,
+  "resources" : 31332,
+  "kind" : "ITEM",
+  "scope" : "runtime"
+}, {
+  "names_ru_ru_with_en_fallback" : 14,
+  "names_en_us" : 10,
+  "images" : 1444,
+  "resources" : 17963,
+  "kind" : "BLOCK",
+  "scope" : "runtime"
+}, {
+  "names_ru_ru_with_en_fallback" : 0,
+  "names_en_us" : 0,
+  "images" : 0,
+  "resources" : 5241,
+  "kind" : "FLUID",
+  "scope" : "runtime"
+} ]

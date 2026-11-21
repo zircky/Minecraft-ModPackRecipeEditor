@@ -1,0 +1,29 @@
+{
+  "version" : 1,
+  "sha256" : "305d95c0fe621b15c467ccb8fbb691a630b89593a1a1929c7fdbe49d0efa5694",
+  "workspace" : {
+    "profiles" : [ {
+      "id" : "mrekubejs20261118",
+      "name" : "Runtime delete",
+      "target" : "L:\\My Add\\RecipeEditor\\.manual-tests\\kubejs-export\\runtime\\delete",
+      "format" : "KUBEJS",
+      "overwrite" : "REFUSE",
+      "backups" : true,
+      "minecraft" : "1.20.1",
+      "loader" : "FORGE",
+      "kubeJsMode" : "JAVASCRIPT"
+    } ],
+    "manifests" : [ {
+      "profile" : "mrekubejs20261118",
+      "target" : "L:\\My Add\\RecipeEditor\\.manual-tests\\kubejs-export\\runtime\\delete",
+      "minecraft" : "1.20.1",
+      "timestamp" : "2026-11-18T14:07:27.926000600Z",
+      "status" : "GENERATED_RUNTIME_UNVERIFIED",
+      "formats" : [ "KUBEJS" ],
+      "hashes" : {
+        "kubejs/server_scripts/recipe_editor_mrekubejs20261118_generated.js" : "75dd282ce1ab33aef0dd899640c41ecb462ad93d3274e7d0686a55c96d92b509"
+      },
+      "recipeIds" : [ "minecraft:tnt" ]
+    } ]
+  }
+}

@@ -1,0 +1,19 @@
+> Task :companion-protocol:compileJava UP-TO-DATE
+> Task :core:compileJava UP-TO-DATE
+> Task :registry:compileJava UP-TO-DATE
+> Task :recipe-engine:compileJava UP-TO-DATE
+> Task :companion-client:compileJava UP-TO-DATE
+> Task :integrations:compileJava UP-TO-DATE
+> Task :exporters:compileJava UP-TO-DATE
+
+> Task :desktop-ui:compileJava
+L:\My Add\RecipeEditor\desktop-ui\src\main\java\dev\recipeeditor\ui\RecipeEditorDialog.java:85: error: unmappable character (0xB7) for encoding UTF-8
+        if(layout.isPresent()&&layout.get().kind()==RecipeLayoutProvider.Kind.COOKING)visual.getChildren().add(new Label("Cooking time: "+value.fields().getOrDefault("cookingtime","not explicitly declared")+" ticks � Experience: "+value.fields().getOrDefault("experience","not explicitly declared")));
+                                                                                                                                                                                                                       ^
+1 error
+
+[Incubating] Problems report is available at: file:///L:/My%20Add/RecipeEditor/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 23s
+8 actionable tasks: 1 executed, 7 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.0/userguide/configuration_cache_enabling.html

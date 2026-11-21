@@ -34,12 +34,15 @@ public final class ExportWizard {
     private final ComboBox<ExportProfile> profiles = new ComboBox<>();
     private final TextField name = new TextField("Development"), target = new TextField();
     private final ComboBox<ExportFormat> format = new ComboBox<>(FXCollections.observableArrayList(ExportFormat.values()));
+    private final ComboBox<KubeJsExportMode> kubeJsMode=new ComboBox<>(FXCollections.observableArrayList(KubeJsExportMode.values()));
     private final ComboBox<OverwritePolicy> overwrite = new ComboBox<>(FXCollections.observableArrayList(OverwritePolicy.values()));
     private final CheckBox sourceConsent = new CheckBox("Allow writing into the imported modpack for this export"), reviewed = new CheckBox("I reviewed generated files, replacements and removals");
     private final TableView<RecipeChange> changes = new TableView<>();
     private final TableView<PlannedRecipe> planned = new TableView<>();
     private final ListView<String> files = new ListView<>();
     private final TextArea content = area(), diagnostics = area();
+    private final TextArea provenanceDetails=area();
+    private final ExportSourceMapping sourceMapping=new ExportSourceMapping();
     private final Label counts = new Label(), status = new Label("Select saved changes, then build a preview. Unsaved edits are excluded.");
     private final Button dryRun = new Button("Dry Run"), preview = new Button("Preview"), export = new Button("Export"), cancel = new Button("Cancel"), saveProfile = new Button("Save Profile"), open = new Button("Open result directory");
     private final ProgressBar progress = new ProgressBar(0);
@@ -63,7 +66,7 @@ public final class ExportWizard {
         version.setText("Profile target: "+profileMinecraft+" / "+profileLoader);
         this.blocked=Set.copyOf(blocked); this.workspace=workspace; this.copies=List.copyOf(copies); this.openDirectory=openDirectory;
         stage.initOwner(owner); stage.initModality(Modality.WINDOW_MODAL); stage.setTitle("Recipe Export Wizard — saved project changes");
-        format.setValue(initialFormat); overwrite.setValue(OverwritePolicy.REFUSE);
+        kubeJsMode.setValue(KubeJsExportMode.AUTO);format.setValue(initialFormat); overwrite.setValue(OverwritePolicy.REFUSE);
         profiles.setCellFactory(list -> profileCell()); profiles.setButtonCell(profileCell());
         profiles.getItems().setAll(workspace.profiles()); profiles.setPromptText("New profile");
         profiles.valueProperty().addListener((o,a,b)->{if(b!=null) loadProfile(b);});
@@ -73,9 +76,16 @@ public final class ExportWizard {
         settings.getChildren().addAll(new HBox(10,new Label("Profile"),profiles,fresh,new Label("Name"),name),
                 new HBox(10,new Label("Output"),target,browse), new HBox(10,new Label("Format"),format,new Label("Overwrite"),overwrite,new Label("Backups: always enabled")),sourceConsent,version,
                 new Label("Target: "+modpack.minecraftVersion().value()+" / "+modpack.loader().type()+". Files generated here are not runtime-validated."));
+        final var modes=new HBox(10,new Label("KubeJS Export Mode"),kubeJsMode,new Label("AUTO/COMBINED: one mechanism per ID; JSON additions/updates + JS removals."));
+        modes.visibleProperty().bind(format.valueProperty().isEqualTo(ExportFormat.KUBEJS).or(format.valueProperty().isEqualTo(ExportFormat.AUTO)));modes.managedProperty().bind(modes.visibleProperty());settings.getChildren().add(modes);
         name.textProperty().addListener((o,a,b)->invalidate()); target.textProperty().addListener((o,a,b)->invalidate());
         format.valueProperty().addListener((o,a,b)->{choices.clear(); invalidate();}); overwrite.valueProperty().addListener((o,a,b)->invalidate()); sourceConsent.selectedProperty().addListener((o,a,b)->invalidate());
+        kubeJsMode.valueProperty().addListener((o,a,b)->invalidate());
         tabs.getTabs().addAll(tab("Changes",changeSelection(selection)),tab("Plan / format choice",planTable()),tab("Generated files",filePreview()),tab("Diagnostics",diagnostics));
+        tabs.getTabs().add(tab("Sources / provenance",provenanceDetails));
+        changes.getSelectionModel().selectedItemProperty().addListener((o,a,b)->provenanceDetails.setText(b==null?"Select a change to inspect all definitions":provenance(b).describe()));
+        planned.getSelectionModel().selectedItemProperty().addListener((o,a,b)->{if(b!=null)provenanceDetails.setText(b.provenance().describe());});
+        if(changes.getSelectionModel().getSelectedItem()!=null)provenanceDetails.setText(provenance(changes.getSelectionModel().getSelectedItem()).describe());
         dryRun.setOnAction(e->buildPreview(false)); preview.setOnAction(e->buildPreview(true)); export.setOnAction(e->apply());
         saveProfile.setOnAction(e->saveProfile()); open.setOnAction(e->{if(resultDirectory!=null) openDirectory.accept(resultDirectory);}); open.setDisable(true);
         cancel.setOnAction(e->{if(operation!=null) {if(operation.cancel()) status.setText("Cancellation requested before file application");} else if(!busy) stage.close();});
@@ -91,30 +101,39 @@ public final class ExportWizard {
         final var rows = FXCollections.observableArrayList(saved.changes().values()); final var visible = new FilteredList<>(rows);
         changes.setItems(visible); changes.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         changes.getColumns().add(column("Recipe ID",c->c.id().toString(),330)); changes.getColumns().add(column("Operation",c->c.type().name(),100));
-        changes.getColumns().add(column("Source Mod IDs",this::sourceMods,220)); changes.getColumns().add(column("Recipe type",this::recipeTypes,280));
+        changes.getColumns().add(column("Recipe Namespace",c->c.id().namespace(),170));
+        changes.getColumns().add(column("Source Mod IDs (container metadata)",this::sourceMods,250)); changes.getColumns().add(column("Recipe type",this::recipeTypes,280));
+        changes.getColumns().add(column("Active Source",c->provenance(c).activeSource(),300));
+        changes.getColumns().add(column("Physical Source",c->provenance(c).discoveredDefinitions().stream().map(RecipeSource::physicalSource).distinct().collect(Collectors.joining("; ")),300));
+        changes.getColumns().add(column("Original File",c->provenance(c).discoveredDefinitions().stream().map(RecipeSource::originalFile).distinct().collect(Collectors.joining("; ")),300));
         if(selection.isEmpty()&&copies.isEmpty()) changes.getSelectionModel().selectAll(); else for(final var row:rows) if(selection.contains(row.id())) changes.getSelectionModel().select(row);
-        final var mod = new ComboBox<String>(); mod.getItems().add("All source mods"); rows.stream().flatMap(c->mods(c).stream()).distinct().sorted().forEach(mod.getItems()::add); mod.getSelectionModel().selectFirst();
+        final var mode=new ComboBox<RecipeFilterMode>(FXCollections.observableArrayList(RecipeFilterMode.values()));mode.setValue(RecipeFilterMode.SOURCE_MOD);
+        final var mod = new ComboBox<String>();
+        final Runnable options=()->{mod.getItems().clear();mod.getItems().add("All");if(mode.getValue()==RecipeFilterMode.RECIPE_NAMESPACE)rows.stream().map(c->c.id().namespace()).distinct().sorted().forEach(mod.getItems()::add);else {mod.getItems().add("UNKNOWN");rows.stream().flatMap(c->mods(c).stream()).distinct().sorted().forEach(mod.getItems()::add);}mod.getSelectionModel().selectFirst();};options.run();
         final var type = new ComboBox<String>(); type.getItems().add("All recipe types"); rows.stream().flatMap(c->definitions(c).stream()).map(r->r.type().displayId()).distinct().sorted().forEach(type.getItems()::add); type.getSelectionModel().selectFirst();
-        final Runnable filter=()->{visible.setPredicate(c->(mod.getSelectionModel().getSelectedIndex()==0||mods(c).contains(mod.getValue()))&&(type.getSelectionModel().getSelectedIndex()==0||definitions(c).stream().anyMatch(r->r.type().displayId().equals(type.getValue())))); changes.getSelectionModel().selectAll(); invalidate(); updateCounts();};
+        final Runnable filter=()->{visible.setPredicate(c->(mod.getSelectionModel().getSelectedIndex()<=0||(mode.getValue()==RecipeFilterMode.RECIPE_NAMESPACE?c.id().namespace().equals(mod.getValue()):mods(c).contains(mod.getValue())||(mod.getValue().equals("UNKNOWN")&&mods(c).isEmpty())))&&(type.getSelectionModel().getSelectedIndex()==0||definitions(c).stream().anyMatch(r->r.type().displayId().equals(type.getValue())))); changes.getSelectionModel().selectAll(); invalidate(); updateCounts();};
         mod.valueProperty().addListener((o,a,b)->filter.run()); type.valueProperty().addListener((o,a,b)->filter.run());
+        mode.valueProperty().addListener((o,a,b)->{options.run();filter.run();});
         final var all = new Button("Select all visible"); all.setOnAction(e->changes.getSelectionModel().selectAll()); final var none = new Button("Clear selection"); none.setOnAction(e->changes.getSelectionModel().clearSelection());
         changes.getSelectionModel().getSelectedItems().addListener((javafx.collections.ListChangeListener<RecipeChange>)c->{invalidate();updateCounts();});
         updateCounts(); VBox.setVgrow(changes,Priority.ALWAYS);
-        return new VBox(8,new Label("Ctrl/Shift selects saved changes. Mod filters use source ownership; each profile replaces its previous selection."),new HBox(10,mod,type,all,none),counts,changes);
+        return new VBox(8,new Label("Source Mod uses container metadata, not authorship. Namespace is independent. Inspect every source in Sources / provenance; runtime winner remains UNKNOWN."),new HBox(10,mode,mod,type,all,none),counts,changes);
     }
     private List<RecipeDefinition> definitions(final RecipeChange change) {return change.replacement().isEmpty()?originals.findById(change.id()):change.replacement();}
-    private Set<String> mods(final RecipeChange change) {final var result=new TreeSet<String>(); change.originals().forEach(r->result.addAll(r.source().modIds())); definitions(change).forEach(r->result.addAll(r.source().modIds())); return result;}
-    private String sourceMods(final RecipeChange c) {return String.join(", ",mods(c));}
+    private RecipeProvenance provenance(final RecipeChange change) {return sourceMapping.resolve(change,originals,project,blocked.contains(change.id()));}
+    private Set<String> mods(final RecipeChange change) {return provenance(change).sourceModIds();}
+    private String sourceMods(final RecipeChange c) {return mods(c).isEmpty()?"UNKNOWN":String.join(", ",mods(c));}
     private String recipeTypes(final RecipeChange c) {return definitions(c).stream().map(r->r.type().displayId()).distinct().collect(Collectors.joining(", "));}
     private void updateCounts() {final var selected=changes.getSelectionModel().getSelectedItems(); counts.setText("Created: "+selected.stream().filter(c->c.type()==RecipeChangeType.CREATE).count()+"   Modified: "+selected.stream().filter(c->c.type()==RecipeChangeType.UPDATE).count()+"   Deleted: "+selected.stream().filter(c->c.type()==RecipeChangeType.DELETE).count()+"   Explicit unchanged copies: "+copies.size());}
     private TableView<PlannedRecipe> planTable() {
         planned.getColumns().add(column("Recipe / operation",p->p.change().id()+" / "+p.change().type(),330)); planned.getColumns().add(column("Format",p->p.format().name(),110));
+        planned.getColumns().add(column("Recipe Type",p->recipeTypes(p.change()),220));planned.getColumns().add(column("Export Mode",PlannedRecipe::exportMode,190));planned.getColumns().add(column("Target File",p->String.join("; ",p.targetFiles()),420));
         planned.getColumns().add(column("Capability",p->p.capability().status()+": "+p.capability().reason(),430)); planned.getColumns().add(column("Alternatives",p->p.alternatives().toString(),220));
         final var menu=new ContextMenu(); for(final var choice:ExportFormat.values()) {final var item=new MenuItem("Use "+choice); item.setOnAction(e->{final var selected=planned.getSelectionModel().getSelectedItem();if(selected!=null) {choices.put(selected.change().id(),choice);invalidate();status.setText("Format changed for "+selected.change().id()+". Rebuild Preview.");}});menu.getItems().add(item);} planned.setContextMenu(menu);return planned;
     }
     private SplitPane filePreview() {files.getSelectionModel().selectedItemProperty().addListener((o,a,b)->{content.setText(plan==null||b==null?"":plan.files().getOrDefault(b,"This previously generated file will be removed after its ownership hash is rechecked."));content.positionCaret(0);}); return new SplitPane(files,content);}
-    private ExportProfile profile() {return new ExportProfile(profileId,name.getText(),Path.of(target.getText()),format.getValue(),overwrite.getValue(),true,profileMinecraft,profileLoader);}
-    private void loadProfile(final ExportProfile p) {loading=true;profileMinecraft=p.minecraftVersion();profileLoader=p.loader();version.setText("Profile target: "+profileMinecraft+" / "+profileLoader);profileId=p.id();name.setText(p.name());target.setText(p.targetDirectory().toString());format.setValue(p.preferredFormat());overwrite.setValue(p.overwritePolicy());loading=false;invalidate();}
+    private ExportProfile profile() {return new ExportProfile(profileId,name.getText(),Path.of(target.getText()),format.getValue(),overwrite.getValue(),true,profileMinecraft,profileLoader,kubeJsMode.getValue());}
+    private void loadProfile(final ExportProfile p) {loading=true;profileMinecraft=p.minecraftVersion();profileLoader=p.loader();version.setText("Profile target: "+profileMinecraft+" / "+profileLoader);profileId=p.id();name.setText(p.name());target.setText(p.targetDirectory().toString());format.setValue(p.preferredFormat());kubeJsMode.setValue(p.kubeJsMode());overwrite.setValue(p.overwritePolicy());loading=false;invalidate();}
     private ExportRequest request() {final var context=new ExportContext(modpack,originals,saved,project,profile(),workspace.manifests(),blocked,sourceConsent.isSelected());return new ExportRequest(context,changes.getSelectionModel().getSelectedItems().stream().map(RecipeChange::id).collect(Collectors.toSet()),choices,copies);}
     private void buildPreview(final boolean showFiles) {
         try {final var request=request();setBusy(true);status.setText("Validating saved changes and generating preview; no files are written…");progress.setProgress(-1);

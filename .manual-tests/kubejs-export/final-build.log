@@ -1,0 +1,174 @@
+> Task :assemble UP-TO-DATE
+
+> Task :verifyArchitecture
+Production architecture verified: 12 modules, no cycles.
+
+> Task :check
+> Task :core:compileJava UP-TO-DATE
+> Task :companion-protocol:compileJava UP-TO-DATE
+> Task :registry:compileJava UP-TO-DATE
+> Task :modpack-parser:compileJava UP-TO-DATE
+> Task :app:generateBuildInfo UP-TO-DATE
+> Task :app:processResources UP-TO-DATE
+> Task :app:processTestFixturesResources NO-SOURCE
+> Task :app:processTestResources NO-SOURCE
+> Task :companion-client:processResources NO-SOURCE
+> Task :companion-protocol:generateCompanionIdentity UP-TO-DATE
+> Task :companion-protocol:processResources UP-TO-DATE
+> Task :companion-protocol:classes UP-TO-DATE
+> Task :companion-protocol:jar UP-TO-DATE
+> Task :recipe-engine:compileJava UP-TO-DATE
+> Task :companion-client:compileJava UP-TO-DATE
+> Task :integrations:compileJava UP-TO-DATE
+> Task :exporters:compileJava UP-TO-DATE
+> Task :companion-server:compileJava UP-TO-DATE
+> Task :recipe-analyzer:compileJava UP-TO-DATE
+> Task :companion-client:classes UP-TO-DATE
+> Task :companion-client:jar UP-TO-DATE
+> Task :companion-server:processResources NO-SOURCE
+> Task :companion-server:classes UP-TO-DATE
+> Task :core:processResources NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :core:jar UP-TO-DATE
+> Task :exporters:processResources NO-SOURCE
+> Task :exporters:classes UP-TO-DATE
+> Task :exporters:jar UP-TO-DATE
+> Task :integrations:processResources NO-SOURCE
+> Task :integrations:classes UP-TO-DATE
+> Task :integrations:jar UP-TO-DATE
+> Task :modpack-parser:processResources NO-SOURCE
+> Task :modpack-parser:classes UP-TO-DATE
+> Task :modpack-parser:jar UP-TO-DATE
+> Task :recipe-analyzer:processResources NO-SOURCE
+> Task :recipe-analyzer:classes UP-TO-DATE
+> Task :desktop-ui:compileJava UP-TO-DATE
+> Task :recipe-analyzer:jar UP-TO-DATE
+> Task :app:compileJava UP-TO-DATE
+> Task :app:classes UP-TO-DATE
+> Task :desktop-ui:processResources UP-TO-DATE
+> Task :desktop-ui:classes UP-TO-DATE
+> Task :desktop-ui:jar UP-TO-DATE
+> Task :recipe-engine:processResources NO-SOURCE
+> Task :recipe-engine:classes UP-TO-DATE
+> Task :recipe-engine:jar UP-TO-DATE
+> Task :registry:processResources NO-SOURCE
+> Task :registry:classes UP-TO-DATE
+> Task :registry:jar UP-TO-DATE
+> Task :app:jar UP-TO-DATE
+> Task :app:compileTestFixturesJava UP-TO-DATE
+> Task :app:testFixturesClasses UP-TO-DATE
+> Task :app:testFixturesJar UP-TO-DATE
+> Task :app:compileTestJava UP-TO-DATE
+> Task :app:testClasses UP-TO-DATE
+> Task :companion-client:compileTestJava
+> Task :companion-client:processTestResources NO-SOURCE
+> Task :companion-client:testClasses
+> Task :companion-server:jar UP-TO-DATE
+> Task :app:test
+> Task :companion-client:test
+> Task :app:integrationTest
+> Task :companion-protocol:compileTestJava UP-TO-DATE
+> Task :companion-protocol:processTestResources NO-SOURCE
+> Task :companion-protocol:testClasses UP-TO-DATE
+> Task :companion-protocol:test UP-TO-DATE
+> Task :companion-protocol:integrationTest UP-TO-DATE
+> Task :companion-server:compileTestJava NO-SOURCE
+> Task :companion-server:processTestResources NO-SOURCE
+> Task :companion-server:testClasses UP-TO-DATE
+> Task :companion-server:test NO-SOURCE
+> Task :companion-server:integrationTest NO-SOURCE
+> Task :core:compileTestJava UP-TO-DATE
+> Task :core:processTestResources NO-SOURCE
+> Task :core:testClasses UP-TO-DATE
+> Task :core:test UP-TO-DATE
+> Task :core:integrationTest UP-TO-DATE
+> Task :desktop-ui:compileTestJava UP-TO-DATE
+> Task :desktop-ui:processTestResources NO-SOURCE
+> Task :desktop-ui:testClasses UP-TO-DATE
+> Task :desktop-ui:test UP-TO-DATE
+> Task :desktop-ui:integrationTest UP-TO-DATE
+> Task :companion-client:integrationTest
+> Task :integrations:compileTestJava UP-TO-DATE
+> Task :integrations:processTestResources NO-SOURCE
+> Task :integrations:testClasses UP-TO-DATE
+> Task :integrations:test UP-TO-DATE
+> Task :integrations:integrationTest UP-TO-DATE
+> Task :modpack-parser:compileTestJava UP-TO-DATE
+> Task :modpack-parser:processTestResources NO-SOURCE
+> Task :modpack-parser:testClasses UP-TO-DATE
+> Task :modpack-parser:test UP-TO-DATE
+> Task :modpack-parser:integrationTest UP-TO-DATE
+> Task :recipe-analyzer:compileTestJava UP-TO-DATE
+> Task :recipe-analyzer:processTestResources NO-SOURCE
+> Task :recipe-analyzer:testClasses UP-TO-DATE
+> Task :recipe-analyzer:test UP-TO-DATE
+> Task :recipe-analyzer:integrationTest UP-TO-DATE
+> Task :recipe-engine:compileTestJava UP-TO-DATE
+> Task :recipe-engine:processTestResources NO-SOURCE
+> Task :recipe-engine:testClasses UP-TO-DATE
+> Task :recipe-engine:test UP-TO-DATE
+> Task :recipe-engine:integrationTest UP-TO-DATE
+> Task :registry:compileTestJava UP-TO-DATE
+> Task :registry:processTestResources NO-SOURCE
+> Task :registry:testClasses UP-TO-DATE
+> Task :registry:test UP-TO-DATE
+> Task :registry:integrationTest UP-TO-DATE
+> Task :app:startScripts UP-TO-DATE
+> Task :app:distTar UP-TO-DATE
+> Task :app:distZip UP-TO-DATE
+> Task :app:assemble UP-TO-DATE
+> Task :app:check
+> Task :app:build
+> Task :companion-client:assemble UP-TO-DATE
+> Task :companion-client:check
+> Task :companion-client:build
+> Task :companion-protocol:assemble UP-TO-DATE
+> Task :companion-protocol:check UP-TO-DATE
+> Task :companion-protocol:build UP-TO-DATE
+> Task :companion-server:assemble UP-TO-DATE
+> Task :companion-server:check UP-TO-DATE
+> Task :companion-server:build UP-TO-DATE
+> Task :core:assemble UP-TO-DATE
+> Task :core:check UP-TO-DATE
+> Task :core:build UP-TO-DATE
+> Task :desktop-ui:assemble UP-TO-DATE
+> Task :desktop-ui:check UP-TO-DATE
+> Task :desktop-ui:build UP-TO-DATE
+> Task :integrations:assemble UP-TO-DATE
+> Task :integrations:check UP-TO-DATE
+> Task :integrations:build UP-TO-DATE
+> Task :modpack-parser:assemble UP-TO-DATE
+> Task :modpack-parser:check UP-TO-DATE
+> Task :modpack-parser:build UP-TO-DATE
+> Task :recipe-analyzer:assemble UP-TO-DATE
+> Task :recipe-analyzer:check UP-TO-DATE
+> Task :recipe-analyzer:build UP-TO-DATE
+> Task :recipe-engine:assemble UP-TO-DATE
+> Task :recipe-engine:check UP-TO-DATE
+> Task :recipe-engine:build UP-TO-DATE
+> Task :registry:assemble UP-TO-DATE
+> Task :registry:check UP-TO-DATE
+> Task :registry:build UP-TO-DATE
+> Task :app:runtimeImage UP-TO-DATE
+> Task :app:dependencyNotices
+> Task :app:stageWindows
+> Task :exporters:compileTestJava
+> Task :exporters:processTestResources NO-SOURCE
+> Task :exporters:testClasses
+
+> Task :exporters:test
+
+ExportFileWriterTest > symbolicLinkAncestorIsRejectedWhenSupported() SKIPPED
+
+> Task :test
+> Task :exporters:integrationTest
+> Task :exporters:assemble UP-TO-DATE
+> Task :exporters:check
+> Task :exporters:build
+> Task :testReport
+> Task :build
+> Task :app:packageWindows
+
+BUILD SUCCESSFUL in 4m 12s
+73 actionable tasks: 13 executed, 60 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.0/userguide/configuration_cache_enabling.html

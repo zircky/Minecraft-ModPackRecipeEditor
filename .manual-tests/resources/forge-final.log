@@ -1,0 +1,36 @@
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/C:/Users/ziran/.gradle/wrapper/dists/gradle-8.8-bin/dl7vupf4psengwqhwktix4v1/gradle-8.8/lib/native-platform-0.22-milestone-26.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.8/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+L:\My Add\RecipeEditor\minecraft-companions\forge-1.20.1\src\main\java\dev\recipeeditor\forge\ClientPresentationCollector.java:99: warning: [removal] ResourceLocation(String) in ResourceLocation has been deprecated and marked for removal
+                final var id=new net.minecraft.resources.ResourceLocation(sprite);
+                             ^
+L:\My Add\RecipeEditor\minecraft-companions\forge-1.20.1\src\main\java\dev\recipeeditor\forge\ClientPresentationCollector.java:100: warning: [removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal
+                final var resource=Minecraft.getInstance().getResourceManager().getResource(new net.minecraft.resources.ResourceLocation(id.getNamespace(),"textures/"+id.getPath()+".png"));
+                                                                                            ^
+> Task :compileJava
+L:\My Add\RecipeEditor\minecraft-companions\forge-1.20.1\src\main\java\dev\recipeeditor\forge\MreCompanion.java:21: warning: [removal] get() in FMLJavaModLoadingContext has been deprecated and marked for removal
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
+                                ^
+Note: L:\My Add\RecipeEditor\minecraft-companions\forge-1.20.1\src\main\java\dev\recipeeditor\forge\ClientPresentationCollector.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+3 warnings
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :jar
+> Task :downloadMcpConfig
+> Task :extractSrg UP-TO-DATE
+> Task :createMcpToSrg UP-TO-DATE
+> Task :reobfJar
+> Task :compileTestJava NO-SOURCE
+> Task :processTestResources NO-SOURCE
+> Task :testClasses UP-TO-DATE
+> Task :test NO-SOURCE
+
+BUILD SUCCESSFUL in 1m 22s
+7 actionable tasks: 4 executed, 3 up-to-date

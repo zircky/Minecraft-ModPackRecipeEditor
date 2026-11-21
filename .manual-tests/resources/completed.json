@@ -1,0 +1,93 @@
+[ {
+  "preview_statuses" : {
+    "AMBIGUOUS_SOURCE" : 2,
+    "INVALID_TEXTURE" : 13,
+    "READY" : 4756,
+    "RENDERING_UNSUPPORTED" : 1672,
+    "RUNTIME_TEXTURE_REQUIRED" : 722,
+    "TEXTURE_NOT_FOUND" : 757,
+    "TEXTURE_SAMPLE" : 1470,
+    "UNSUPPORTED_RENDERER" : 2657
+  },
+  "resources" : 12049,
+  "images" : 7898,
+  "names_en_us" : 3957,
+  "scope" : "static",
+  "names_ru_ru_with_en_fallback" : 3959,
+  "kind" : "ITEM"
+}, {
+  "preview_statuses" : {
+    "INVALID_TEXTURE" : 1,
+    "RENDERING_UNSUPPORTED" : 8288,
+    "RUNTIME_TEXTURE_REQUIRED" : 371,
+    "TEXTURE_NOT_FOUND" : 222,
+    "TEXTURE_SAMPLE" : 1949,
+    "UNSUPPORTED_RENDERER" : 2261
+  },
+  "resources" : 13092,
+  "images" : 8025,
+  "names_en_us" : 5179,
+  "scope" : "static",
+  "names_ru_ru_with_en_fallback" : 5183,
+  "kind" : "BLOCK"
+}, {
+  "preview_statuses" : {
+    "RUNTIME_TEXTURE_REQUIRED" : 551
+  },
+  "resources" : 551,
+  "images" : 0,
+  "names_en_us" : 2,
+  "scope" : "static",
+  "names_ru_ru_with_en_fallback" : 2,
+  "kind" : "FLUID"
+}, {
+  "preview_statuses" : {
+    "INVALID_TEXTURE" : 62,
+    "READY" : 17188,
+    "RENDERING_UNSUPPORTED" : 6507,
+    "RUNTIME_TEXTURE_REQUIRED" : 184,
+    "TEXTURE_NOT_FOUND" : 6665,
+    "TEXTURE_SAMPLE" : 5,
+    "UNSUPPORTED_RENDERER" : 721
+  },
+  "resources" : 31332,
+  "images" : 23700,
+  "names_en_us" : 16557,
+  "scope" : "runtime",
+  "names_ru_ru_with_en_fallback" : 29511,
+  "kind" : "ITEM"
+}, {
+  "preview_statuses" : {
+    "INVALID_TEXTURE" : 5,
+    "RENDERING_UNSUPPORTED" : 11091,
+    "RUNTIME_TEXTURE_REQUIRED" : 422,
+    "TEXTURE_NOT_FOUND" : 3488,
+    "TEXTURE_SAMPLE" : 696,
+    "UNSUPPORTED_RENDERER" : 2261
+  },
+  "resources" : 17963,
+  "images" : 11773,
+  "names_en_us" : 8068,
+  "scope" : "runtime",
+  "names_ru_ru_with_en_fallback" : 10752,
+  "kind" : "BLOCK"
+}, {
+  "preview_statuses" : {
+    "RUNTIME_TEXTURE_REQUIRED" : 7,
+    "TEXTURE_NOT_FOUND" : 20,
+    "TEXTURE_SAMPLE" : 5214
+  },
+  "resources" : 5241,
+  "images" : 5214,
+  "names_en_us" : 1932,
+  "scope" : "runtime",
+  "names_ru_ru_with_en_fallback" : 5233,
+  "kind" : "FLUID"
+}, {
+  "names_ru_ru_with_en_fallback" : 3083,
+  "names_en_us" : 657,
+  "images" : 3076,
+  "resources" : 3083,
+  "kind" : "MATERIAL",
+  "scope" : "runtime"
+} ]

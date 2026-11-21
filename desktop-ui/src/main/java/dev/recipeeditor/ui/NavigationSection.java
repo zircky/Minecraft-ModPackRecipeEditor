@@ -6,6 +6,7 @@ public enum NavigationSection {
     ITEMS("Items", "No items loaded", "Import a Minecraft 1.20.1 instance to index static resource candidates."),
     BLOCKS("Blocks", "No blocks indexed", "Block models and blockstates are static evidence, not runtime registration."),
     FLUIDS("Fluids", "No fluid references indexed", "Only explicit fluid tag references are indexed. Programmatic registrations may be absent."),
+    MATERIALS("Materials", "Runtime Companion required", "Synchronize a materials-v1 snapshot from a supported GregTech runtime to inspect actual materials and registered forms."),
     RECIPES("Recipes", "No recipes loaded", "Import and index a Minecraft 1.20.1 instance to edit saved project recipes."),
     RUNTIME("Runtime", "No runtime connection", "Connect to the read-only Minecraft Companion and collect a complete snapshot."),
     ANALYZER("Analyzer", "Nothing to analyze", "Recipe analysis will be available when recipe loading is implemented."),

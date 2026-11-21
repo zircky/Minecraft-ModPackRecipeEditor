@@ -55,4 +55,18 @@ public final class EffectiveRecipeIndex {
     public synchronized List<RecipeDefinition> findRecipesByType(final ResourceLocation id) { return merge(original.findRecipesByType(id),types.getOrDefault(id,Set.of())); }
     public synchronized List<RecipeDefinition> findRecipesByTag(final ResourceLocation id) { return merge(original.findRecipesByTag(id),tags.getOrDefault(id,Set.of())); }
     public synchronized List<RecipeDefinition> recipes() { return merge(original.recipes(),replacements.keySet()); }
+    public synchronized List<RecipeDefinition> findRecipesUsing(final ResourceKind kind,final ResourceLocation id) {
+        if(kind==ResourceKind.ITEM)return findRecipesUsing(id);
+        if(kind!=ResourceKind.FLUID)return List.of();
+        return merge(original.findRecipesUsing(kind,id),fluidReplacements(id,true));
+    }
+    public synchronized List<RecipeDefinition> findRecipesProducing(final ResourceKind kind,final ResourceLocation id) {
+        if(kind==ResourceKind.ITEM)return findRecipesProducing(id);
+        if(kind!=ResourceKind.FLUID)return List.of();
+        return merge(original.findRecipesProducing(kind,id),fluidReplacements(id,false));
+    }
+    private Set<ResourceLocation> fluidReplacements(final ResourceLocation id,final boolean uses) {
+        final var delta=new RecipeIndex(List.copyOf(replacements.values()),original.tagIndex());
+        return (uses?delta.findRecipesUsing(ResourceKind.FLUID,id):delta.findRecipesProducing(ResourceKind.FLUID,id)).stream().map(RecipeDefinition::id).collect(java.util.stream.Collectors.toSet());
+    }
 }

@@ -1,0 +1,186 @@
+> Task :companion-server:clean
+> Task :companion-protocol:clean
+> Task :companion-client:clean
+> Task :core:clean
+> Task :desktop-ui:clean
+> Task :integrations:clean
+> Task :exporters:clean
+> Task :modpack-parser:clean
+> Task :app:clean
+> Task :assemble UP-TO-DATE
+
+> Task :verifyArchitecture
+Production architecture verified: 12 modules, no cycles.
+
+> Task :check
+> Task :registry:clean
+> Task :recipe-analyzer:clean
+> Task :recipe-engine:clean
+> Task :app:generateBuildInfo
+> Task :app:processResources
+> Task :app:processTestFixturesResources NO-SOURCE
+> Task :app:processTestResources NO-SOURCE
+> Task :companion-client:processResources NO-SOURCE
+> Task :companion-server:processResources NO-SOURCE
+> Task :clean
+> Task :exporters:processResources NO-SOURCE
+> Task :integrations:processResources NO-SOURCE
+> Task :modpack-parser:processResources NO-SOURCE
+> Task :recipe-analyzer:processResources NO-SOURCE
+> Task :recipe-engine:processResources NO-SOURCE
+> Task :registry:processResources NO-SOURCE
+> Task :companion-client:processTestResources NO-SOURCE
+> Task :companion-server:processTestResources NO-SOURCE
+> Task :desktop-ui:processResources
+> Task :desktop-ui:processTestResources NO-SOURCE
+> Task :exporters:processTestResources NO-SOURCE
+> Task :integrations:processTestResources NO-SOURCE
+> Task :recipe-analyzer:processTestResources NO-SOURCE
+> Task :recipe-engine:processTestResources NO-SOURCE
+> Task :registry:processTestResources NO-SOURCE
+> Task :modpack-parser:processTestResources NO-SOURCE
+> Task :core:compileJava
+> Task :core:processResources NO-SOURCE
+> Task :core:classes
+> Task :core:jar
+> Task :companion-protocol:compileJava
+> Task :companion-protocol:generateCompanionIdentity
+> Task :companion-protocol:processResources
+> Task :companion-protocol:classes
+> Task :companion-protocol:jar
+> Task :companion-server:compileJava
+> Task :companion-server:classes
+> Task :companion-server:jar
+> Task :registry:compileJava
+> Task :companion-protocol:compileTestJava
+> Task :registry:classes
+> Task :registry:jar
+> Task :companion-protocol:processTestResources NO-SOURCE
+> Task :companion-protocol:testClasses
+> Task :core:compileTestJava
+> Task :companion-server:compileTestJava NO-SOURCE
+> Task :companion-server:testClasses UP-TO-DATE
+> Task :companion-server:test NO-SOURCE
+> Task :companion-server:integrationTest NO-SOURCE
+> Task :core:processTestResources NO-SOURCE
+> Task :core:testClasses
+> Task :recipe-engine:compileJava
+> Task :companion-protocol:test
+> Task :companion-client:compileJava
+> Task :companion-client:classes
+> Task :companion-client:jar
+> Task :recipe-engine:classes
+> Task :modpack-parser:compileJava
+> Task :modpack-parser:classes
+> Task :modpack-parser:jar
+> Task :recipe-engine:jar
+> Task :core:test
+> Task :modpack-parser:compileTestJava
+> Task :modpack-parser:testClasses
+> Task :companion-protocol:integrationTest
+> Task :core:integrationTest
+
+> Task :modpack-parser:test
+
+ModScannerTest > symbolicLinkOutsideRootIsRejectedWhenSupported() SKIPPED
+
+> Task :integrations:compileJava
+> Task :recipe-engine:compileTestJava
+> Task :registry:compileTestJava
+> Task :integrations:classes
+> Task :integrations:jar
+> Task :modpack-parser:integrationTest
+> Task :recipe-engine:testClasses
+> Task :recipe-engine:test
+> Task :recipe-analyzer:compileJava
+> Task :recipe-analyzer:classes
+> Task :recipe-analyzer:jar
+> Task :recipe-engine:integrationTest
+> Task :registry:testClasses
+> Task :integrations:compileTestJava
+> Task :integrations:testClasses
+> Task :exporters:compileJava
+> Task :recipe-analyzer:compileTestJava
+> Task :exporters:classes
+> Task :exporters:jar
+> Task :registry:test
+> Task :desktop-ui:compileJava
+> Task :integrations:test
+> Task :desktop-ui:classes
+> Task :desktop-ui:jar
+> Task :exporters:compileTestJava
+> Task :exporters:testClasses
+> Task :companion-client:compileTestJava
+> Task :companion-client:testClasses
+> Task :companion-client:test
+
+> Task :exporters:test
+
+ExportFileWriterTest > symbolicLinkAncestorIsRejectedWhenSupported() SKIPPED
+
+> Task :desktop-ui:compileTestJava
+> Task :desktop-ui:testClasses
+> Task :app:compileJava
+> Task :app:classes
+> Task :app:jar
+> Task :desktop-ui:test
+> Task :app:compileTestFixturesJava
+> Task :app:testFixturesClasses
+> Task :app:testFixturesJar
+> Task :companion-client:integrationTest
+> Task :integrations:integrationTest
+> Task :recipe-analyzer:testClasses
+> Task :desktop-ui:integrationTest
+> Task :app:compileTestJava
+> Task :app:testClasses
+> Task :registry:integrationTest
+> Task :companion-client:assemble
+> Task :companion-client:check
+> Task :companion-client:build
+> Task :companion-protocol:assemble
+> Task :companion-protocol:check
+> Task :companion-protocol:build
+> Task :companion-server:assemble
+> Task :companion-server:check UP-TO-DATE
+> Task :companion-server:build
+> Task :core:assemble
+> Task :core:check
+> Task :core:build
+> Task :desktop-ui:assemble
+> Task :desktop-ui:check
+> Task :desktop-ui:build
+> Task :integrations:assemble
+> Task :integrations:check
+> Task :integrations:build
+> Task :modpack-parser:assemble
+> Task :modpack-parser:check
+> Task :modpack-parser:build
+> Task :recipe-engine:assemble
+> Task :recipe-engine:check
+> Task :recipe-engine:build
+> Task :registry:assemble
+> Task :registry:check
+> Task :registry:build
+> Task :exporters:integrationTest
+> Task :exporters:assemble
+> Task :exporters:check
+> Task :exporters:build
+> Task :app:test
+> Task :recipe-analyzer:test
+> Task :recipe-analyzer:integrationTest
+> Task :recipe-analyzer:assemble
+> Task :recipe-analyzer:check
+> Task :recipe-analyzer:build
+> Task :app:integrationTest
+> Task :testReport
+> Task :app:startScripts
+> Task :app:distTar
+> Task :app:distZip
+> Task :app:assemble
+> Task :app:check
+> Task :app:build
+> Task :build
+
+BUILD SUCCESSFUL in 2m 34s
+82 actionable tasks: 82 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.0/userguide/configuration_cache_enabling.html

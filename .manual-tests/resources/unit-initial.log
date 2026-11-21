@@ -1,0 +1,63 @@
+> Task :companion-client:processResources NO-SOURCE
+> Task :registry:processResources NO-SOURCE
+> Task :core:compileJava UP-TO-DATE
+> Task :registry:processTestResources NO-SOURCE
+> Task :companion-client:processTestResources NO-SOURCE
+> Task :core:processResources NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :companion-server:processResources NO-SOURCE
+> Task :core:jar UP-TO-DATE
+> Task :exporters:processResources NO-SOURCE
+> Task :integrations:processResources NO-SOURCE
+> Task :recipe-engine:processResources NO-SOURCE
+> Task :companion-protocol:compileJava UP-TO-DATE
+> Task :companion-protocol:generateCompanionIdentity UP-TO-DATE
+> Task :companion-protocol:processResources UP-TO-DATE
+> Task :companion-protocol:classes UP-TO-DATE
+> Task :companion-protocol:jar UP-TO-DATE
+> Task :companion-server:compileJava UP-TO-DATE
+> Task :companion-server:classes UP-TO-DATE
+> Task :companion-server:jar UP-TO-DATE
+> Task :registry:compileJava
+> Task :registry:classes
+> Task :registry:jar
+> Task :recipe-engine:compileJava
+> Task :recipe-engine:classes
+> Task :recipe-engine:jar UP-TO-DATE
+> Task :integrations:compileJava UP-TO-DATE
+> Task :integrations:classes UP-TO-DATE
+> Task :integrations:jar UP-TO-DATE
+> Task :companion-client:compileJava
+> Task :companion-client:classes
+> Task :registry:compileTestJava
+> Task :registry:testClasses
+> Task :exporters:compileJava
+> Task :exporters:classes
+> Task :exporters:jar UP-TO-DATE
+
+> Task :registry:test
+
+ResourceIndexersTest > complexBlockstateDoesNotBorrowSimpleModelPreview() FAILED
+    org.opentest4j.AssertionFailedError at ResourceIndexersTest.java:38
+
+TextureResourceServiceTest > validatesPngCachesAndClears() FAILED
+    org.opentest4j.AssertionFailedError at TextureResourceServiceTest.java:16
+
+17 tests completed, 2 failed
+
+> Task :companion-client:compileTestJava
+> Task :companion-client:testClasses
+> Task :registry:test FAILED
+> Task :companion-client:test
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':registry:test'.
+> There were failing tests. See the report at: file:///L:/My%20Add/RecipeEditor/registry/build/reports/tests/test/index.html
+
+* Try:
+> Run with --scan to generate a Build Scan (powered by Develocity).
+
+BUILD FAILED in 35s
+21 actionable tasks: 9 executed, 12 up-to-date

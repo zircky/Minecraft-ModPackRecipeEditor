@@ -21,6 +21,7 @@ public final class RecipeEditorDialog extends Dialog<Void> {
     private final EditorTasks tasks;
     private final RecipeEditSession session;
     private final RecipeFormService forms=new RecipeFormService();
+    private final TextureResourceService textures=new TextureResourceService();
     private final TextArea raw=new TextArea(),diff=new TextArea();
     private final VBox visual=new VBox(12),advanced=new VBox(10);
     private final Label state=new Label(),issues=new Label();
@@ -30,6 +31,8 @@ public final class RecipeEditorDialog extends Dialog<Void> {
     private RecipeEditPreview preview;
     private final Map<String,String> pendingAdvanced=new LinkedHashMap<>();
     private boolean alive=true,saving;
+    private final Deque<String> draftUndo=new ArrayDeque<>(),draftRedo=new ArrayDeque<>();
+    private boolean restoringDraft;
     public RecipeEditorDialog(final Window owner,final DiscoveryResult discovery,final RecipeEditorService editor,final EditorTasks tasks,final RecipeEditSession session,final boolean creating, final dev.recipeeditor.integrations.api.IntegrationContext integration) {
         this.integration=integration;
         this.discovery=discovery; this.editor=editor; this.tasks=tasks; this.session=session; this.creating=creating;
@@ -44,18 +47,21 @@ public final class RecipeEditorDialog extends Dialog<Void> {
         tabs.getSelectionModel().selectedIndexProperty().addListener((o,a,b)->session.mode(RecipeEditSession.Mode.values()[b.intValue()]));
         issues.setWrapText(true); issues.setMaxWidth(950); issues.getStyleClass().add("validation-error");
         final var warnings=new ScrollPane(issues); warnings.setFitToWidth(true); warnings.setPrefViewportHeight(100);
-        final var content=new VBox(10,new Label("Recipe ID: "+session.id()+" · Source JARs remain read-only"),state,tabs,warnings); VBox.setVgrow(tabs,Priority.ALWAYS); getDialogPane().setContent(content);
+        final var undoDraft=new Button("Undo draft");undoDraft.setOnAction(event->restoreDraft(draftUndo,draftRedo));
+        final var redoDraft=new Button("Redo draft");redoDraft.setOnAction(event->restoreDraft(draftRedo,draftUndo));
+        final var content=new VBox(10,new Label("Recipe ID: "+session.id()+" · Source JARs remain read-only"),state,new HBox(8,undoDraft,redoDraft),tabs,warnings); VBox.setVgrow(tabs,Priority.ALWAYS); getDialogPane().setContent(content);
         final var resetDraft=new ButtonType("Reset draft",ButtonBar.ButtonData.OTHER);
         getDialogPane().getButtonTypes().addAll(save,resetDraft,ButtonType.CLOSE);
         getDialogPane().lookupButton(resetDraft).addEventFilter(javafx.event.ActionEvent.ACTION,event->{event.consume(); pendingAdvanced.clear(); session.cancel(); raw.setText(session.rawJson()); validateDraft();});
         getDialogPane().lookupButton(save).addEventFilter(javafx.event.ActionEvent.ACTION,event->{event.consume(); save();});
         raw.textProperty().addListener((o,a,b)->{
+            if(!restoringDraft&&!a.equals(b)){draftUndo.addFirst(a);while(draftUndo.size()>16)draftUndo.removeLast();draftRedo.clear();}
             try { session.setRawJson(b); preview=null; visual.getChildren().setAll(new Label("Raw JSON changed. Visual state is unavailable until validation completes.")); advanced.getChildren().clear(); getDialogPane().lookupButton(save).setDisable(true); state.setText("Unsaved editor changes"); debounce.playFromStart(); }
             catch(RuntimeException error) { issues.setText(error.getMessage()); getDialogPane().lookupButton(save).setDisable(true); }
         });
         debounce.setOnFinished(e->validateDraft());
         setOnCloseRequest(e->{ if(saving || ((session.dirty() || !pendingAdvanced.isEmpty()) && !confirmDiscard())) e.consume(); });
-        setOnHidden(e->{alive=false; debounce.stop();}); validateDraft();
+        setOnHidden(e->{alive=false; debounce.stop();textures.close();}); validateDraft();
     }
     private Tab tab(final String name,final javafx.scene.Node content) { final var tab=new Tab(name,content); tab.setClosable(false); return tab; }
     private boolean confirmDiscard() { final var alert=new Alert(Alert.AlertType.CONFIRMATION,"Discard unsaved editor changes? Project changes already saved by this dialog remain in memory.",ButtonType.YES,ButtonType.NO); alert.initOwner(getDialogPane().getScene().getWindow()); return alert.showAndWait().orElse(ButtonType.NO)==ButtonType.YES; }
@@ -70,6 +76,7 @@ public final class RecipeEditorDialog extends Dialog<Void> {
     }
     private void render(final RecipeEditPreview value) {
         visual.getChildren().clear(); advanced.getChildren().clear();
+        if(value.validation().recipe()==null){visual.getChildren().add(new Label("Repair the recipe using Raw JSON; validation details are shown below."));return;}
         if(modEditor.supports(value.validation().recipe(),integration)) {
             visual.getChildren().add(modEditor.createEditor(new RecipeEditorContext(value.validation().recipe(),pendingAdvanced,
                 (name,text)->{pendingAdvanced.put(name,text); state.setText("Unapplied GregTech fields: "+pendingAdvanced.keySet()); getDialogPane().lookupButton(save).setDisable(true);},
@@ -78,17 +85,28 @@ public final class RecipeEditorDialog extends Dialog<Void> {
             return;
         }
         if(!value.visualSupported()) { visual.getChildren().add(new Label("Visual editing unavailable. Raw JSON is preserved; unknown recipes have limited semantic validation.")); advanced.getChildren().add(new Label("No adapter for this type. Inspect and edit Raw JSON explicitly.")); return; }
-        final String type=value.type(); visual.getChildren().add(new Label(type));
+        final String type=value.type();
+        final var layout=new RecipeLayoutProvider().find(type);
+        visual.getChildren().add(new Label(layout.map(RecipeLayoutProvider.Layout::workstation).orElse(type)));
+        if(layout.isPresent()&&layout.get().kind()==RecipeLayoutProvider.Kind.COOKING)visual.getChildren().add(new Label("Cooking time: "+property(value,"cookingtime")+" ticks | Experience: "+property(value,"experience")));
         if(type.equals("minecraft:crafting_shaped")) shaped(value);
         else if(type.equals("minecraft:crafting_shapeless")) shapeless(value);
-        else if(type.startsWith("minecraft:smithing_")) for(final var role:List.of("template","base","addition")) ingredientButton(role,value.fields().getOrDefault(role,""));
+        else if(type.startsWith("minecraft:smithing_")) {
+            final var roles=new HBox(10);for(final var role:List.of("template","base","addition")) {if(!roles.getChildren().isEmpty())roles.getChildren().add(new Label("+"));roles.getChildren().add(ingredientControl(role,value.fields().getOrDefault(role,"")));}visual.getChildren().add(roles);
+        }
         else ingredientButton("ingredient",value.fields().getOrDefault("ingredient",""));
-        visual.getChildren().add(new RecipeOutputEditor(getDialogPane().getScene().getWindow(),discovery,value.validation().recipe(),(id,count)->patch(text->forms.result(text,id,count)),()->patch(text->forms.removeResult(text))));
+        final var ingredientNodes=List.copyOf(visual.getChildren());visual.getChildren().clear();
+        final var inputPane=new VBox(10);inputPane.getChildren().setAll(ingredientNodes);
+        final var outputPane=new RecipeOutputEditor(getDialogPane().getScene().getWindow(),discovery,value.validation().recipe(),(id,count)->patch(text->forms.result(text,id,count)),()->patch(text->forms.removeResult(text)));
+        final var workstation=new HBox(24,inputPane,new Label("→"),outputPane);workstation.setAlignment(javafx.geometry.Pos.CENTER);workstation.setMaxWidth(850);visual.setAlignment(javafx.geometry.Pos.TOP_CENTER);visual.getChildren().add(workstation);
         final var fields=new ArrayList<>(List.of("group"));
         if(Set.of("minecraft:smelting","minecraft:blasting","minecraft:smoking","minecraft:campfire_cooking").contains(type)) fields.addAll(List.of("experience","cookingtime"));
         for(final var name:fields) advancedField(name,value.fields().getOrDefault(name,name.equals("group")?"\"\"":name.equals("experience")?"0":type.equals("minecraft:smelting")?"200":type.equals("minecraft:campfire_cooking")?"600":"100"));
         advanced.getChildren().add(new Label("Other / unknown properties are preserved. Use Raw JSON for explicit changes:"));
         value.fields().forEach((name,json)->{ if(!fields.contains(name)) { final var label=new Label(name+": "+brief(json)); label.setWrapText(true); label.setMaxWidth(850); advanced.getChildren().add(label); } });
+    }
+    private String property(final RecipeEditPreview value,final String key) {
+        return value.fields().getOrDefault(key,value.validation().recipe().properties().stream().filter(property->property.name().equals(key)).map(RecipeProperty::rawValue).findFirst().orElse("Unknown"));
     }
     private void applyGregTechField(final String pointer,final String json) {
         final String key="GT"+pointer, pending=pendingAdvanced.get(key), current=raw.getText();
@@ -100,20 +118,26 @@ public final class RecipeEditorDialog extends Dialog<Void> {
         },failure->{if(alive)issues.setText(failure.getMessage());});
     }
     private void shaped(final RecipeEditPreview value) {
-        final var slots=new ArrayList<>(value.grid()); final var grid=new GridPane(); grid.setHgap(8); grid.setVgap(8);
-        while(slots.size()<9) slots.add("");
-        for(int i=0;i<9;i++) { final int index=i; final var button=new Button(slots.get(i).isBlank()?"Empty":brief(slots.get(i))); button.setWrapText(true); button.setPrefSize(210,80);
-            button.setOnAction(e->pickIngredient(json->{ slots.set(index,json); patch(text->forms.shaped(text,List.copyOf(slots))); }));
-            final var clear=new MenuItem("Clear slot"); clear.setOnAction(e->{ slots.set(index,""); patch(text->forms.shaped(text,List.copyOf(slots))); }); button.setContextMenu(new ContextMenu(clear)); grid.add(button,i%3,i/3);
-        } visual.getChildren().addAll(new Label("Click to replace; right-click to clear. Empty slots are not ingredients."),grid);
+        final var slots=new ArrayList<>(value.grid());while(slots.size()<9)slots.add("");
+        visual.getChildren().add(new ShapedCraftingEditorView(slots,discovery,textures,
+            index->pickIngredient(json->{slots.set(index,json);patch(text->forms.shaped(text,List.copyOf(slots)));}),
+            index->{slots.set(index,"");patch(text->forms.shaped(text,List.copyOf(slots)));}));
     }
     private void shapeless(final RecipeEditPreview value) {
         final var values=new ArrayList<>(value.shapeless());
-        for(int i=0;i<values.size();i++) { final int index=i; final var row=new HBox(8); final var edit=new Button(brief(values.get(i))); edit.setMaxWidth(650); edit.setOnAction(e->pickIngredient(json->{values.set(index,json); patch(text->forms.shapeless(text,List.copyOf(values)));}));
-            final var remove=new Button("Remove"); remove.setOnAction(e->{values.remove(index); patch(text->forms.shapeless(text,List.copyOf(values)));}); row.getChildren().addAll(edit,remove); visual.getChildren().add(row); }
-        final var add=new Button("Add ingredient"); add.setDisable(values.size()>=9); add.setOnAction(e->pickIngredient(json->{values.add(json); patch(text->forms.shapeless(text,List.copyOf(values)));})); visual.getChildren().add(add);
+        visual.getChildren().add(new ShapelessCraftingEditorView(values,discovery,textures,
+            index->pickIngredient(json->{values.set(index,json);patch(text->forms.shapeless(text,List.copyOf(values)));}),
+            index->{values.remove(index);patch(text->forms.shapeless(text,List.copyOf(values)));},
+            ()->pickIngredient(json->{values.add(json);patch(text->forms.shapeless(text,List.copyOf(values)));})));
     }
-    private void ingredientButton(final String field,final String value) { final var button=new Button(field+": "+brief(value)); button.setWrapText(true); button.setOnAction(e->pickIngredient(json->patch(text->forms.patch(text,field,json)))); visual.getChildren().add(button); }
+    private RecipeSlotView slot(final String json) { return new RecipeSlotView(RecipeSlotContent.parse(json),discovery,textures); }
+    private void ingredientButton(final String field,final String value) {visual.getChildren().add(ingredientControl(field,value));}
+    private VBox ingredientControl(final String field,final String value) {final var button=slot(value);button.setOnAction(e->pickIngredient(json->patch(text->forms.patch(text,field,json))));return new VBox(6,new Label(field),button);}
+    private void restoreDraft(final Deque<String> from,final Deque<String> to) {
+        if(saving||from.isEmpty())return;
+        if(!pendingAdvanced.isEmpty()){issues.setText("Apply Advanced fields or Reset draft before Undo/Redo.");return;}
+        to.addFirst(raw.getText());restoringDraft=true;try{raw.setText(from.removeFirst());}finally{restoringDraft=false;}
+    }
     private void pickIngredient(final java.util.function.Consumer<String> selected) {
         new IngredientPicker(getDialogPane().getScene().getWindow(),discovery,ResourceKind.ITEM,true,false).showAndWait().ifPresent(value->selected.accept(value.json()));
     }

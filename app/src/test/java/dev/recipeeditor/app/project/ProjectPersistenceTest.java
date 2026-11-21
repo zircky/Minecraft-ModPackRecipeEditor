@@ -18,6 +18,23 @@ final class ProjectPersistenceTest {
     private RecipeDefinition recipe(final String id,final String raw) {return validator().validate(id,raw,new RecipeSource(SourceType.MOD_JAR,List.of("test"),root.resolve("source/base.jar"),"data/test/recipes/base.json","Static resource scan")).recipe();}
     private RecipeEditorService editor(final String base) {return new RecipeEditorService(new RecipeIndex(List.of(recipe("test:base",base)),new TagIndex(List.of())),validator());}
     private Path source() throws Exception {final var path=root.resolve("source");Files.createDirectories(path);return path;}
+    @Test void archiveProvenanceSurvivesDiskSaveAndReopenWithDifferentNamespace() throws Exception {
+        final var directory=source();final var id=ResourceLocation.parse("minecraft:tnt");
+        final var source=new RecipeSource(SourceType.MOD_JAR,List.of("biomesoplenty"),directory.resolve("bop.jar"),"data/minecraft/recipes/tnt.json","Static resource scan");
+        final var base=validator().validate(id,raw,source).recipe();
+        final var originalIndex=new RecipeIndex(List.of(base),new TagIndex(List.of()));final var editor=new RecipeEditorService(originalIndex,validator());
+        editor.update(id,validator().validate(id,raw.replace("test:ingot","test:changed"),source).recipe());
+        final var saved=editor.snapshot();final var file=root.resolve("provenance-project.json");
+        try(final var store=new FileProjectPersistence()) {
+            store.write(file,ProjectDocument.capture(directory,saved));
+            final var restored=store.read(file).materialize(validator(),file);
+            assertEquals(saved,restored);assertEquals(source,restored.changes().get(id).replacement().getFirst().source());
+            assertEquals(List.of(OriginalRecipeReference.from(base)),restored.changes().get(id).originals());
+            assertTrue(Files.readString(file).contains("replacementSources"));
+            assertEquals("minecraft",restored.changes().get(id).id().namespace());
+            assertEquals(List.of("biomesoplenty"),restored.changes().get(id).replacement().getFirst().source().sourceModIds());
+        }
+    }
     @Test void saveLoadRestoreAndPreviousGoodBackup() throws Exception {
         final var source=source(); Files.writeString(source.resolve("base.jar"),"unchanged sentinel"); final var editor=editor(raw); final var id=ResourceLocation.parse("test:base");
         editor.update(id,recipe(id.toString(),raw.replace("test:ingot","test:changed")));

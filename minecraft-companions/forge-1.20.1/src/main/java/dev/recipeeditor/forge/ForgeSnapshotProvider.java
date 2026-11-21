@@ -22,7 +22,11 @@ public final class ForgeSnapshotProvider implements SnapshotProvider {
     @Override public CompletableFuture<RuntimeData.Snapshot> capture(final String sessionId,final BooleanSupplier cancelled,final Consumer<String> progress) {
         final var future=new CompletableFuture<RuntimeData.Snapshot>();final var current=server;
         if(current==null){future.completeExceptionally(new IllegalStateException("Open a local world / start a server first; remote client RecipeManager is not authoritative"));return future;}
-        current.execute(()->{try{if(active!=null)throw new IllegalStateException("Collection busy");if(current!=server)throw new IllegalStateException("Server changed");active=new CollectionJob(current,generation,sessionId,cancelled,progress,future);}catch(RuntimeException|LinkageError failure){future.completeExceptionally(failure);}});return future;
+        final long expectedGeneration=generation;progress.accept("Collecting client texture/name metadata in bounded tick batches");
+        RuntimePresentation.capture().whenComplete((presentation,error)->{
+            if(error!=null){future.completeExceptionally(error);return;}
+            current.execute(()->{try{if(future.isDone()||cancelled.getAsBoolean())return;if(active!=null)throw new IllegalStateException("Collection busy");if(current!=server||generation!=expectedGeneration)throw new IllegalStateException("Server changed during presentation capture");active=new CollectionJob(current,generation,sessionId,cancelled,progress,future,presentation);}catch(RuntimeException|LinkageError failure){future.completeExceptionally(failure);}});
+        });return future;
     }
     public void tick() {
         final var job=active;if(job==null)return;
@@ -35,11 +39,12 @@ public final class ForgeSnapshotProvider implements SnapshotProvider {
     private static final class CollectionJob {
         private final long generation;private final String session;private final BooleanSupplier cancelled;private final Consumer<String> progress;private final CompletableFuture<RuntimeData.Snapshot> future;
         private final List<RuntimeData.Registry> registries=new ArrayList<>();private final List<RuntimeData.Tag> tags=new ArrayList<>();private final List<RuntimeData.Recipe> recipes=new ArrayList<>();private final List<RuntimeData.Mod> mods;private final List<String> diagnostics=new ArrayList<>();private final Iterator<Runnable> jobs;private final int total;private int completed;
-        private CollectionJob(final MinecraftServer server,final long generation,final String session,final BooleanSupplier cancelled,final Consumer<String> progress,final CompletableFuture<RuntimeData.Snapshot> future) {
+        private final List<RuntimeData.Material> materials=new ArrayList<>();
+        private CollectionJob(final MinecraftServer server,final long generation,final String session,final BooleanSupplier cancelled,final Consumer<String> progress,final CompletableFuture<RuntimeData.Snapshot> future,final Map<String,Map<String,String>> presentation) {
             this.generation=generation;this.session=session;this.cancelled=cancelled;this.progress=progress;this.future=future;
             mods=ModList.get().getMods().stream().map(m->new RuntimeData.Mod(m.getModId(),m.getVersion().toString(),m.getDisplayName())).toList();
-            final var tasks=new ArrayList<Runnable>();tasks.addAll(new RuntimeRegistryScanner().jobs(registries::add));tasks.addAll(new RuntimeTagCollector().jobs(server,tags::add));tasks.addAll(new RuntimeRecipeScanner().jobs(server,recipes::add,diagnostics));if(tasks.size()>500000)throw new IllegalStateException("Runtime collection record limit");total=tasks.size();jobs=tasks.iterator();
+            final var tasks=new ArrayList<Runnable>();tasks.addAll(new RuntimeRegistryScanner().jobs(registries::add,presentation));tasks.addAll(new GregTechMaterialCollector().jobs(materials::add,diagnostics));tasks.addAll(new RuntimeTagCollector().jobs(server,tags::add));tasks.addAll(new RuntimeRecipeScanner().jobs(server,recipes::add,diagnostics));if(presentation.isEmpty())diagnostics.add("Client presentation unavailable: dedicated server/headless snapshot; runtime textures may be required");if(tasks.size()>500000)throw new IllegalStateException("Runtime collection record limit");total=tasks.size();jobs=tasks.iterator();
         }
-        private RuntimeData.Snapshot snapshot() {return new RuntimeData.Snapshot(1,UUID.randomUUID().toString(),true,new RuntimeData.Environment(session,FMLPaths.GAMEDIR.get().toAbsolutePath().normalize().toString(),"1.20.1","FORGE",FMLLoader.versionInfo().forgeVersion(),dev.recipeeditor.companionprotocol.CompanionIdentity.version(),generation,java.time.Instant.now().toString()),registries,tags,recipes,mods,diagnostics);}
+        private RuntimeData.Snapshot snapshot() {return new RuntimeData.Snapshot(2,UUID.randomUUID().toString(),true,new RuntimeData.Environment(session,FMLPaths.GAMEDIR.get().toAbsolutePath().normalize().toString(),"1.20.1","FORGE",FMLLoader.versionInfo().forgeVersion(),dev.recipeeditor.companionprotocol.CompanionIdentity.version(),generation,java.time.Instant.now().toString()),registries,tags,recipes,mods,diagnostics,materials);}
     }
 }

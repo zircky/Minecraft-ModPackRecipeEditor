@@ -126,8 +126,8 @@ public final class ResourceScanner {
                 && Arrays.stream(path.split("/",-1)).noneMatch(s->s.isEmpty() || s.equals(".") || s.equals(".."));
     }
     private boolean relevant(final String path) {
-        return path.matches("assets/[a-z0-9_.-]+/(lang|models/item|models/block|blockstates)/[a-z0-9/._-]+\\.json")
-                || path.matches("assets/[a-z0-9_.-]+/textures/[a-z0-9/._-]+\\.png")
+        return path.matches("assets/[a-z0-9_.-]+/(lang|models|blockstates|atlases)/[a-z0-9/._-]+\\.json")
+                || path.matches("assets/[a-z0-9_.-]+/textures/[a-z0-9/._-]+\\.png(\\.mcmeta)?")
                 || path.matches("data/[a-z0-9_.-]+/("+layout.recipesDirectory()+"|tags)/[a-z0-9/._-]+\\.json");
     }
     private final class State {

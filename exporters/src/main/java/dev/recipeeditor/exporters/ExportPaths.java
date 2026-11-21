@@ -15,6 +15,7 @@ final class ExportPaths {
     static void managed(final String profileId,final String value) {
         relative(value);
         if(!profileId.matches("[a-z0-9]{8,32}") || !(value.startsWith("datapacks/recipe_editor_"+profileId+"/")&&(value.endsWith(".json")||value.endsWith("/pack.mcmeta"))
+                || value.matches("kubejs/data/[a-z0-9_.-]+/recipes/[a-z0-9/._-]+\\.json")
                 || value.equals("kubejs/server_scripts/recipe_editor_"+profileId+"_generated.js") || value.equals("scripts/recipe_editor_"+profileId+"_generated.zs")))
             throw new IllegalArgumentException("File is outside this profile's generated namespace: "+value);
     }

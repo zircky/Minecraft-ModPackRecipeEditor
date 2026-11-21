@@ -18,9 +18,21 @@
 
 Для нового проекта нажмите **Import Modpack** и выберите отдельный инстанс (например, внутри `G:\PrismLauncher\instances`), а не общий каталог instances. После импорта запускается фоновый анализ. **Index resources** повторяет статический анализ импортированных источников; для обновлённого набора модов выполните импорт заново или Open Project.
 
-До runtime-синхронизации каталоги Items / Blocks / Fluids показывают статически предполагаемые ресурсы. После совместимого merge подтверждённые записи получают CONFIRMED_BY_RUNTIME; остальные сохраняют статическую достоверность. Поиск, Mod-фильтр, пагинация и выбор языка ресурсов en_us/ru_ru доступны отдельно от языка UI. Кнопки Recipes / Uses у предмета используют эффективные рецепты с проектными изменениями. Совпадения по тегам являются статически возможными кандидатами.
+До runtime-синхронизации каталоги Items / Blocks / Fluids показывают статически предполагаемые ресурсы. После совместимого merge подтверждённые записи получают CONFIRMED_BY_RUNTIME; остальные сохраняют статическую достоверность. Namespace и Source Mod фильтруются раздельно. Выбор en_us/ru_ru относится к ресурсам, язык UI не меняет. View Recipes / View Uses используют эффективные разобранные ссылки предметов и жидкостей; при отсутствии таких ссылок кнопки отключены. Совпадения по тегам остаются кандидатами.
 
 ## Редактирование — Phase 4
+
+### Resource Browser и Materials
+
+Items / Blocks / Fluids используют карточки фиксированного размера, виртуализированные строки и ленивые превью. Полное имя и ID доступны в Tooltip и Details. Справа показаны confidence, runtime confirmation, фактический translation key и физический источник текстуры. Выбор ru_ru использует en_us как fallback, затем ID; шаблон перевода без аргументов не считается названием.
+
+Разрешаются цепочки моделей, texture variables, generated layers, block item parents, variants/multipart как образцы. `.png.mcmeta` задаёт первый/указанный кадр. Runtime Companion добавляет реальные baked-model sprite references, fluid still/flowing/source references и tint. При доступном SHA256 активной PNG несовпадение со статическим файлом блокирует превью. Это не полный Minecraft renderer: biome-dependent tint без позиции, custom geometry и generated atlas sprites без доступной PNG могут оставаться неподдержанными. Причина показана в Details/Tooltip.
+
+**Materials** требует полного runtime-снимка с расширением `materials-v1`. Реализован read-only collector для проверенного **GTCEu `8.0.0-SNAPSHOT+e24b238`**: Material Registry, properties/flags/components, реальные registered item/block/fluid forms. Другие сборки не считаются ABI-совместимыми автоматически; причина доступна в Runtime diagnostics. Материал не является предметом; изображение материала — образец его зарегистрированной формы. Нажатие формы открывает соответствующий ресурс. Поддержка материалов GT8 не включает специализированное редактирование его рецептов.
+
+Wire protocol остаётся v1: новый запрос согласуется через capabilities, со старым Companion каталог материалов недоступен. Snapshot schema v2 добавляет `materials.jsonl`; schema v1 по-прежнему читается. Старый Desktop не сможет открыть v2-снимок. После обновления Companion перезапустите Minecraft и выполните Runtime → Synchronize; старые снимки не получают новые texture/component/material metadata автоматически.
+
+Реальные замеры до/после, ограничения и команды воспроизведения: [RESOURCE_BROWSER_REPORT.md](RESOURCE_BROWSER_REPORT.md).
 
 Откройте **Recipes**. Исходные записи сохраняются неизменными; пользовательские изменения накладываются через ChangeSet. При одинаковом ID в нескольких JAR исходные определения остаются доступны; одно проектное UPDATE перекрывает все эти кандидаты, о чём редактор предупреждает. Фактический победитель в Minecraft не угадывается.
 
@@ -98,7 +110,7 @@ GTCEu 7.1.4: typed profile для assembler / macerator / chemical_reactor, item
 
 Runtime Companion и snapshot-scoped подтверждение registry реализованы в Phase 6. Пока не реализованы: выполнение пользовательского Java-кода/скриптов внутри Desktop, полный рендер Minecraft, drag-and-drop сетки, persistent discovery cache, история Undo после перезапуска, автоматическое объединение source conflicts и переезд проекта с автоматическим поиском перемещённой сборки. Для восстановления по текущему пути требуется доступность исходного инстанса. Редактирование недоступно без подтверждённых метаданных Minecraft 1.20.1.
 
-Статический анализ остаётся неполным: программные ресурсы/рецепты могут отсутствовать, Forge conditions/datapack load order не вычисляются, tag membership объединяет статически возможные значения. Все источники конфликтующих Recipe ID сохраняются. Model JSON, текстура и локализация не подтверждают регистрацию предмета/блока. Жидкости обнаруживаются только по явным fluid-tag references. Общие vanilla client JAR лаунчера за пределами инстанса не сканируются. Превью — образец однозначной простой текстуры; сложные/неоднозначные модели получают placeholder.
+Статический анализ остаётся неполным: программные ресурсы/рецепты могут отсутствовать, Forge conditions/datapack load order не вычисляются, tag membership объединяет статически возможные значения. Все источники конфликтующих Recipe ID сохраняются. Model JSON, текстура и локализация не подтверждают регистрацию. Статические жидкости обнаруживаются только по явным fluid-tag references; runtime-каталог поступает из реестров Companion. Общие vanilla client JAR лаунчера за пределами инстанса не сканируются. Превью показывают плоские слои или явно помеченный образец текстуры. Сложная геометрия имеет RENDERING_UNSUPPORTED; неизвестный порядок переопределений — AMBIGUOUS_SOURCE, произвольный победитель не выбирается.
 
 ## Архитектура
 
@@ -188,7 +200,7 @@ Merge выполняется только для открытого проект
 .\gradlew.bat :companion-client:test --tests '*RuntimeRecipeAdapterTest' '-PruntimeSnapshotFile=L:\My Add\RecipeEditor\.manual-tests\phase6\evidence\gt-runtime.mresnapshot'
 ```
 
-Подробности протокола, матрица поддержки, результаты и ограничения: [PHASE6_REPORT.md](PHASE6_REPORT.md). Материалы GregTech пока представлены контрактом расширения; материал-редактор не реализован. Текущая поддержка GregTech описана ниже в Phase 7.
+Подробности исходного протокола и ограничений Phase 6: [PHASE6_REPORT.md](PHASE6_REPORT.md). Отдельный просмотр материалов и расширение материалов описаны в [RESOURCE_BROWSER_REPORT.md](RESOURCE_BROWSER_REPORT.md). Редактирование материалов не реализовано. Поддержка рецептов GregTech описана ниже в Phase 7.
 
 
 ## Phase 7 — Integration Framework и GregTech
@@ -267,3 +279,19 @@ Opt-in snapshot test читает реальные ранее сохранённ
 Application Image: `app/build/windows/image/MinecraftRecipeEditor/MinecraftRecipeEditor.exe`. Java 21 и JavaFX включены; для запуска пользователю не нужны Gradle/IDE/системная Java. Для portable запуска нужен весь каталог image, а не один EXE. Installers: `app/build/windows/installers`; собранный alpha bundle с ZIP/EXE/MSI/Companion/SHA256/manifest: `app/build/windows/artifacts/1.0.0-alpha.1`.
 
 Новые логи/кэши/snapshots размещаются в Windows APPDATA/LOCALAPPDATA; проекты остаются в выбранных пользователем каталогах. Подробнее: [WINDOWS_PACKAGING.md](WINDOWS_PACKAGING.md), [Release Readiness](RELEASE_READINESS.md), [PHASE10_REPORT.md](PHASE10_REPORT.md). Публичная публикация и git tags не выполняются. Step 3–8, а также ранее отложенные функции Phase 7–9 не реализуются этим запросом.
+
+## Происхождение рецептов
+
+Фильтры **Recipe Namespace** и **Source Mod** независимы. Source Mod означает metadata физического контейнера, а не доказанное авторство. Например, `minecraft:tnt` действительно найден в JAR Biomes O' Plenty. В Export Wizard вкладка **Sources / provenance** показывает все кандидаты, archive/internal paths, project overlay и confidence. Статический порядок сканирования не определяет активный источник; неизвестный runtime-источник показывается как UNKNOWN. Проекты сохраняют исходные ссылки и происхождение replacement; старые проекты формата 1 продолжают читаться. Подробности и результаты проверок: [RECIPE_PROVENANCE_REPORT.md](RECIPE_PROVENANCE_REPORT.md).
+
+## KubeJS JavaScript / Data JSON
+
+Для Minecraft 1.20.1 Forge проверены KubeJS 2001.6.4-build.120 и 2001.6.5-build.26 для Vanilla JSON serializers. Выберите Format=KUBEJS и KubeJS Export Mode:
+
+| Mode | Применение |
+|---|---|
+| JAVASCRIPT | CREATE/UPDATE/DELETE в отдельном `kubejs/server_scripts/recipe_editor_<profile>_generated.js`; исходные ID сохраняются |
+| DATA JSON | CREATE/UPDATE в `kubejs/data/<namespace>/recipes/<nested-path>.json`; DELETE возвращает UNSUPPORTED |
+| AUTO / COMBINED | Data для совместимых additions/updates, JS для удалений/проверенных JS-only адаптеров; один механизм на Recipe ID |
+
+Preview показывает фактический механизм, target files и отказы, Generated files — содержимое и замены/удаления файлов. Перед записью обязателен Review. Перезапись возможна только для неизменённых файлов, принадлежащих manifest профиля. Неизвестные кастомные/GT serializers не получают Data-поддержку автоматически. Подробнее: [KUBEJS_EXPORT_REPORT.md](KUBEJS_EXPORT_REPORT.md).

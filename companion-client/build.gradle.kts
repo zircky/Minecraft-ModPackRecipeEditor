@@ -5,6 +5,7 @@ dependencies { api(project(":companion-protocol"));api(project(":recipe-engine")
 
 dependencies { testImplementation(project(":companion-server")) }
 tasks.test {
+    listOf("kubeJsLifecycleStage","kubeJsLifecycleDirectory","resourceRuntimeSnapshot").forEach { key -> providers.gradleProperty(key).orNull?.let { systemProperty(key,it) } }
     if (providers.gradleProperty("runtimeSessionFile").isPresent || providers.gradleProperty("runtimeSnapshotFile").isPresent) maxHeapSize = "1536m"
     listOf("runtimeSessionFile", "runtimeProbeMarker", "runtimeReadyFlag", "runtimeSnapshotFile", "runtimeProbeRunId", "runtimeReloadRequest", "runtimeReloadComplete", "runtimeExpectServerStop", "phase7Mode", "phase7Directory").forEach { key -> providers.gradleProperty(key).orNull?.let { systemProperty(key, it) } }
     testLogging { events("failed", "skipped") }

@@ -1,0 +1,52 @@
+KUBEJS_JAVASCRIPT
+[kubejs/server_scripts/recipe_editor_mrekubejs20261118_generated.js]
+Recipe ID: minecraft:tnt
+Recipe Namespace: minecraft
+Declaring Source: UNKNOWN
+Active Source: Deleted in project — runtime winner UNKNOWN
+Scope: PROJECT
+Provenance Confidence: PROJECT_OVERLAY
+
+All discovered / derived-from definitions (not a load-order ranking):
+Candidate:
+  Source Mod IDs (container metadata): [biomesoplenty]
+  Archive Mod IDs: [biomesoplenty]
+  Declaring Source: UNKNOWN
+  Physical Source: G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh\minecraft\mods\BiomesOPlenty-1.20.1-18.0.0.592.jar
+  Source File: G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh\minecraft\mods\BiomesOPlenty-1.20.1-18.0.0.592.jar!data/minecraft/recipes/tnt.json
+  Original File: data/minecraft/recipes/tnt.json
+  Source Type: MOD_JAR
+  Discovery Method: Static resource scan
+  Confidence: PHYSICAL_LOCATION_ONLY
+Candidate:
+  Source Mod IDs (container metadata): UNKNOWN
+  Archive Mod IDs: []
+  Declaring Source: UNKNOWN
+  Physical Source: G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh\minecraft\saves\MRE E2E 20261118\datapacks\recipe_editor_147a0422c59e453fb2b269415304ae8d
+  Source File: G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh\minecraft\saves\MRE E2E 20261118\datapacks\recipe_editor_147a0422c59e453fb2b269415304ae8d/data/minecraft/recipes/tnt.json
+  Original File: data/minecraft/recipes/tnt.json
+  Source Type: DATAPACK
+  Discovery Method: Local static resource scan
+  Confidence: PHYSICAL_LOCATION_ONLY
+
+Overridden definitions in PROJECT: 2
+Overridden:
+  Source Mod IDs (container metadata): [biomesoplenty]
+  Archive Mod IDs: [biomesoplenty]
+  Declaring Source: UNKNOWN
+  Physical Source: G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh\minecraft\mods\BiomesOPlenty-1.20.1-18.0.0.592.jar
+  Source File: G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh\minecraft\mods\BiomesOPlenty-1.20.1-18.0.0.592.jar!data/minecraft/recipes/tnt.json
+  Original File: data/minecraft/recipes/tnt.json
+  Source Type: MOD_JAR
+  Discovery Method: Static resource scan
+  Confidence: PHYSICAL_LOCATION_ONLY
+Overridden:
+  Source Mod IDs (container metadata): UNKNOWN
+  Archive Mod IDs: []
+  Declaring Source: UNKNOWN
+  Physical Source: G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh\minecraft\saves\MRE E2E 20261118\datapacks\recipe_editor_147a0422c59e453fb2b269415304ae8d
+  Source File: G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh\minecraft\saves\MRE E2E 20261118\datapacks\recipe_editor_147a0422c59e453fb2b269415304ae8d/data/minecraft/recipes/tnt.json
+  Original File: data/minecraft/recipes/tnt.json
+  Source Type: DATAPACK
+  Discovery Method: Local static resource scan
+  Confidence: PHYSICAL_LOCATION_ONLY

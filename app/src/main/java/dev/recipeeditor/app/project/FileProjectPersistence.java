@@ -58,14 +58,22 @@ public final class FileProjectPersistence implements ProjectPersistence {
     private StoredRecipeChange decode(final JsonNode node) {
         final var originals=new ArrayList<OriginalRecipeReference>();
         for(final var base:node.path("originals")) {
-            final var mods=new ArrayList<String>(); base.path("modIds").forEach(mod->mods.add(mod.asText()));
-            final var source=new RecipeSource(SourceType.valueOf(base.path("sourceType").asText()),mods,Path.of(base.path("archivePath").asText()),base.path("internalPath").asText(),base.path("method").asText());
+            final var source=decodeSource(base);
             final String hash=base.path("hash").asText(); if(!hash.matches("[a-f0-9]{64}")) throw new IllegalArgumentException("Invalid base hash");
             originals.add(new OriginalRecipeReference(source,hash));
         }
         final var raw=new ArrayList<String>(); node.path("replacementJson").forEach(value->{ if(!value.isTextual()) throw new IllegalArgumentException("Replacement must be JSON text"); raw.add(value.asText()); });
         final var metadata=new LinkedHashMap<String,String>(); node.path("metadata").fields().forEachRemaining(field->metadata.put(field.getKey(),field.getValue().asText()));
-        return new StoredRecipeChange(ResourceLocation.parse(node.path("id").asText()),RecipeChangeType.valueOf(node.path("type").asText()),originals,raw,Instant.parse(node.path("timestamp").asText()),metadata);
+        final var sources=new ArrayList<RecipeSource>();
+        if(node.has("replacementSources")) {
+            if(!node.path("replacementSources").isArray())throw new IllegalArgumentException("Invalid replacement provenance");
+            node.path("replacementSources").forEach(value->sources.add(decodeSource(value)));
+        }
+        return new StoredRecipeChange(ResourceLocation.parse(node.path("id").asText()),RecipeChangeType.valueOf(node.path("type").asText()),originals,raw,Instant.parse(node.path("timestamp").asText()),metadata,sources);
+    }
+    private RecipeSource decodeSource(final JsonNode node) {
+        final var mods=new ArrayList<String>(); node.path("modIds").forEach(mod->mods.add(mod.asText()));
+        return new RecipeSource(SourceType.valueOf(node.path("sourceType").asText()),mods,Path.of(node.path("archivePath").asText()),node.path("internalPath").asText(),node.path("method").asText());
     }
     public void write(final Path requested,final ProjectDocument project) throws IOException {
         Objects.requireNonNull(requested); Objects.requireNonNull(project);
@@ -118,11 +126,15 @@ public final class FileProjectPersistence implements ProjectPersistence {
         final var node=mapper.createObjectNode(); node.put("id",change.id().toString()); node.put("type",change.type().name()); node.put("timestamp",change.timestamp().toString());
         final var originals=node.putArray("originals");
         for(final var base:change.originals()) {
-            final var source=base.source(); final var value=originals.addObject(); value.put("hash",base.contentHash()); value.put("sourceType",source.type().name());
-            final var mods=value.putArray("modIds"); source.modIds().forEach(mods::add); value.put("archivePath",source.archivePath().toString()); value.put("internalPath",source.internalPath()); value.put("method",source.discoveryMethod());
+            final var value=originals.addObject(); value.put("hash",base.contentHash());encodeSource(value,base.source());
         }
+        final var sources=node.putArray("replacementSources"); change.replacementSources().forEach(source->encodeSource(sources.addObject(),source));
         final var raw=node.putArray("replacementJson"); change.replacementJson().forEach(raw::add);
         final var metadata=node.putObject("metadata"); change.metadata().forEach(metadata::put); return node;
+    }
+    private void encodeSource(final ObjectNode node,final RecipeSource source) {
+        node.put("sourceType",source.type().name()); final var mods=node.putArray("modIds");source.modIds().forEach(mods::add);
+        node.put("archivePath",source.archivePath().toString());node.put("internalPath",source.internalPath());node.put("method",source.discoveryMethod());
     }
     private String hash(final JsonNode value) {
         try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.toString().getBytes(StandardCharsets.UTF_8))); }

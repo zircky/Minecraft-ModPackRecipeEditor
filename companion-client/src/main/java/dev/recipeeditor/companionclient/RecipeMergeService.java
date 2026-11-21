@@ -7,7 +7,7 @@ import java.util.*;
 
 /** Keeps both provenances. Normalized runtime properties never become fictional source JSON. */
 public final class RecipeMergeService {
-    public record Entry(ResourceLocation id,List<RecipeDefinition> staticDefinitions,RuntimeData.Recipe runtime,List<String> diagnostics) {public Entry{staticDefinitions=List.copyOf(staticDefinitions);diagnostics=List.copyOf(diagnostics);}}
+    public record Entry(ResourceLocation id,List<RecipeDefinition> staticDefinitions,RuntimeData.Recipe runtime,List<String> diagnostics,RecipeProvenance provenance) {public Entry{staticDefinitions=List.copyOf(staticDefinitions);diagnostics=List.copyOf(diagnostics);Objects.requireNonNull(provenance);}}
     public record Result(List<Entry> entries,Set<ResourceLocation> changedOrMissing,List<String> diagnostics) {public Result{entries=List.copyOf(entries);changedOrMissing=Set.copyOf(changedOrMissing);diagnostics=List.copyOf(diagnostics);}}
     public Result merge(final RecipeIndex originals,final RuntimeData.Snapshot snapshot) {
         if(!snapshot.complete())throw new IllegalArgumentException("Partial runtime snapshot");final var runtime=new LinkedHashMap<ResourceLocation,RuntimeData.Recipe>();snapshot.recipes().forEach(recipe->runtime.put(ResourceLocation.parse(recipe.id()),recipe));
@@ -20,7 +20,12 @@ public final class RecipeMergeService {
                 else diagnostics.add("Matching ID/available properties; original JSON equivalence is not proven");
             }
             if(actual!=null&&actual.status()!=RuntimeData.Support.SUPPORTED)diagnostics.add("Runtime view is partial/unsupported; no editable source JSON is inferred");
-            diagnostics.forEach(message->messages.add(id+": "+message));entries.add(new Entry(id,staticDefinitions,actual,diagnostics));
+            final var sources=staticDefinitions.stream().map(RecipeDefinition::source).toList();
+            final var resolver=new RecipeSourceResolver();
+            final var provenance=actual==null?resolver.discover(id,sources):resolver.runtime(id,sources,
+                    new RecipeSource(dev.recipeeditor.registry.SourceType.RUNTIME,List.of(),java.nio.file.Path.of(snapshot.environment().sourceInstance()),"",
+                            "Companion snapshot "+snapshot.snapshotId()+" @ "+snapshot.environment().collectedAt()+"; "+actual.sourceInformation()));
+            diagnostics.forEach(message->messages.add(id+": "+message));entries.add(new Entry(id,staticDefinitions,actual,diagnostics,provenance));
         }
         return new Result(entries,changed,messages);
     }

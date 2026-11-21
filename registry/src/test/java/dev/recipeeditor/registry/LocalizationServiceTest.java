@@ -21,4 +21,18 @@ final class LocalizationServiceTest {
         final var scan=new ResourceScanResult(List.of(ResourceFixtures.document("assets/test/lang/en_us.json","{\"item.test.a\":\"English\"}")),List.of(),List.of());
         assertTrue(new ItemResourceIndexer().index(scan,service(),new TagIndex(List.of()),"en_us",new java.util.ArrayList<>()).isEmpty());
     }
+    @Test void actualModSpecificComponentKeyAndArgumentsUseTranslationsWithoutInventingNames() {
+        final var service=new LocalizationService(List.of(ResourceFixtures.document("assets/gtceu/lang/en_us.json","{\"material.gtceu.propane\":\"Propane\",\"prefix.ingot\":\"%s Ingot\"}")));
+        assertEquals("Propane",service.componentTranslations("{\"translate\":\"material.gtceu.propane\"}").get("en_us"));
+        assertEquals("Propane Ingot",service.componentTranslations("{\"translate\":\"prefix.ingot\",\"with\":[{\"translate\":\"material.gtceu.propane\"}]}").get("ru_ru"));
+        assertTrue(service.componentTranslations("{\"translate\":\"unknown.resource\"}").isEmpty());
+        assertTrue(service.translations("prefix.ingot").isEmpty());
+        assertTrue(service.componentTranslations("{\"translate\":\"prefix.ingot\"}").isEmpty());
+        assertTrue(service.resolvedRuntimeName("Propane","{\"translate\":\"material.gtceu.propane\"}"));
+        assertFalse(service.resolvedRuntimeName("prefix.ingot(material.missing)","{\"translate\":\"prefix.ingot\",\"with\":[{\"translate\":\"material.missing\"}]}"));
+    }
+    @Test void conflictingTranslationsHaveNoArbitraryPackWinner() {
+        final var service=new LocalizationService(List.of(ResourceFixtures.document("assets/a/lang/en_us.json","{\"fluid.test.a\":\"One\"}"),ResourceFixtures.document("assets/b/lang/en_us.json","{\"fluid.test.a\":\"Two\"}")));
+        assertEquals("test:a",service.displayName(ResourceLocation.parse("test:a"),"fluid.test.a","en_us"));assertFalse(service.diagnostics().isEmpty());
+    }
 }

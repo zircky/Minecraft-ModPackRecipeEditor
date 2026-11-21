@@ -40,4 +40,13 @@ final class RecipeIndexTest {
         final var service=new RecipeSearchService(new RecipeIndex(List.of(bare),new TagIndex(List.of())));
         assertEquals(1,service.search("","","minecraft:crafting_shapeless").size());
     }
+    @Test void fluidReferencesAreSeparateFromItemsEvenWhenIdsCoincide() {
+        final var tagSource=new ResourceSource(SourceType.MOD_JAR,List.of(),Path.of("tags.jar"),"data/test/tags/fluids/fuel.json","test");
+        final var tags=new TagIndex(List.of(new ResourceDocument(tagSource,"{\"values\":[\"test:a\"]}")));
+        final var fluid=RecipeFixtures.recipe("test:fluid_recipe","a.jar",List.of(new IngredientDefinition.Fluid(ResourceLocation.parse("test:fuel"),true,1000,"")),
+                List.of(new RecipeOutput.Capability("fluid",new IngredientDefinition.Fluid(output,false,500,""),"")),RecipeParseStatus.PARSED);
+        final var index=new RecipeIndex(List.of(fluid),tags);
+        assertEquals(1,index.findRecipesUsing(ResourceKind.FLUID,item).size());assertTrue(index.findRecipesUsing(item).isEmpty());
+        assertEquals(1,index.findRecipesProducing(ResourceKind.FLUID,output).size());assertTrue(index.findRecipesProducing(output).isEmpty());
+    }
 }

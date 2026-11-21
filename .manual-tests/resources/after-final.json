@@ -1,0 +1,93 @@
+[ {
+  "scope" : "static",
+  "names_en_us" : 3957,
+  "images" : 7898,
+  "resources" : 12049,
+  "preview_statuses" : {
+    "AMBIGUOUS_SOURCE" : 2,
+    "INVALID_TEXTURE" : 13,
+    "READY" : 4756,
+    "RENDERING_UNSUPPORTED" : 1672,
+    "RUNTIME_TEXTURE_REQUIRED" : 722,
+    "TEXTURE_NOT_FOUND" : 757,
+    "TEXTURE_SAMPLE" : 1470,
+    "UNSUPPORTED_RENDERER" : 2657
+  },
+  "kind" : "ITEM",
+  "names_ru_ru_with_en_fallback" : 3959
+}, {
+  "scope" : "static",
+  "names_en_us" : 5179,
+  "images" : 8025,
+  "resources" : 13092,
+  "preview_statuses" : {
+    "INVALID_TEXTURE" : 1,
+    "RENDERING_UNSUPPORTED" : 8288,
+    "RUNTIME_TEXTURE_REQUIRED" : 371,
+    "TEXTURE_NOT_FOUND" : 222,
+    "TEXTURE_SAMPLE" : 1949,
+    "UNSUPPORTED_RENDERER" : 2261
+  },
+  "kind" : "BLOCK",
+  "names_ru_ru_with_en_fallback" : 5183
+}, {
+  "scope" : "static",
+  "names_en_us" : 2,
+  "images" : 0,
+  "resources" : 551,
+  "preview_statuses" : {
+    "RUNTIME_TEXTURE_REQUIRED" : 551
+  },
+  "kind" : "FLUID",
+  "names_ru_ru_with_en_fallback" : 2
+}, {
+  "scope" : "runtime",
+  "names_en_us" : 16557,
+  "images" : 23700,
+  "resources" : 31332,
+  "preview_statuses" : {
+    "INVALID_TEXTURE" : 62,
+    "READY" : 17188,
+    "RENDERING_UNSUPPORTED" : 6507,
+    "RUNTIME_TEXTURE_REQUIRED" : 184,
+    "TEXTURE_NOT_FOUND" : 6665,
+    "TEXTURE_SAMPLE" : 5,
+    "UNSUPPORTED_RENDERER" : 721
+  },
+  "kind" : "ITEM",
+  "names_ru_ru_with_en_fallback" : 29511
+}, {
+  "scope" : "runtime",
+  "names_en_us" : 8068,
+  "images" : 11773,
+  "resources" : 17963,
+  "preview_statuses" : {
+    "INVALID_TEXTURE" : 5,
+    "RENDERING_UNSUPPORTED" : 11091,
+    "RUNTIME_TEXTURE_REQUIRED" : 422,
+    "TEXTURE_NOT_FOUND" : 3488,
+    "TEXTURE_SAMPLE" : 696,
+    "UNSUPPORTED_RENDERER" : 2261
+  },
+  "kind" : "BLOCK",
+  "names_ru_ru_with_en_fallback" : 10752
+}, {
+  "scope" : "runtime",
+  "names_en_us" : 1932,
+  "images" : 5214,
+  "resources" : 5241,
+  "preview_statuses" : {
+    "RUNTIME_TEXTURE_REQUIRED" : 7,
+    "TEXTURE_NOT_FOUND" : 20,
+    "TEXTURE_SAMPLE" : 5214
+  },
+  "kind" : "FLUID",
+  "names_ru_ru_with_en_fallback" : 5233
+}, {
+  "resources" : 3083,
+  "images" : 3076,
+  "names_en_us" : 657,
+  "names_ru_ru_with_en_fallback" : 657,
+  "scope" : "runtime",
+  "kind" : "MATERIAL"
+} ]

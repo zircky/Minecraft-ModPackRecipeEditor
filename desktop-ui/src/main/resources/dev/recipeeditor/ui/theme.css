@@ -32,3 +32,9 @@
 
 .validation-error { -fx-text-fill: #e4aa79; }
 .dialog-pane { -fx-background-color: #2b2d30; }
+.minecraft-recipe-slot { -fx-padding: 2; -fx-background-color: #242528; -fx-border-color: #65676b #17181b #17181b #65676b; -fx-border-width: 2; -fx-background-radius: 0; }
+.minecraft-recipe-slot:hover { -fx-background-color: #454952; }
+.minecraft-recipe-slot:selected { -fx-border-color: #6aa5e8; }
+.minecraft-recipe-slot:invalid { -fx-border-color: #e07575; }
+.minecraft-recipe-slot:unknown { -fx-border-color: #b89960; }
+.slot-quantity { -fx-text-fill: white; -fx-font-weight: bold; -fx-effect: dropshadow(gaussian, black, 2, 1, 1, 1); }

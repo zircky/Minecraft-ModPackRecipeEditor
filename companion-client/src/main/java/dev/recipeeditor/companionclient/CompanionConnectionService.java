@@ -23,7 +23,11 @@ public final class CompanionConnectionService implements AutoCloseable {
     private volatile boolean cancelled;
     private SessionCredentials credentials;
     private String companionVersion="";
-    public CompanionConnectionService(){heartbeat.scheduleWithFixedDelay(()->{if(status==CompanionConnectionStatus.CONNECTED&&heartbeatPending.compareAndSet(false,true))try{worker.submit(()->{try{if(status==CompanionConnectionStatus.CONNECTED)request(MessageType.PING,new JsonObject(),MessageType.PONG);}catch(Exception lost){closeSocket();state(cancelled?CompanionConnectionStatus.DISCONNECTED:CompanionConnectionStatus.ERROR);}finally{heartbeatPending.set(false);}});}catch(RejectedExecutionException ended){heartbeatPending.set(false);}},5,5,TimeUnit.SECONDS);}
+    private boolean materialsSupported;
+    private final long syncKeepaliveNanos;
+    private final Set<String> pendingKeepalives=new HashSet<>();
+    public CompanionConnectionService(){this(java.time.Duration.ofSeconds(30));}
+    CompanionConnectionService(final java.time.Duration keepaliveInterval){syncKeepaliveNanos=keepaliveInterval.toNanos();if(syncKeepaliveNanos<=0)throw new IllegalArgumentException("Positive keepalive interval required");heartbeat.scheduleWithFixedDelay(()->{if(status==CompanionConnectionStatus.CONNECTED&&heartbeatPending.compareAndSet(false,true))try{worker.submit(()->{try{if(status==CompanionConnectionStatus.CONNECTED)request(MessageType.PING,new JsonObject(),MessageType.PONG);}catch(Exception lost){closeSocket();state(cancelled?CompanionConnectionStatus.DISCONNECTED:CompanionConnectionStatus.ERROR);}finally{heartbeatPending.set(false);}});}catch(RejectedExecutionException ended){heartbeatPending.set(false);}},5,5,TimeUnit.SECONDS);}
     public CompanionConnectionStatus status(){return status;}
     public String companionVersion(){return companionVersion;}
     public void addListener(final Consumer<CompanionConnectionStatus> listener){listeners.add(listener);}
@@ -31,30 +35,33 @@ public final class CompanionConnectionService implements AutoCloseable {
     public CompletableFuture<Void> connect(final Path sessionFile){return CompletableFuture.runAsync(()->{try{open(SessionCredentials.load(sessionFile));}catch(Exception failure){fail(failure);}},worker);}
     public CompletableFuture<Void> connect(final SessionCredentials session){return CompletableFuture.runAsync(()->{try{open(session);}catch(Exception failure){fail(failure);}},worker);}
     private void open(final SessionCredentials session)throws IOException {
-        closeSocket();cancelled=false;state(CompanionConnectionStatus.CONNECTING);credentials=Objects.requireNonNull(session);
+        closeSocket();pendingKeepalives.clear();cancelled=false;state(CompanionConnectionStatus.CONNECTING);credentials=Objects.requireNonNull(session);
         final var connected=new Socket();socket=connected;connected.connect(new InetSocketAddress(InetAddress.getByName("127.0.0.1"),session.port()),3000);connected.setSoTimeout(5000);
         final String nonce=SessionCredentials.nonce();final var hello=new JsonObject();hello.addProperty("clientNonce",nonce);final var challenge=request(MessageType.HANDSHAKE,hello,MessageType.HANDSHAKE_RESPONSE);
         final String server=ProtocolCodec.required(challenge,"serverNonce");
         if(!session.sessionId().equals(ProtocolCodec.required(challenge,"sessionId"))||!session.matches(session.proof("server",nonce,server),ProtocolCodec.required(challenge,"proof")))throw new ProtocolException("Companion server authentication failed");
         final var auth=new JsonObject();auth.addProperty("proof",session.proof("client",nonce,server));final var response=request(MessageType.HANDSHAKE,auth,MessageType.HANDSHAKE_RESPONSE);
         if(!response.has("authenticated")||!response.get("authenticated").getAsBoolean())throw new ProtocolException("Authentication rejected");
-        companionVersion=ProtocolCodec.required(response,"companionVersion");connected.setSoTimeout(15000);connected();
+        companionVersion=ProtocolCodec.required(response,"companionVersion");materialsSupported=response.has("capabilities")&&response.getAsJsonArray("capabilities").contains(new com.google.gson.JsonPrimitive("materials-v1"));connected.setSoTimeout(15000);connected();
     }
     public CompletableFuture<Snapshot> synchronize(final Consumer<String> progress) {
         return CompletableFuture.supplyAsync(()->{
             try {
                 if(status!=CompanionConnectionStatus.CONNECTED)throw new IOException("Connect before synchronization");cancelled=false;state(CompanionConnectionStatus.SYNCHRONIZING);
-                final long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(120);
+                final long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(300);
                 final var registries=dataset(MessageType.GET_REGISTRIES,MessageType.REGISTRY_DATA,Registry.class,progress,deadline,256L*1024*1024);
                 final var tags=dataset(MessageType.GET_TAGS,MessageType.TAG_DATA,Tag.class,progress,deadline,256L*1024*1024-registries.completion().get("bytes").getAsLong());
                 final var recipes=dataset(MessageType.GET_RECIPES,MessageType.RECIPE_DATA,Recipe.class,progress,deadline,256L*1024*1024-registries.completion().get("bytes").getAsLong()-tags.completion().get("bytes").getAsLong());
                 final var mods=dataset(MessageType.GET_MOD_LIST,MessageType.MOD_LIST_DATA,Mod.class,progress,deadline,256L*1024*1024-registries.completion().get("bytes").getAsLong()-tags.completion().get("bytes").getAsLong()-recipes.completion().get("bytes").getAsLong());
+                final var materials=materialsSupported?dataset(MessageType.GET_MATERIALS,MessageType.MATERIAL_DATA,Material.class,progress,deadline,256L*1024*1024-registries.completion().get("bytes").getAsLong()-tags.completion().get("bytes").getAsLong()-recipes.completion().get("bytes").getAsLong()-mods.completion().get("bytes").getAsLong()):null;
                 final var base=registries.completion();for(final var other:List.of(tags.completion(),recipes.completion(),mods.completion()))if(!other.get("snapshotId").equals(base.get("snapshotId"))||!other.get("environment").equals(base.get("environment")))throw new ProtocolException("Environment changed during synchronization");
                 final var environment=ProtocolCodec.GSON.fromJson(base.get("environment"),Environment.class);
+                if(materials!=null&&(!materials.completion().get("snapshotId").equals(base.get("snapshotId"))||!materials.completion().get("environment").equals(base.get("environment"))))throw new ProtocolException("Material environment changed during synchronization");
                 if(!environment.sessionId().equals(credentials.sessionId())||!environment.minecraftVersion().equals("1.20.1")||!environment.loader().equals("FORGE")||!environment.loaderVersion().startsWith("47."))throw new ProtocolException("Unsupported or mismatched runtime environment");
                 final var ping=request(MessageType.PING,new JsonObject(),MessageType.PONG);if(!ping.get("ready").getAsBoolean()||ping.get("generation").getAsLong()!=environment.generation())throw new ProtocolException("Runtime reloaded during synchronization");
                 final var diagnostics=new ArrayList<String>();base.getAsJsonArray("diagnostics").forEach(d->diagnostics.add(d.getAsString()));
-                final var result=new Snapshot(1,ProtocolCodec.required(base,"snapshotId"),true,environment,registries.records(),tags.records(),recipes.records(),mods.records(),diagnostics);
+                if(!materialsSupported)diagnostics.add("Companion does not support materials-v1; material catalog requires an updated Companion");
+                final var result=new Snapshot(materialsSupported?2:1,ProtocolCodec.required(base,"snapshotId"),true,environment,registries.records(),tags.records(),recipes.records(),mods.records(),diagnostics,materials==null?List.of():materials.records());
                 connected();return result;
             }catch(Exception failure){fail(failure);throw new AssertionError("unreachable");}
             finally{if(status==CompanionConnectionStatus.SYNCHRONIZING){closeSocket();state(cancelled?CompanionConnectionStatus.DISCONNECTED:CompanionConnectionStatus.ERROR);}}
@@ -62,10 +69,24 @@ public final class CompanionConnectionService implements AutoCloseable {
     }
     private <T> RecordTransfer.Received<T> dataset(final MessageType request,final MessageType response,final Class<T> type,final Consumer<String> progress,final long deadline,final long byteBudget)throws IOException {
         if(cancelled)throw new InterruptedIOException("Synchronization cancelled");progress.accept("Receiving "+request.name());final String id=UUID.randomUUID().toString();codec.write(socket.getOutputStream(),new ProtocolMessage(request,id,new JsonObject()));
-        return new RecordTransfer(byteBudget).receive(()->{if(cancelled||System.nanoTime()>deadline)throw new SocketTimeoutException("Synchronization deadline exceeded");return codec.read(socket.getInputStream());},id,response,type,p->progress.accept(p.has("stage")?p.get("stage").getAsString():"Synchronizing"));
+        final long[] lastKeepalive={System.nanoTime()};
+        return new RecordTransfer(byteBudget).receive(()->{
+            if(cancelled||System.nanoTime()>deadline)throw new SocketTimeoutException("Synchronization deadline exceeded");
+            if(System.nanoTime()-lastKeepalive[0]>=syncKeepaliveNanos&&pendingKeepalives.isEmpty()) {
+                final String ping=UUID.randomUUID().toString();pendingKeepalives.add(ping);lastKeepalive[0]=System.nanoTime();codec.write(socket.getOutputStream(),new ProtocolMessage(MessageType.PING,ping,new JsonObject()));
+            }
+            return readMessage();
+        },id,response,type,p->progress.accept(p.has("stage")?p.get("stage").getAsString():"Synchronizing"));
     }
     private JsonObject request(final MessageType type,final JsonObject payload,final MessageType expected)throws IOException {
-        final String id=UUID.randomUUID().toString();codec.write(socket.getOutputStream(),new ProtocolMessage(type,id,payload));final var response=codec.read(socket.getInputStream());if(!response.requestId().equals(id)||response.messageType()!=expected)throw new ProtocolException("Unexpected response to "+type);return response.payload();
+        final String id=UUID.randomUUID().toString();codec.write(socket.getOutputStream(),new ProtocolMessage(type,id,payload));final var response=readMessage();if(!response.requestId().equals(id)||response.messageType()!=expected)throw new ProtocolException("Unexpected response to "+type);return response.payload();
+    }
+    private ProtocolMessage readMessage() throws IOException {
+        while(true) {
+            final var message=codec.read(socket.getInputStream());
+            if(!pendingKeepalives.remove(message.requestId()))return message;
+            if(message.messageType()!=MessageType.PONG||!message.payload().has("ready")||!message.payload().get("ready").getAsBoolean())throw new ProtocolException("Runtime stopped during synchronization keepalive");
+        }
     }
     private synchronized void connected(){if(cancelled||socket==null||socket.isClosed())throw new CancellationException("Connection cancelled");state(CompanionConnectionStatus.CONNECTED);}
     private void fail(final Exception failure){closeSocket();state(cancelled?CompanionConnectionStatus.DISCONNECTED:CompanionConnectionStatus.ERROR);throw new CompletionException(cancelled?new CancellationException("Synchronization cancelled"):failure);}

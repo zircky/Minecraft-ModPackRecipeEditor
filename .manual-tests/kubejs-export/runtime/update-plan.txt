@@ -1,0 +1,42 @@
+KUBEJS_DATA
+[kubejs/data/biomesoplenty/recipes/jacaranda_planks.json]
+Recipe ID: biomesoplenty:jacaranda_planks
+Recipe Namespace: biomesoplenty
+Declaring Source: UNKNOWN
+Active Source: Project overlay — runtime winner UNKNOWN
+Scope: PROJECT
+Provenance Confidence: PROJECT_OVERLAY
+Active definition location:
+  Source Mod IDs (container metadata): UNKNOWN
+  Archive Mod IDs: []
+  Declaring Source: UNKNOWN
+  Physical Source: L:\My Add\RecipeEditor\.manual-tests\kubejs-export\runtime\update-project.json
+  Source File: L:\My Add\RecipeEditor\.manual-tests\kubejs-export\runtime\update-project.json#changes/biomesoplenty:jacaranda_planks
+  Original File: changes/biomesoplenty:jacaranda_planks
+  Source Type: LOCAL_RESOURCE
+  Discovery Method: User project overlay; not installed into Minecraft
+  Confidence: PHYSICAL_LOCATION_ONLY
+
+All discovered / derived-from definitions (not a load-order ranking):
+Candidate:
+  Source Mod IDs (container metadata): [biomesoplenty]
+  Archive Mod IDs: [biomesoplenty]
+  Declaring Source: UNKNOWN
+  Physical Source: G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh\minecraft\mods\BiomesOPlenty-1.20.1-18.0.0.592.jar
+  Source File: G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh\minecraft\mods\BiomesOPlenty-1.20.1-18.0.0.592.jar!data/biomesoplenty/recipes/jacaranda_planks.json
+  Original File: data/biomesoplenty/recipes/jacaranda_planks.json
+  Source Type: MOD_JAR
+  Discovery Method: Static resource scan
+  Confidence: PHYSICAL_LOCATION_ONLY
+
+Overridden definitions in PROJECT: 1
+Overridden:
+  Source Mod IDs (container metadata): [biomesoplenty]
+  Archive Mod IDs: [biomesoplenty]
+  Declaring Source: UNKNOWN
+  Physical Source: G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh\minecraft\mods\BiomesOPlenty-1.20.1-18.0.0.592.jar
+  Source File: G:\PrismLauncher\instances\ISG-0.6.0-alpha.1-harsh\minecraft\mods\BiomesOPlenty-1.20.1-18.0.0.592.jar!data/biomesoplenty/recipes/jacaranda_planks.json
+  Original File: data/biomesoplenty/recipes/jacaranda_planks.json
+  Source Type: MOD_JAR
+  Discovery Method: Static resource scan
+  Confidence: PHYSICAL_LOCATION_ONLY

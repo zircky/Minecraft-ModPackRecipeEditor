@@ -1,0 +1,29 @@
+{
+  "version" : 1,
+  "sha256" : "126a5899cbd7599a29eec716e595a1288422f8ae00129bf419a7836ef98513f3",
+  "workspace" : {
+    "profiles" : [ {
+      "id" : "mrekubejs20261118",
+      "name" : "Runtime update",
+      "target" : "L:\\My Add\\RecipeEditor\\.manual-tests\\kubejs-export\\runtime\\update",
+      "format" : "KUBEJS",
+      "overwrite" : "REFUSE",
+      "backups" : true,
+      "minecraft" : "1.20.1",
+      "loader" : "FORGE",
+      "kubeJsMode" : "DATA_JSON"
+    } ],
+    "manifests" : [ {
+      "profile" : "mrekubejs20261118",
+      "target" : "L:\\My Add\\RecipeEditor\\.manual-tests\\kubejs-export\\runtime\\update",
+      "minecraft" : "1.20.1",
+      "timestamp" : "2026-11-18T14:07:27.635344500Z",
+      "status" : "GENERATED_RUNTIME_UNVERIFIED",
+      "formats" : [ "KUBEJS" ],
+      "hashes" : {
+        "kubejs/data/biomesoplenty/recipes/jacaranda_planks.json" : "e8ea6d2a0cc86455d4b3d634dc1f31e58691f3bbc7ed727d9dc222803a18da46"
+      },
+      "recipeIds" : [ "biomesoplenty:jacaranda_planks" ]
+    } ]
+  }
+}

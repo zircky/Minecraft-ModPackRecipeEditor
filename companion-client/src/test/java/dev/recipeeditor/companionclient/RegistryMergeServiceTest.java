@@ -13,4 +13,24 @@ final class RegistryMergeServiceTest {
     @Test void runtimeWinsMatchingIdButStaticOriginalIsRetained(){final var staticEntry=entry("minecraft:iron_ingot");final var original=new RegistryIndex(List.of(staticEntry,entry("test:static_only")));final var result=new RegistryMergeService().merge(original,new RuntimeFixtures().snapshot(root,"s",1),root.resolve("snapshot"));assertSame(original,result.staticOriginals());assertEquals(2,result.preferred().entries().size());assertEquals(DiscoveryConfidence.CONFIRMED_BY_RUNTIME,result.preferred().find(staticEntry.id()).getFirst().confidence());assertEquals(DiscoveryConfidence.INFERRED_FROM_RESOURCES,result.preferred().find(ResourceLocation.parse("test:static_only")).getFirst().confidence());assertFalse(result.diagnostics().isEmpty());assertEquals(2,result.runtimeTags().definitions().size());assertTrue(result.runtimeTags().members(ResourceKind.ITEM,ResourceLocation.parse("test:empty")).isEmpty());}
     @Test void runtimeOnlyAndEmptySnapshots(){final var runtime=new RuntimeFixtures().snapshot(root,"s",1);assertEquals(1,new RegistryMergeService().merge(new RegistryIndex(List.of()),runtime,root.resolve("snapshot")).preferred().entries().size());final var empty=new RuntimeData.Snapshot(1,"empty",true,runtime.environment(),List.of(),List.of(),List.of(),List.of(),List.of());final var staticIndex=new RegistryIndex(List.of(entry("test:static")));assertEquals(staticIndex.entries(),new RegistryMergeService().merge(staticIndex,empty,root.resolve("snapshot")).preferred().entries());}
     @Test void incompleteSnapshotIsNeverTreatedAsAuthoritative(){final var runtime=new RuntimeFixtures().snapshot(root,"s",1);final var partial=new RuntimeData.Snapshot(1,"partial",false,runtime.environment(),runtime.registries(),runtime.tags(),runtime.recipes(),runtime.mods(),List.of());assertThrows(IllegalArgumentException.class,()->new RegistryMergeService().merge(new RegistryIndex(List.of()),partial,root.resolve("snapshot")));}
+    @Test void mergeRetainsTranslationsAndUnknownRuntimeFluidHasNoInventedTextureOrOwner() {
+        final var base=new RuntimeFixtures().snapshot(root,"s",1);
+        final var localized=new RegistryEntry(ResourceLocation.parse("minecraft:iron_ingot"),ResourceKind.ITEM,"Iron Ingot","item.minecraft.iron_ingot",Map.of("en_us","Iron Ingot","ru_ru","Железный слиток"),entry("minecraft:iron_ingot").sources(),List.of(),DiscoveryConfidence.INFERRED_FROM_RESOURCES,"static");
+        final var fluid=new RuntimeData.Registry(RuntimeData.Kind.FLUID,"gtceu:propane","Propane","test.Fluid",Map.of(),Map.of());
+        final var snapshot=new RuntimeData.Snapshot(1,"runtime",true,base.environment(),List.of(base.registries().getFirst(),fluid),List.of(),List.of(),List.of(),List.of());
+        final var merged=new RegistryMergeService().merge(new RegistryIndex(List.of(localized)),snapshot,root.resolve("snapshot")).preferred();
+        assertEquals(localized.localizedNames(),merged.find(localized.id()).getFirst().localizedNames());
+        final var actualFluid=merged.find(ResourceLocation.parse("gtceu:propane")).getFirst();assertEquals(ResourceVisual.Status.RUNTIME_TEXTURE_REQUIRED,actualFluid.visual().status());assertTrue(actualFluid.sources().getFirst().modIds().isEmpty());
+    }
+    @Test void materialRuntimeNamesRequireAnExplicitUnambiguousClientLanguage() {
+        final var base=new RuntimeFixtures().snapshot(root,"s",1);
+        final var ru=new RuntimeData.Registry(RuntimeData.Kind.ITEM,"test:a","A","test.Item",Map.of("runtimeNameLanguage","ru_ru"),Map.of());
+        final var en=new RuntimeData.Registry(RuntimeData.Kind.ITEM,"test:b","B","test.Item",Map.of("runtimeNameLanguage","en_us"),Map.of());
+        final var material=new RuntimeData.Material("test:metal","Металл","material.test.metal",Map.of(),Map.of(),List.of(),List.of(),Map.of("nameComponent","{\"translate\":\"material.test.metal\"}"));
+        for(final boolean mixed:List.of(false,true)) {
+            final var snapshot=new RuntimeData.Snapshot(2,"materials",true,base.environment(),mixed?List.of(ru,en):List.of(ru),List.of(),List.of(),List.of(),List.of(),List.of(material));
+            final var names=new RegistryMergeService().merge(new RegistryIndex(List.of()),snapshot,root.resolve("snapshot")).preferred().materials().getFirst().localizedNames();
+            if(mixed)assertTrue(names.isEmpty());else assertEquals("Металл",names.get("ru_ru"));
+        }
+    }
 }

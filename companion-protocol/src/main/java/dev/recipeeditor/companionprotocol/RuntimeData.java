@@ -27,11 +27,26 @@ public final class RuntimeData {
     public record Mod(String id, String version, String name) {
         public Mod {text(id);text(version);text(name);}
     }
+    /** Optional materials-v1 dataset; forms are actual registered references, never generated ID patterns. */
+    public record MaterialForm(String prefix, Kind kind, String resourceId) {
+        public MaterialForm { text(prefix);location(resourceId);if(kind!=Kind.ITEM&&kind!=Kind.BLOCK&&kind!=Kind.FLUID)throw new IllegalArgumentException("Invalid material form kind"); }
+    }
+    public record Material(String id, String name, String localizationKey, Map<String,String> localizedNames,
+            Map<String,String> properties, List<String> flags, List<MaterialForm> forms, Map<String,String> metadata) {
+        public Material { location(id);text(name);Objects.requireNonNull(localizationKey);localizedNames=Map.copyOf(localizedNames);properties=Map.copyOf(properties);flags=List.copyOf(flags);forms=List.copyOf(forms);metadata=Map.copyOf(metadata);if(forms.size()>4096)throw new IllegalArgumentException("Material form limit"); }
+    }
     public record Snapshot(int schemaVersion, String snapshotId, boolean complete, Environment environment,
-            List<Registry> registries, List<Tag> tags, List<Recipe> recipes, List<Mod> mods, List<String> diagnostics) {
+            List<Registry> registries, List<Tag> tags, List<Recipe> recipes, List<Mod> mods, List<String> diagnostics, List<Material> materials) {
+        public Snapshot(final int schemaVersion,final String snapshotId,final boolean complete,final Environment environment,
+                final List<Registry> registries,final List<Tag> tags,final List<Recipe> recipes,final List<Mod> mods,final List<String> diagnostics) {
+            this(schemaVersion,snapshotId,complete,environment,registries,tags,recipes,mods,diagnostics,List.of());
+        }
         public Snapshot {
-            if(schemaVersion!=1)throw new IllegalArgumentException("Unknown snapshot schema");text(snapshotId);if(!snapshotId.matches("[a-zA-Z0-9-]{1,64}"))throw new IllegalArgumentException("Invalid snapshot ID");Objects.requireNonNull(environment);
+            if(schemaVersion!=1&&schemaVersion!=2)throw new IllegalArgumentException("Unknown snapshot schema");text(snapshotId);if(!snapshotId.matches("[a-zA-Z0-9-]{1,64}"))throw new IllegalArgumentException("Invalid snapshot ID");Objects.requireNonNull(environment);
             registries=List.copyOf(registries);tags=List.copyOf(tags);recipes=List.copyOf(recipes);mods=List.copyOf(mods);diagnostics=List.copyOf(diagnostics);
+            materials=List.copyOf(materials);if(materials.size()>20000||(schemaVersion==1&&!materials.isEmpty()))throw new IllegalArgumentException("Material dataset/schema mismatch");unique(materials.stream().map(Material::id).toList());
+            final var registered=new HashSet<String>();registries.forEach(r->registered.add(r.kind()+":"+r.id()));
+            for(final var material:materials)for(final var form:material.forms())if(!registered.contains(form.kind()+":"+form.resourceId()))throw new IllegalArgumentException("Unregistered material form: "+form.resourceId());
             if(registries.size()>200000||tags.size()>100000||recipes.size()>200000||mods.size()>4096)throw new IllegalArgumentException("Snapshot count limit");
             unique(registries.stream().map(r->r.kind()+":"+r.id()).toList());unique(tags.stream().map(t->t.kind()+":"+t.id()).toList());unique(recipes.stream().map(Recipe::id).toList());unique(mods.stream().map(Mod::id).toList());
         }

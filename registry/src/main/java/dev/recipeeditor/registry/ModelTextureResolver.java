@@ -1,65 +1,101 @@
 package dev.recipeeditor.registry;
 
-import dev.recipeeditor.core.ResourceLocation;
 import com.fasterxml.jackson.databind.JsonNode;
+import dev.recipeeditor.core.ResourceLocation;
 import java.util.*;
+import static dev.recipeeditor.registry.ResourceVisual.Status.*;
 
-/** Resolves a texture sample only for simple generated items / cube blocks, never arbitrary geometry. */
-final class ModelTextureResolver {
-    private final Map<ResourceLocation,List<ResourceDocument>> models=new HashMap<>();
-    private final Map<String,List<ResourceSource>> textures=new HashMap<>();
+/** Resolves flat layers or a labelled representative block texture, not game geometry. */
+public final class ModelTextureResolver {
+    private final ResourceAssetCatalog assets;
     private final ResourceJsonReader reader=new ResourceJsonReader();
-    ModelTextureResolver(final ResourceScanResult scan) {
-        for (final var document:scan.documents()) {
-            final String path=document.source().internalPath();
-            if (!path.matches("assets/[^/]+/models/(item|block)/.+\\.json")) continue;
-            final String[] parts=path.split("/",4);
-            final var id=new ResourceLocation(parts[1],parts[3].substring(0,parts[3].length()-5));
-            models.computeIfAbsent(id,k->new ArrayList<>()).add(document);
-        }
-        scan.textures().forEach(source->textures.computeIfAbsent(source.internalPath(),k->new ArrayList<>()).add(source));
-    }
+    public ModelTextureResolver(final ResourceScanResult scan) { this(new ResourceAssetCatalog(scan)); }
+    public ModelTextureResolver(final ResourceAssetCatalog assets) { this.assets=assets; }
     List<ResourceSource> resolve(final ResourceDocument document) {
-        try {
-            JsonNode model=reader.read(document.text());
-            final String path=document.source().internalPath();
-            if (path.contains("/blockstates/")) {
-                if (model.has("multipart") || !model.path("variants").isObject()) return List.of();
-                final var refs=new HashSet<String>();
-                for (final var variant:model.path("variants")) {
-                    if (variant.isArray()) return List.of();
-                    if (!variant.path("model").isTextual()) return List.of();
-                    refs.add(variant.path("model").asText());
-                }
-                if (refs.size()!=1) return List.of();
-                final var docs=models.getOrDefault(ResourceLocation.parse(refs.iterator().next()),List.of());
-                return docs.size()==1?resolve(docs.getFirst()):List.of();
-            }
-            final var textureValues=new HashMap<String,String>(); final var visited=new HashSet<ResourceLocation>();
-            String terminal="";
-            for (int depth=0;depth<16;depth++) {
-                if (model.has("elements") || model.has("overrides") || model.has("loader")) return List.of();
-                final var fields=model.path("textures").fields();
-                while(fields.hasNext()) { final var field=fields.next(); if (field.getValue().isTextual()) textureValues.putIfAbsent(field.getKey(),field.getValue().asText()); }
-                terminal=model.path("parent").asText();
-                if (Set.of("minecraft:item/generated","item/generated","minecraft:item/handheld","item/handheld","minecraft:block/cube_all","block/cube_all").contains(terminal)) break;
-                if (terminal.isEmpty()) return List.of();
-                final var parent=ResourceLocation.parse(terminal);
-                if (!visited.add(parent)) return List.of();
-                final var docs=models.getOrDefault(parent,List.of());
-                if (docs.size()!=1) return List.of();
-                model=reader.read(docs.getFirst().text());
-            }
-            if (!Set.of("minecraft:item/generated","item/generated","minecraft:item/handheld","item/handheld","minecraft:block/cube_all","block/cube_all").contains(terminal)) return List.of();
-            final String key=terminal.contains("cube_all")?"all":"layer0";
-            if (!terminal.contains("cube_all") && textureValues.keySet().stream().anyMatch(k->k.startsWith("layer")&&!k.equals("layer0"))) return List.of();
-            String value=textureValues.getOrDefault(key,"");
-            final var seen=new HashSet<String>();
-            while (value.startsWith("#")) { if (!seen.add(value)) return List.of(); value=textureValues.getOrDefault(value.substring(1),""); }
-            if (value.isEmpty()) return List.of();
-            final var texture=ResourceLocation.parse(value);
-            final var sources=textures.getOrDefault("assets/"+texture.namespace()+"/textures/"+texture.path()+".png",List.of());
-            return sources.size()==1?List.copyOf(sources):List.of();
-        } catch (Exception error) { return List.of(); }
+        return preview(document).layers().stream().map(ResourceVisual.Layer::source).toList();
     }
+    public ResourceVisual model(final String modelId) {
+        try {
+            final var documents=assets.models(ResourceLocation.parse(modelId));
+            if (documents.size()>1) return missing(AMBIGUOUS_SOURCE,"Model override order is unknown: "+modelId);
+            return documents.isEmpty()?missing(RUNTIME_TEXTURE_REQUIRED,"No static model: "+modelId):preview(documents.getFirst());
+        } catch (IllegalArgumentException error) { return missing(INVALID_TEXTURE,"Invalid model reference"); }
+    }
+    public ResourceVisual preview(final ResourceDocument document) {
+        try {
+            final var json=reader.read(document.text());
+            if (!json.isObject()) return missing(INVALID_TEXTURE,"Model must be an object");
+            return document.source().internalPath().contains("/blockstates/")?blockstate(json):inherited(json);
+        } catch (Exception error) { return missing(INVALID_TEXTURE,"Invalid model: "+error.getMessage()); }
+    }
+    private ResourceVisual blockstate(final JsonNode json) {
+        final var references=new LinkedHashSet<String>();
+        collectReferences(json.path("variants"),references);
+        for (final var part:json.path("multipart")) collectReferences(part.path("apply"),references);
+        if (references.isEmpty()) return missing(RENDERING_UNSUPPORTED,"No supported blockstate model reference");
+        ResourceVisual representative=null;
+        for (final var reference:references) {
+            final var visual=model(reference);
+            if (visual.status()==AMBIGUOUS_SOURCE) return visual;
+            if (representative==null && !visual.layers().isEmpty()) representative=visual;
+        }
+        if (representative==null) return missing(RENDERING_UNSUPPORTED,"Blockstate requires a runtime renderer or missing assets");
+        if (references.size()==1 && !json.has("multipart")) return representative;
+        return new ResourceVisual(RENDERING_UNSUPPORTED,representative.layers(),"Representative texture from one variant/part; state geometry is not rendered");
+    }
+    private void collectReferences(final JsonNode node, final Set<String> references) {
+        if (references.size()>128) throw new IllegalArgumentException("Blockstate reference limit");
+        if (node.isObject() && node.path("model").isTextual()) references.add(node.path("model").asText());
+        else if (node.isContainerNode()) for (final var child:node) collectReferences(child,references);
+    }
+    private ResourceVisual inherited(JsonNode model) throws java.io.IOException {
+        final var values=new LinkedHashMap<String,String>();
+        final var visited=new HashSet<ResourceLocation>();
+        boolean complex=false,generated=false;
+        for (int depth=0;depth<32;depth++) {
+            complex|=model.has("elements") || model.has("overrides") || model.has("loader");
+            final var fields=model.path("textures").fields();
+            while (fields.hasNext()) { final var field=fields.next(); if(field.getValue().isTextual()) values.putIfAbsent(field.getKey(),field.getValue().asText()); }
+            final String parent=model.path("parent").asText();
+            if (parent.isEmpty()) break;
+            final var id=ResourceLocation.parse(parent);
+            if (!visited.add(id)) return missing(INVALID_TEXTURE,"Cyclic model inheritance");
+            if (id.namespace().equals("minecraft") && Set.of("item/generated","item/handheld","item/handheld_rod","builtin/generated").contains(id.path())) { generated=true;break; }
+            final var parents=assets.models(id);
+            if (parents.size()>1) return missing(AMBIGUOUS_SOURCE,"Parent model override order is unknown: "+id);
+            if (parents.isEmpty()) {
+                complex|=!id.namespace().equals("minecraft") || !id.path().startsWith("block/cube");
+                break;
+            }
+            model=reader.read(parents.getFirst().text());
+            if (depth==31) return missing(INVALID_TEXTURE,"Model inheritance depth limit");
+        }
+        final var layers=new ArrayList<ResourceVisual.Layer>();
+        if (generated) {
+            for (int i=0;i<8;i++) {
+                final String key="layer"+i;
+                if (!values.containsKey(key)) { if(i==0) return missing(TEXTURE_NOT_FOUND,"Missing layer0");break; }
+                final var visual=texture(values,key);
+                if (visual.layers().isEmpty()) return visual;
+                layers.addAll(visual.layers());
+            }
+            return new ResourceVisual(complex?RENDERING_UNSUPPORTED:READY,layers,complex?"Base layers only; overrides/custom geometry are not rendered":"Generated item layers");
+        }
+        for (final String key:List.of("all","side","top","bottom","front","texture","particle")) {
+            if (!values.containsKey(key)) continue;
+            final var sample=texture(values,key);
+            if (sample.layers().isEmpty()) return sample;
+            return new ResourceVisual(complex || key.equals("particle")?RENDERING_UNSUPPORTED:TEXTURE_SAMPLE,sample.layers(),"Representative #"+key+" texture only; geometry is not rendered");
+        }
+        return missing(complex?UNSUPPORTED_RENDERER:RUNTIME_TEXTURE_REQUIRED,"No supported static reference; runtime renderer may supply one");
+    }
+    private ResourceVisual texture(final Map<String,String> values,final String key) {
+        String value=values.getOrDefault(key,"");final var seen=new HashSet<String>();
+        while(value.startsWith("#")) { if(!seen.add(value)) return missing(INVALID_TEXTURE,"Cyclic texture variable");value=values.getOrDefault(value.substring(1),""); }
+        final var sources=assets.texture(value);
+        if(sources.size()>1) return missing(AMBIGUOUS_SOURCE,"Texture override order is unknown: "+value);
+        if(sources.isEmpty()) return missing(TEXTURE_NOT_FOUND,"Texture not found: "+value);
+        return new ResourceVisual(TEXTURE_SAMPLE,List.of(new ResourceVisual.Layer(sources.getFirst(),null)),"Texture reference: "+value);
+    }
+    private ResourceVisual missing(final ResourceVisual.Status status,final String explanation) { return ResourceVisual.unavailable(status,explanation); }
 }
