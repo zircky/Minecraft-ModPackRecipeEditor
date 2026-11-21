@@ -97,7 +97,8 @@ public final class TextureResourceService implements AutoCloseable {
     }
     private BufferedImage remember(final FrameKey key,final BufferedImage original,final long request) {
         // Copy/cap the frame: a subimage must not retain the entire spritesheet in the cache.
-        final var frame=new BufferedImage(Math.min(256,original.getWidth()),Math.min(256,original.getHeight()),BufferedImage.TYPE_INT_ARGB);
+        final double scale=Math.min(1.0,256.0/Math.max(original.getWidth(),original.getHeight()));
+        final var frame=new BufferedImage(Math.max(1,(int)Math.round(original.getWidth()*scale)),Math.max(1,(int)Math.round(original.getHeight()*scale)),BufferedImage.TYPE_INT_ARGB);
         for(int y=0;y<frame.getHeight();y++)for(int x=0;x<frame.getWidth();x++)frame.setRGB(x,y,original.getRGB(x*original.getWidth()/frame.getWidth(),y*original.getHeight()/frame.getHeight()));
         synchronized(cache) { if(request==epoch.get())frames.put(key,frame);while(frames.size()>64)frames.remove(frames.keySet().iterator().next()); }
         return frame;

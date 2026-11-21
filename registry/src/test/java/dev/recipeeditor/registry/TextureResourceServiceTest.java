@@ -8,6 +8,13 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
 final class TextureResourceServiceTest {
+    @Test void boundsPreviewWithoutChangingAspectRatio()throws Exception {
+        ImageIO.write(new BufferedImage(512,128,BufferedImage.TYPE_INT_ARGB),"PNG",root.resolve("wide.png").toFile());
+        try(final var service=new TextureResourceService()) {
+            final var image=ImageIO.read(new java.io.ByteArrayInputStream(service.load(source("wide.png"),root)));
+            assertEquals(256,image.getWidth());assertEquals(64,image.getHeight());
+        }
+    }
     @TempDir Path root;
     private ResourceSource source(final String path) { return new ResourceSource(SourceType.LOCAL_RESOURCE,List.of(),root,path,"test"); }
     @Test void validatesPngCachesAndClears() throws Exception {
