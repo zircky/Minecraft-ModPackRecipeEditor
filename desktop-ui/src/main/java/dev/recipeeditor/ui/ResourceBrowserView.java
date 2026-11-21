@@ -23,6 +23,7 @@ public final class ResourceBrowserView extends BorderPane {
     private final TextArea details=new TextArea();
     private final VBox selection=new VBox(10);
     private final Label summary=new Label(),previewStatus=new Label();
+    private final javafx.beans.property.ObjectProperty<ResourceLocation> selectedId=new javafx.beans.property.SimpleObjectProperty<>();
     private ResourceKind kind=ResourceKind.ITEM;
     private List<RegistryEntry> filtered=List.of();
     private long generation,selectionGeneration;
@@ -60,11 +61,13 @@ public final class ResourceBrowserView extends BorderPane {
         summary.setText(kind+" · "+filtered.size()+" entries · "+confirmed+" runtime-confirmed · "+(filtered.size()-confirmed)+" static candidates");
         pages.setPageCount((filtered.size()+59)/60);pages.setCurrentPageIndex(0);pages.setPageFactory(this::page);
         selection.getChildren().setAll(new Label("Select a resource to inspect details."));setBottom(null);
+        selectedId.set(null);
     }
     private javafx.scene.Node page(final Integer number) {
         final long request=++generation;
         if(filtered.isEmpty())return new EmptyStateView("No matching resources","Change the search or source filter. Static discovery may omit resources that require a runtime snapshot.","Clear search and source filter",()->{search.clear();source.getSelectionModel().selectFirst();});
         final var list=new ListView<List<RegistryEntry>>();list.setFixedCellSize(182);
+        list.getStyleClass().add("resource-grid");list.setSelectionModel(null);list.setFocusTraversable(false);
         list.setCellFactory(view->new ListCell<>() {
             @Override protected void updateItem(final List<RegistryEntry> entries,final boolean empty) {
                 super.updateItem(entries,empty);setText(null);setGraphic(null);
@@ -88,12 +91,13 @@ public final class ResourceBrowserView extends BorderPane {
         final var origin=line(model.source(entry));origin.getStyleClass().add("muted");
         final var confidence=line(entry.confidence()==DiscoveryConfidence.CONFIRMED_BY_RUNTIME?"Runtime confirmed":"Static candidate");confidence.getStyleClass().add("muted");
         final var content=new VBox(5,image,name,id,origin,confidence);content.setAlignment(Pos.CENTER);
-        final var button=new Button();button.setGraphic(content);button.setMinSize(148,166);button.setPrefSize(148,166);button.setMaxSize(148,166);
+        final var button=new ResourceCardView(entry.id(),selectedId);button.setGraphic(content);button.setMinSize(148,166);button.setPrefSize(148,166);button.setMaxSize(148,166);
         button.setTooltip(new Tooltip(model.displayName(entry,language.getValue())+"\n"+entry.id()+"\n"+model.source(entry)+"\n"+entry.confidence()+"\n"+entry.visual().status()+": "+entry.visual().explanation()));
-        button.setOnAction(event->select(entry));return button;
+        button.setOnAction(event->{if(entry.id().equals(selectedId.get())){selectedId.set(null);selection.getChildren().setAll(new Label("Select a resource to inspect details."));setBottom(null);selectionGeneration++;}else select(entry);});return button;
     }
     private Label line(final String text) { final var label=new Label(text);label.setMinWidth(0);label.setPrefWidth(128);label.setMaxWidth(128);label.setWrapText(false);label.setTextOverrun(OverrunStyle.ELLIPSIS);return label; }
     private void select(final RegistryEntry entry) {
+        selectedId.set(entry.id());
         final long request=++selectionGeneration;
         details.setText(model.details(entry,language.getValue()));details.positionCaret(0);previewStatus.setText(entry.visual().status()+": "+entry.visual().explanation());
         final var image=new ResourcePreview(entry.visual(),result.selectedRoot(),textures,96,()->active&&selectionGeneration==request,
