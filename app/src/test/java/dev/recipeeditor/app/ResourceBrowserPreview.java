@@ -19,6 +19,7 @@ public final class ResourceBrowserPreview {
     public static void main(final String[] args) { Application.launch(Preview.class,args); }
     public static final class Preview extends Application {
         private final TextureResourceService textures=new TextureResourceService();
+        private final CompanionConnectionService companion=new CompanionConnectionService();
         private ResourceBrowserView resources;
         private MaterialsBrowserView materials;
         private RecipeBrowserView recipeBrowser;
@@ -32,6 +33,7 @@ public final class ResourceBrowserPreview {
                     final var original=analyzer.start(pack,p->{}).result().get(5,TimeUnit.MINUTES);
                     final var file=Path.of(args.get(1));final var snapshot=new RuntimeSnapshotService().load(file);final var merged=new RegistryMergeService().merge(original.registry(),snapshot,file);
                     final var result=new DiscoveryResult(original.selectedRoot(),merged.preferred(),original.recipes(),original.diagnostics(),original.elapsedMillis());
+                    if(args.size()>2&&!args.get(2).isBlank()){companion.connect(Path.of(args.get(2))).get(8,TimeUnit.SECONDS);dev.recipeeditor.ui.rendering.InventoryPreviewProvider.shared().client(companion);}
                     Platform.runLater(()->show(stage,result));
                 } catch(Exception failure) { Platform.runLater(()->stage.getScene().setRoot(new TextArea(failure.toString()))); }
             });
@@ -53,13 +55,13 @@ public final class ResourceBrowserPreview {
             final var tnt=result.recipes().findById(dev.recipeeditor.core.ResourceLocation.parse("minecraft:tnt")).stream().filter(recipe->recipe.source().archiveModIds().contains("biomesoplenty")).findFirst();
             final var edit=new Button("Edit actual minecraft:tnt");edit.setDisable(tnt.isEmpty());
             edit.setOnAction(event->tnt.ifPresent(recipe->{final var current=editor.effective().findById(recipe.id()).stream().findFirst().orElse(recipe);new RecipeEditorDialog(stage,result,editor,editingTasks,new dev.recipeeditor.recipeengine.editor.RecipeEditSession(current.id(),current.source(),current.rawJson()),false,new dev.recipeeditor.integrations.api.IntegrationContext("1.20.1",dev.recipeeditor.core.importing.ModLoaderType.FORGE,Map.of(),Map.of())).showAndWait();}));
-            final var status=new Label("Cached snapshot, not a live Minecraft connection");
+            final var status=new Label(companion.itemPreviewsAvailable()?"Live Minecraft inventory renderer + cached registry snapshot":"Cached snapshot, not a live Minecraft connection");
             final var project=Path.of("build/resource-probe-project.json").toAbsolutePath();
             final var save=new Button("Save test project");save.setOnAction(event->{final var changes=editor.persistentSnapshot();persistence.save(project,dev.recipeeditor.recipeengine.editor.ProjectDocument.capture(result.selectedRoot(),changes)).whenComplete((ignored,error)->Platform.runLater(()->{if(error==null){editor.markPersisted(changes);status.setText("Test project saved: "+changes.changes().size()+" changes");}else status.setText("Save failed: "+error.getMessage());}));});
             final var reopen=new Button("Reopen test project");reopen.setOnAction(event->persistence.load(project).whenComplete((document,error)->Platform.runLater(()->{if(error!=null){status.setText("Reopen failed: "+error.getMessage());return;}editingTasks.submit(()->document.materialize(validator,project),changes->{editor.restore(changes);status.setText("Test project reopened: "+changes.changes().size()+" changes");},failure->status.setText(failure.getMessage()));})));
             root.setBottom(new ToolBar(edit,save,reopen,status));
             final var scene=new Scene(root,1320,820);scene.getStylesheets().add(Objects.requireNonNull(ResourceBrowserView.class.getResource("theme.css")).toExternalForm());stage.setScene(scene);
         }
-        @Override public void stop() { if(resources!=null)resources.deactivate();if(materials!=null)materials.deactivate();if(recipeBrowser!=null)recipeBrowser.close();textures.close();editingTasks.close();persistence.close(); }
+        @Override public void stop() { companion.close();dev.recipeeditor.ui.rendering.InventoryPreviewProvider.shared().close(); if(resources!=null)resources.deactivate();if(materials!=null)materials.deactivate();if(recipeBrowser!=null)recipeBrowser.close();textures.close();editingTasks.close();persistence.close(); }
     }
 }

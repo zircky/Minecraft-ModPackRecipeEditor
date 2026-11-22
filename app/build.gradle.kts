@@ -46,11 +46,12 @@ tasks.processResources { dependsOn(generateBuildInfo) }
 tasks.test {
     dependsOn(":companion-server:classes")
     if(providers.gradleProperty("realModpack").isPresent) maxHeapSize="1536m"
+    if (providers.gradleProperty("phase19Evidence").isPresent) maxHeapSize="1536m"
     systemProperty("architectureRoot", rootProject.projectDir.absolutePath)
     systemProperty("expectedDesktopVersion", project.version.toString())
     providers.gradleProperty("realModpack").orNull?.let { systemProperty("realModpack", it) }
     providers.gradleProperty("kubeJsExportDirectory").orNull?.let { systemProperty("kubeJsExportDirectory", it) }
-    listOf("resourceAuditDirectory","resourceAuditSnapshot","resourceAuditLabel").forEach { key -> providers.gradleProperty(key).orNull?.let { systemProperty(key,it) } }
+    listOf("resourceAuditDirectory","resourceAuditSnapshot","resourceAuditLabel","previewSession","inventoryClientRegistry","inventoryReloadProbe","phase19Snapshot").forEach { key -> providers.gradleProperty(key).orNull?.let { systemProperty(key,it) } }
     testLogging { events("failed", "skipped") }
 }
 
@@ -61,7 +62,7 @@ tasks.register<JavaExec>("previewResources") {
     classpath=sourceSets.test.get().runtimeClasspath
     mainClass.set("dev.recipeeditor.app.ResourceBrowserPreview")
     maxHeapSize="1536m"
-    args(providers.gradleProperty("realModpack").getOrElse(""),providers.gradleProperty("runtimeSnapshotFile").getOrElse(""))
+    args(providers.gradleProperty("realModpack").getOrElse(""),providers.gradleProperty("runtimeSnapshotFile").getOrElse(""),providers.gradleProperty("previewSession").getOrElse(""))
 }
 
 tasks.register<JavaExec>("previewGregTech") {
@@ -74,3 +75,13 @@ tasks.register<JavaExec>("previewGregTech") {
 }
 
 apply(from = rootProject.file("gradle/windows-packaging.gradle.kts"))
+
+// Phase 18 visual verification only; catalog integration is intentionally a later step.
+tasks.register<JavaExec>("previewBlockModels") {
+    group = "verification"
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("dev.recipeeditor.app.BlockRenderingPreview")
+    maxHeapSize = "1536m"
+    args(providers.gradleProperty("realModpack").getOrElse(""))
+}

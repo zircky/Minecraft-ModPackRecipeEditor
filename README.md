@@ -297,3 +297,10 @@ Application Image: `app/build/windows/image/MinecraftRecipeEditor/MinecraftRecip
 | AUTO / COMBINED | Data для совместимых additions/updates, JS для удалений/проверенных JS-only адаптеров; один механизм на Recipe ID |
 
 Preview показывает фактический механизм, target files и отказы, Generated files — содержимое и замены/удаления файлов. Перед записью обязателен Review. Перезапись возможна только для неизменённых файлов, принадлежащих manifest профиля. Неизвестные кастомные/GT serializers не получают Data-поддержку автоматически. Подробнее: [KUBEJS_EXPORT_REPORT.md](docs/reports/KUBEJS_EXPORT_REPORT.md).
+
+
+## Minecraft inventory icons (Phase 18)
+
+Каталог, Ingredient Picker и слоты рецептов используют общий inventory preview provider. При подключении Companion Forge 1.20.1 с capability `item-previews-v1` иконки захватываются настоящим Minecraft GUI ItemRenderer. Подключение использует существующий session-файл Companion; графика работает только на клиенте, мир для обычных предметов не обязателен. Старый Companion без capability продолжает работать со статическими иконками.
+
+Без клиента используются настоящие `models/item/*.json`, их parents, `display.gui`, геометрия, UV и доступный tint. Custom loaders и неизвестные модели дают диагностический placeholder. Для NBT-вариантов требуется клиент; default ItemStack не обещает отображение всех вариантов предмета. В деталях изображения указан фактический источник. Отчёт и ограничения: [Phase 18 Inventory](docs/reports/PHASE18_INVENTORY_REPORT.md).

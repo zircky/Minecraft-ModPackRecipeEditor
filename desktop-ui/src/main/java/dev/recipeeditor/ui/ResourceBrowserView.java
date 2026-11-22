@@ -39,7 +39,7 @@ public final class ResourceBrowserView extends BorderPane {
         mode.getItems().setAll(ResourceBrowserViewModel.FilterMode.values());mode.getSelectionModel().selectFirst();
         language.getItems().setAll("en_us","ru_ru");language.getSelectionModel().selectFirst();
         language.setAccessibleText("Resource display language");source.setAccessibleText("Resource source filter");search.setAccessibleText("Search resources");
-        final var notice=new Label("Runtime-confirmed entries and static candidates retain separate confidence. Images are flat previews; complex Minecraft geometry is not rendered.");notice.setWrapText(true);notice.getStyleClass().add("muted");
+        final var notice=new Label("Inventory icons prefer Minecraft Client ItemStacks, then static Item Models and their GUI transforms. Unsupported models retain diagnostics.");notice.setWrapText(true);notice.getStyleClass().add("muted");
         resourceType.getItems().setAll(UnifiedResourceIndex.Type.values());resourceType.getSelectionModel().selectFirst();resourceType.setAccessibleText("Resource type");
         evidence.getItems().setAll(ResourceBrowserViewModel.Evidence.values());evidence.getSelectionModel().selectFirst();evidence.setAccessibleText("Resource evidence");
         layout.getItems().setAll(Layout.values());layout.getSelectionModel().selectFirst();layout.setAccessibleText("Resource layout");
@@ -100,7 +100,7 @@ public final class ResourceBrowserView extends BorderPane {
         list.widthProperty().addListener((o,a,b)->resize.run());resize.run();return list;
     }
     private Button tile(final RegistryEntry entry,final long request) {
-        final var image=new ResourcePreview(entry.visual(),result.selectedRoot(),textures,48,()->active&&generation==request,preview->{});
+        final var image=new ResourcePreview(entry,result,textures,48,()->active&&generation==request,preview->{});
         final var name=line(model.displayName(entry,language.getValue()));
         final var content=new VBox(5,image,name);content.setAlignment(Pos.CENTER);
         final var button=new ResourceCardView(ResourceIdentity.of(entry),selectedId);button.setGraphic(content);
@@ -114,7 +114,7 @@ public final class ResourceBrowserView extends BorderPane {
         selectedId.set(ResourceIdentity.of(entry));
         final long request=++selectionGeneration;
         details.setText(model.details(entry,language.getValue()));details.positionCaret(0);previewStatus.setText(entry.visual().status()+": "+entry.visual().explanation());
-        final var image=new ResourcePreview(entry.visual(),result.selectedRoot(),textures,96,()->active&&selectionGeneration==request,
+        final var image=new ResourcePreview(entry,result,textures,96,()->active&&selectionGeneration==request,
                 preview->previewStatus.setText(preview.status()+": "+preview.explanation()));
         selection.getChildren().setAll(image,previewStatus,details);
         if(entry.kind()==ResourceKind.ITEM||entry.kind()==ResourceKind.FLUID) {

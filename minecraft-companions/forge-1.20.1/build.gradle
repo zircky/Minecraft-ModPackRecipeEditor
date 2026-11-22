@@ -89,8 +89,20 @@ if (providers.gradleProperty('withKubeJS').isPresent()) {
 // Clear only explicit isolated client-probe signals before each fresh runtime run.
 tasks.matching { it.name == 'runClient' }.configureEach {
     doFirst {
+        if (providers.gradleProperty('inventoryPreviewProbe').isPresent()) {
+            ['inventory-ready.flag','inventory-items.json','inventory-reload.request','inventory-reload.done','inventory-stop.request'].each { delete new File(file('run-inventory'), it) }
+        }
         if (providers.gradleProperty('withGameTests').isPresent() && providers.gradleProperty('quickPlayWorld').isPresent()) {
             ['runtime-ready.flag', 'runtime-probe.ok', 'runtime-reload.request', 'runtime-reload.done'].each { delete new File(file('run-client'), it) }
         }
+    }
+}
+
+// Explicit, isolated inventory-capture verification. Never uses a user instance or world.
+if (providers.gradleProperty('inventoryPreviewProbe').isPresent()) {
+    minecraft.runs.client {
+        workingDirectory project.file('run-inventory')
+        property 'mre.inventoryPreviewProbe', 'true'
+        jvmArgs '-Xmx1536m'
     }
 }

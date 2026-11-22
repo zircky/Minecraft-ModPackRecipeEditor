@@ -20,6 +20,33 @@ final class ResourcePreview extends StackPane {
             if(newScene!=null)load(visual,root,textures,size,current,completed);
         });
     }
+    private java.util.concurrent.CompletableFuture<?> inventoryTask;
+    private javafx.beans.InvalidationListener inventoryListener;
+    ResourcePreview(final RegistryEntry entry,final dev.recipeeditor.recipeengine.DiscoveryResult discovery,final TextureResourceService textures,
+            final int size,final BooleanSupplier current,final Consumer<TextureResourceService.Preview> completed){this(entry,discovery,textures,size,current,completed,"");}
+    ResourcePreview(final RegistryEntry entry,final dev.recipeeditor.recipeengine.DiscoveryResult discovery,final TextureResourceService textures,
+            final int size,final BooleanSupplier current,final Consumer<TextureResourceService.Preview> completed,final String nbt){
+        getStyleClass().add("inventory-preview");setMinSize(size,size);setPrefSize(size,size);setMaxSize(size,size);getChildren().add(new Label("?"));
+        final var provider=dev.recipeeditor.ui.rendering.InventoryPreviewProvider.shared();
+        final Runnable refresh=()->{
+            if(getScene()==null||!current.getAsBoolean())return;if(inventoryTask!=null)inventoryTask.cancel(false);
+            getChildren().setAll(new Label("?"));final var task=provider.preview(entry,discovery.registry(),discovery.selectedRoot(),size,nbt);inventoryTask=task;
+            task.whenComplete((image,error)->Platform.runLater(()->{
+                if(inventoryTask!=task||getScene()==null||!current.getAsBoolean()||task.isCancelled())return;
+                getProperties().put("inventory.preview",image);
+                final byte[] png=image==null?new byte[0]:image.png();final String diagnostic=image==null?"Inventory preview timed out or was cancelled":image.source()+": "+image.diagnostic();
+                final var decoded=png.length==0?null:new Image(new ByteArrayInputStream(png),size,size,true,false);
+                if(decoded!=null&&!decoded.isError())getChildren().setAll(new ImageView(decoded));else getChildren().setAll(new Label("?"));
+                Tooltip.install(this,new Tooltip(diagnostic));completed.accept(new TextureResourceService.Preview(png,png.length==0?ResourceVisual.Status.RENDERING_UNSUPPORTED:ResourceVisual.Status.READY,diagnostic));
+            }));
+        };
+        inventoryListener=observable->refresh.run();final var weak=new javafx.beans.WeakInvalidationListener(inventoryListener);
+        sceneProperty().addListener((observable,oldScene,newScene)->{
+            if(oldScene!=null)provider.revisionProperty().removeListener(weak);
+            if(newScene!=null){provider.revisionProperty().addListener(weak);refresh.run();}
+            else if(inventoryTask!=null)inventoryTask.cancel(false);
+        });
+    }
     private void load(final ResourceVisual visual,final Path root,final TextureResourceService textures,
             final int size,final BooleanSupplier current,final Consumer<TextureResourceService.Preview> completed) {
         textures.previewAsync(visual,root).thenAccept(preview->{

@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.*;
 /** Fixed read-only command set, one authenticated session and bounded worker queues. */
 public final class ReadOnlyCompanionServer implements AutoCloseable {
     private final SnapshotProvider provider;
+    private final ItemPreviewProvider previews;
     private final ServerSocket listener;
     private final SessionCredentials credentials;
     private final ExecutorService acceptor=Executors.newSingleThreadExecutor(daemon("mre-accept"));
@@ -24,6 +25,11 @@ public final class ReadOnlyCompanionServer implements AutoCloseable {
         this(provider,360000);
     }
     public ReadOnlyCompanionServer(final SnapshotProvider provider,final int readTimeoutMillis)throws IOException {
+        this(provider,readTimeoutMillis,ItemPreviewProvider.unavailable());
+    }
+    public ReadOnlyCompanionServer(final SnapshotProvider provider,final ItemPreviewProvider previews)throws IOException{this(provider,360000,previews);}
+    private ReadOnlyCompanionServer(final SnapshotProvider provider,final int readTimeoutMillis,final ItemPreviewProvider previews)throws IOException{
+        this.previews=Objects.requireNonNull(previews);
         if(readTimeoutMillis<1)throw new IllegalArgumentException("Positive read timeout required");this.readTimeoutMillis=readTimeoutMillis;
         this.provider=Objects.requireNonNull(provider);listener=new ServerSocket();listener.bind(new InetSocketAddress(InetAddress.getByName("127.0.0.1"),0),1);
         credentials=new SessionCredentials(1,"127.0.0.1",listener.getLocalPort(),SessionCredentials.nonce(),UUID.randomUUID().toString());
@@ -38,8 +44,27 @@ public final class ReadOnlyCompanionServer implements AutoCloseable {
             while(!closed&&!cancelled.get()) {
                 final var request=codec.read(input);
                 if(request.messageType()==MessageType.CANCEL||request.messageType()==MessageType.DISCONNECT){cancelled.set(true);break;}
+                if(request.messageType()==MessageType.ITEM_PREVIEW_REQUEST){
+                    if(!inFlight.compareAndSet(null,request.requestId())){error(codec,output,request,"BUSY","Another request is active");continue;}
+                    try{
+                        if(!request.payload().keySet().equals(Set.of("items"))||!request.payload().get("items").isJsonArray())throw new IllegalArgumentException("Expected items batch");
+                        final var items=request.payload().getAsJsonArray("items");if(items.isEmpty()||items.size()>4)throw new IllegalArgumentException("Batch limit: 1..4");
+                        final var rows=new ArrayList<ItemPreviewRequest>();for(final var item:items){if(!item.isJsonObject()||!item.getAsJsonObject().keySet().equals(Set.of("resourceId","size","variant","nbt")))throw new IllegalArgumentException("Invalid item preview fields");final var object=item.getAsJsonObject();for(final String field:List.of("resourceId","variant","nbt"))if(!object.get(field).isJsonPrimitive()||!object.getAsJsonPrimitive(field).isString())throw new IllegalArgumentException("Expected preview string field");if(!object.get("size").isJsonPrimitive()||!object.getAsJsonPrimitive("size").isNumber()||!object.get("size").getAsString().matches("16|32|64|128"))throw new IllegalArgumentException("Expected bounded integer size");rows.add(ProtocolCodec.GSON.fromJson(item,ItemPreviewRequest.class));}
+                        worker.execute(()->{
+                            CompletableFuture<List<ItemPreviewResponse>> future=null;
+                            try{
+                                future=previews.capture(List.copyOf(rows),cancelled::get);final var result=future.get(5,TimeUnit.SECONDS);
+                                if(cancelled.get())return;if(result.size()!=rows.size())throw new IOException("Incomplete preview response");
+                                for(int i=0;i<rows.size();i++)if(!rows.get(i).equals(result.get(i).request()))throw new IOException("Preview source mismatch");
+                                final var payload=new JsonObject();payload.add("items",ProtocolCodec.GSON.toJsonTree(result));inFlight.compareAndSet(request.requestId(),null);codec.write(output,new ProtocolMessage(MessageType.ITEM_PREVIEW_RESPONSE,request.requestId(),payload));
+                            }catch(Exception failure){if(future!=null)future.cancel(false);try{final var payload=new JsonObject();payload.addProperty("code","PREVIEW_FAILED");payload.addProperty("message",safeMessage(failure));codec.write(output,new ProtocolMessage(MessageType.ITEM_PREVIEW_ERROR,request.requestId(),payload));}catch(IOException gone){cancelled.set(true);}}
+                            finally{inFlight.compareAndSet(request.requestId(),null);}
+                        });
+                    }catch(RuntimeException invalid){inFlight.compareAndSet(request.requestId(),null);error(codec,output,request,"INVALID_PREVIEW",safeMessage(invalid));}
+                    continue;
+                }
                 if(request.payload().size()!=0) {error(codec,output,request,"INVALID_REQUEST","Read-only requests accept no arguments");continue;}
-                if(request.messageType()==MessageType.PING){final var p=new JsonObject();p.addProperty("generation",provider.generation());p.addProperty("ready",provider.ready());codec.write(output,new ProtocolMessage(MessageType.PONG,request.requestId(),p));continue;}
+                if(request.messageType()==MessageType.PING){final var p=new JsonObject();p.addProperty("generation",provider.generation());p.addProperty("ready",provider.ready());p.addProperty("previewContext",previews.context());codec.write(output,new ProtocolMessage(MessageType.PONG,request.requestId(),p));continue;}
                 if(!Set.of(MessageType.GET_REGISTRIES,MessageType.GET_TAGS,MessageType.GET_RECIPES,MessageType.GET_MOD_LIST,MessageType.GET_MATERIALS).contains(request.messageType())){error(codec,output,request,"UNSUPPORTED_REQUEST","Command is not available");continue;}
                 if(!inFlight.compareAndSet(null,request.requestId())){error(codec,output,request,"BUSY","One synchronization request at a time");continue;}
                 worker.execute(()->{
@@ -76,7 +101,7 @@ public final class ReadOnlyCompanionServer implements AutoCloseable {
         final var hello=codec.read(input);if(hello.messageType()!=MessageType.HANDSHAKE||!hello.payload().keySet().equals(Set.of("clientNonce")))throw new ProtocolException("Handshake required");
         final String client=ProtocolCodec.required(hello.payload(),"clientNonce"),server=SessionCredentials.nonce();final var challenge=new JsonObject();challenge.addProperty("serverNonce",server);challenge.addProperty("sessionId",credentials.sessionId());challenge.addProperty("proof",credentials.proof("server",client,server));codec.write(output,new ProtocolMessage(MessageType.HANDSHAKE_RESPONSE,hello.requestId(),challenge));
         final var auth=codec.read(input);if(auth.messageType()!=MessageType.HANDSHAKE||!auth.payload().keySet().equals(Set.of("proof"))||!credentials.matches(credentials.proof("client",client,server),ProtocolCodec.required(auth.payload(),"proof")))throw new ProtocolException("Authentication failed");
-        final var ok=new JsonObject();ok.addProperty("authenticated",true);ok.addProperty("companionVersion",CompanionIdentity.version());ok.add("capabilities",ProtocolCodec.GSON.toJsonTree(List.of("materials-v1","resource-visuals-v1")));codec.write(output,new ProtocolMessage(MessageType.HANDSHAKE_RESPONSE,auth.requestId(),ok));
+        final var ok=new JsonObject();ok.addProperty("authenticated",true);ok.addProperty("companionVersion",CompanionIdentity.version());final var capabilities=new ArrayList<>(List.of("materials-v1","resource-visuals-v1"));if(previews.available())capabilities.add("item-previews-v1");ok.add("capabilities",ProtocolCodec.GSON.toJsonTree(capabilities));ok.addProperty("previewContext",previews.context());codec.write(output,new ProtocolMessage(MessageType.HANDSHAKE_RESPONSE,auth.requestId(),ok));
     }
     private void error(final ProtocolCodec codec,final OutputStream output,final ProtocolMessage request,final String code,final String message)throws IOException {final var payload=new JsonObject();payload.addProperty("code",code);payload.addProperty("message",message);codec.write(output,new ProtocolMessage(MessageType.ERROR,request.requestId(),payload));}
     private String safeMessage(final Throwable error){Throwable cause=error;while(cause.getCause()!=null)cause=cause.getCause();return cause.getClass().getSimpleName()+": "+Objects.toString(cause.getMessage(),"Synchronization failed").replace(credentials.token(),"[redacted]");}

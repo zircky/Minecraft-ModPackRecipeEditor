@@ -12,7 +12,8 @@ import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 /** All socket I/O runs on one worker. Cancellation closes the socket to release blocked reads. */
-public final class CompanionConnectionService implements AutoCloseable {
+public final class CompanionConnectionService implements AutoCloseable,ItemPreviewClient {
+    private static final class PreviewUnavailable extends IOException {private PreviewUnavailable(final String message){super(message);}}
     private final ExecutorService worker=Executors.newSingleThreadExecutor(Thread.ofVirtual().name("companion-client",0).factory());
     private final List<Consumer<CompanionConnectionStatus>> listeners=new CopyOnWriteArrayList<>();
     private final ScheduledExecutorService heartbeat=Executors.newSingleThreadScheduledExecutor(Thread.ofVirtual().name("companion-heartbeat",0).factory());
@@ -24,6 +25,10 @@ public final class CompanionConnectionService implements AutoCloseable {
     private SessionCredentials credentials;
     private String companionVersion="";
     private boolean materialsSupported;
+    private volatile boolean previewsSupported;
+    private volatile String previewContext="";
+    private final Semaphore previewSlots=new Semaphore(8);
+    private final Set<CompletableFuture<List<ItemPreviewResponse>>> previewFutures=ConcurrentHashMap.newKeySet();
     private final long syncKeepaliveNanos;
     private final Set<String> pendingKeepalives=new HashSet<>();
     public CompanionConnectionService(){this(java.time.Duration.ofSeconds(30));}
@@ -42,7 +47,29 @@ public final class CompanionConnectionService implements AutoCloseable {
         if(!session.sessionId().equals(ProtocolCodec.required(challenge,"sessionId"))||!session.matches(session.proof("server",nonce,server),ProtocolCodec.required(challenge,"proof")))throw new ProtocolException("Companion server authentication failed");
         final var auth=new JsonObject();auth.addProperty("proof",session.proof("client",nonce,server));final var response=request(MessageType.HANDSHAKE,auth,MessageType.HANDSHAKE_RESPONSE);
         if(!response.has("authenticated")||!response.get("authenticated").getAsBoolean())throw new ProtocolException("Authentication rejected");
+        previewsSupported=response.has("capabilities")&&response.getAsJsonArray("capabilities").contains(new com.google.gson.JsonPrimitive("item-previews-v1"));previewContext=response.has("previewContext")?response.get("previewContext").getAsString():"";
         companionVersion=ProtocolCodec.required(response,"companionVersion");materialsSupported=response.has("capabilities")&&response.getAsJsonArray("capabilities").contains(new com.google.gson.JsonPrimitive("materials-v1"));connected.setSoTimeout(15000);connected();
+    }
+    public boolean itemPreviewsAvailable(){return status==CompanionConnectionStatus.CONNECTED&&previewsSupported;}
+    public String previewContext(){return previewContext;}
+    public CompletableFuture<List<ItemPreviewResponse>> itemPreviews(final List<ItemPreviewRequest> items){
+        final var requests=List.copyOf(items);if(requests.isEmpty()||requests.size()>4)return CompletableFuture.failedFuture(new IllegalArgumentException("Batch limit: 1..4"));
+        if(!itemPreviewsAvailable())return CompletableFuture.failedFuture(new IllegalStateException("Client inventory preview unavailable"));
+        if(!previewSlots.tryAcquire())return CompletableFuture.failedFuture(new RejectedExecutionException("Preview queue full"));
+        final var result=new CompletableFuture<List<ItemPreviewResponse>>();previewFutures.add(result);result.whenComplete((value,error)->previewFutures.remove(result));
+        try{worker.execute(()->{
+            try{
+                if(result.isDone())return;if(!itemPreviewsAvailable())throw new IOException("Runtime disconnected or synchronizing");
+                final var payload=new JsonObject();payload.add("items",ProtocolCodec.GSON.toJsonTree(requests));socket.setSoTimeout(6000);
+                final var response=request(MessageType.ITEM_PREVIEW_REQUEST,payload,MessageType.ITEM_PREVIEW_RESPONSE);
+                if(!response.keySet().equals(Set.of("items"))||!response.get("items").isJsonArray()||response.getAsJsonArray("items").size()!=requests.size())throw new ProtocolException("Invalid preview batch response");
+                final var rows=new ArrayList<ItemPreviewResponse>();int index=0;
+                for(final var item:response.getAsJsonArray("items")){final var row=ProtocolCodec.GSON.fromJson(item,ItemPreviewResponse.class);if(!row.request().equals(requests.get(index++)))throw new ProtocolException("Preview identity mismatch");rows.add(row);if(row.status().equals("READY"))previewContext=row.context();}
+                result.complete(List.copyOf(rows));
+            }catch(PreviewUnavailable unavailable){result.completeExceptionally(unavailable);}
+            catch(Exception failure){closeSocket();state(cancelled?CompanionConnectionStatus.DISCONNECTED:CompanionConnectionStatus.ERROR);result.completeExceptionally(failure);}
+            finally{previewSlots.release();final var connected=socket;if(connected!=null)try{connected.setSoTimeout(15000);}catch(IOException ignored){}}
+        });}catch(RejectedExecutionException ended){previewSlots.release();result.completeExceptionally(ended);}return result.orTimeout(8,TimeUnit.SECONDS);
     }
     public CompletableFuture<Snapshot> synchronize(final Consumer<String> progress) {
         return CompletableFuture.supplyAsync(()->{
@@ -79,7 +106,7 @@ public final class CompanionConnectionService implements AutoCloseable {
         },id,response,type,p->progress.accept(p.has("stage")?p.get("stage").getAsString():"Synchronizing"));
     }
     private JsonObject request(final MessageType type,final JsonObject payload,final MessageType expected)throws IOException {
-        final String id=UUID.randomUUID().toString();codec.write(socket.getOutputStream(),new ProtocolMessage(type,id,payload));final var response=readMessage();if(!response.requestId().equals(id)||response.messageType()!=expected)throw new ProtocolException("Unexpected response to "+type);return response.payload();
+        final String id=UUID.randomUUID().toString();codec.write(socket.getOutputStream(),new ProtocolMessage(type,id,payload));final var response=readMessage();if(type==MessageType.ITEM_PREVIEW_REQUEST&&response.requestId().equals(id)&&(response.messageType()==MessageType.ITEM_PREVIEW_ERROR||response.messageType()==MessageType.ERROR))throw new PreviewUnavailable(response.payload().has("code")?response.payload().get("code").getAsString():"Preview temporarily unavailable");if(type==MessageType.PING&&response.payload().has("previewContext"))previewContext=response.payload().get("previewContext").getAsString();if(!response.requestId().equals(id)||response.messageType()!=expected)throw new ProtocolException("Unexpected response to "+type);return response.payload();
     }
     private ProtocolMessage readMessage() throws IOException {
         while(true) {
@@ -90,7 +117,7 @@ public final class CompanionConnectionService implements AutoCloseable {
     }
     private synchronized void connected(){if(cancelled||socket==null||socket.isClosed())throw new CancellationException("Connection cancelled");state(CompanionConnectionStatus.CONNECTED);}
     private void fail(final Exception failure){closeSocket();state(cancelled?CompanionConnectionStatus.DISCONNECTED:CompanionConnectionStatus.ERROR);throw new CompletionException(cancelled?new CancellationException("Synchronization cancelled"):failure);}
-    public synchronized void disconnect(){cancelled=true;closeSocket();state(CompanionConnectionStatus.DISCONNECTED);}
+    public synchronized void disconnect(){cancelled=true;closeSocket();previewFutures.forEach(f->f.completeExceptionally(new CancellationException("Preview connection closed")));previewFutures.clear();state(CompanionConnectionStatus.DISCONNECTED);}
     public void cancelSynchronization(){disconnect();}
     private void closeSocket(){final var current=socket;socket=null;if(current!=null)try{current.close();}catch(IOException ignored){}}
     @Override public void close(){disconnect();heartbeat.shutdownNow();worker.shutdownNow();}

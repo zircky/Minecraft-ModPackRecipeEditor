@@ -1,0 +1,111 @@
+[ {
+  "source" : "STATIC_ITEM_MODEL_3D",
+  "png_bytes" : 2420,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "minecraft:stone"
+}, {
+  "source" : "STATIC_ITEM_MODEL_3D",
+  "png_bytes" : 6853,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "minecraft:oak_planks"
+}, {
+  "source" : "STATIC_ITEM_MODEL_3D",
+  "png_bytes" : 6491,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "minecraft:oak_stairs"
+}, {
+  "source" : "STATIC_ITEM_MODEL_3D",
+  "png_bytes" : 4817,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "minecraft:oak_slab"
+}, {
+  "source" : "STATIC_ITEM_MODEL_3D",
+  "png_bytes" : 3881,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "minecraft:oak_fence"
+}, {
+  "source" : "STATIC_ITEM_MODEL_2D",
+  "png_bytes" : 433,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "minecraft:oak_door"
+}, {
+  "source" : "STATIC_ITEM_MODEL_3D",
+  "png_bytes" : 7103,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "minecraft:crafting_table"
+}, {
+  "source" : "STATIC_ITEM_MODEL_3D",
+  "png_bytes" : 4695,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "minecraft:furnace"
+}, {
+  "source" : "STATIC_ITEM_MODEL_2D",
+  "png_bytes" : 505,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "minecraft:diamond"
+}, {
+  "source" : "STATIC_ITEM_MODEL_2D",
+  "png_bytes" : 487,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "minecraft:iron_ingot"
+}, {
+  "source" : "STATIC_ITEM_MODEL_3D",
+  "png_bytes" : 5529,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "botania:abstruse_platform"
+}, {
+  "source" : "STATIC_ITEM_MODEL_2D",
+  "png_bytes" : 613,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "botania:agricarnation"
+}, {
+  "source" : "STATIC_ITEM_MODEL_2D",
+  "png_bytes" : 499,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "botania:agricarnation_chibi"
+}, {
+  "source" : "STATIC_ITEM_MODEL_3D",
+  "png_bytes" : 4601,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "ad_astra:aeronos_cap"
+}, {
+  "source" : "STATIC_ITEM_MODEL_2D",
+  "png_bytes" : 569,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "ad_astra:aeronos_door"
+}, {
+  "source" : "STATIC_ITEM_MODEL_3D",
+  "png_bytes" : 3327,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "ad_astra:aeronos_fence"
+}, {
+  "source" : "STATIC_ITEM_MODEL_2D",
+  "png_bytes" : 585,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "gtceu:advanced_integrated_circuit"
+}, {
+  "source" : "PLACEHOLDER",
+  "png_bytes" : 0,
+  "diagnostic" : "BlockModelException: UNSUPPORTED_RENDERER: Custom loader or ItemStack predicates require Minecraft Client: gtceu:item/aluminium_fluid_cell",
+  "id" : "gtceu:aluminium_fluid_cell"
+}, {
+  "source" : "STATIC_ITEM_MODEL_2D",
+  "png_bytes" : 487,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "gtceu:basic_electronic_circuit"
+}, {
+  "source" : "STATIC_ITEM_MODEL_3D",
+  "png_bytes" : 3497,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "nuclearcraft:accelerator_beam_port"
+}, {
+  "source" : "STATIC_ITEM_MODEL_3D",
+  "png_bytes" : 3367,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "nuclearcraft:accelerator_casing"
+}, {
+  "source" : "STATIC_ITEM_MODEL_3D",
+  "png_bytes" : 2056,
+  "diagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation",
+  "id" : "nuclearcraft:accelerator_casing_glass"
+} ]

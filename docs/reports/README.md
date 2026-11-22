@@ -41,3 +41,22 @@
 - [RECIPE_PROVENANCE_REPORT.md](RECIPE_PROVENANCE_REPORT.md)
 - [RESOURCE_BROWSER_REPORT.md](RESOURCE_BROWSER_REPORT.md)
 
+
+## Phase 18 — 3D rendering
+
+- [Аудит рендеринга](PHASE18_RENDERING_AUDIT.md)
+- [Результат шагов 1–6](PHASE18_REPORT.md)
+- [Метрики настоящих моделей](phase18/metrics.json)
+
+## Phase 18 — Inventory icons
+
+- [Inventory rendering audit](PHASE18_INVENTORY_AUDIT.md)
+- [Inventory rendering results](PHASE18_INVENTORY_REPORT.md)
+- [Changed files](PHASE18_INVENTORY_FILES.txt)
+- [Actual Minecraft client capture](phase18-inventory-evidence/client-inventory.png)
+
+## Phase 19 — Dynamic material previews (Steps 1–4)
+
+- [Report](PHASE19_REPORT.md)
+- [Audit](PHASE19_RENDERING_AUDIT.md)
+- [Changed files](PHASE19_FILES.txt)
