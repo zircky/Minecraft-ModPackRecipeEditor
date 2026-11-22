@@ -30,6 +30,7 @@ public final class RecipeEditorApplication extends Application {
     public void start(final Stage stage) {
         final var metadata = dev.recipeeditor.app.release.BuildMetadata.load();
         final var info = metadata.applicationInfo();
+        dev.recipeeditor.ui.rendering.InventoryPreviewProvider.shared().client(companion);
         new MainWindow(info, importService, analysisService, textures, persistence, result -> new RecipeEditorService(result.recipes(), new RecipeValidator(new dev.recipeeditor.integrations.ProjectRecipeParsers().parsers(), result.registry())) ,exports,path->getHostServices().showDocument(path.toUri().toString()),companion,runtimeSnapshots).show(stage);
         new dev.recipeeditor.app.release.ReleaseInformationView(metadata,
                 path -> getHostServices().showDocument(path.toUri().toString())).attach(stage);
@@ -40,6 +41,7 @@ public final class RecipeEditorApplication extends Application {
 
     @Override
     public void stop() {
+        dev.recipeeditor.ui.rendering.InventoryPreviewProvider.shared().close();
         companion.close();
         exports.close();
         importService.close();

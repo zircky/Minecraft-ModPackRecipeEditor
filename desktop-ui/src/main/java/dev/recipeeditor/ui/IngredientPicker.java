@@ -49,7 +49,7 @@ public final class IngredientPicker extends Dialog<IngredientPicker.Selection> {
                 final var entry=entries.get(index);final var button=new Button();button.setPrefSize(150,115);
                 final String language=Locale.getDefault().getLanguage().equals("ru")?"ru_ru":"en_us";
                 final var name=new Label(new ResourceBrowserViewModel(result.registry()).displayName(entry,language));name.setMaxWidth(125);name.setTextOverrun(OverrunStyle.ELLIPSIS);
-                button.setGraphic(new VBox(5,new ResourcePreview(entry.visual(),result.selectedRoot(),textures,40,()->button.getScene()!=null,preview->{}),name,new Label(entry.confidence()==DiscoveryConfidence.CONFIRMED_BY_RUNTIME?"Runtime confirmed":"Static candidate")));
+                button.setGraphic(new VBox(5,new ResourcePreview(entry,result,textures,40,()->button.getScene()!=null,preview->{}),name,new Label(entry.confidence()==DiscoveryConfidence.CONFIRMED_BY_RUNTIME?"Runtime confirmed":"Static candidate")));
                 button.setTooltip(new Tooltip(new ResourceBrowserViewModel(result.registry()).tooltip(entry,language)));button.setOnAction(event->{id.setText(entry.id().toString());mode.setValue("Exact Item");});grid.getChildren().add(button);
             }
             final var scroll=new ScrollPane(grid);scroll.setFitToWidth(true);return scroll;
