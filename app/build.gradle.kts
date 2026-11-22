@@ -74,3 +74,13 @@ tasks.register<JavaExec>("previewGregTech") {
 }
 
 apply(from = rootProject.file("gradle/windows-packaging.gradle.kts"))
+
+// Phase 18 visual verification only; catalog integration is intentionally a later step.
+tasks.register<JavaExec>("previewBlockModels") {
+    group = "verification"
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("dev.recipeeditor.app.BlockRenderingPreview")
+    maxHeapSize = "1536m"
+    args(providers.gradleProperty("realModpack").getOrElse(""))
+}
