@@ -24,6 +24,8 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
     private final TextArea diagnostics=new TextArea();private final ProgressBar progress=new ProgressBar(0);
     private final Button connect=new Button("Connect"),disconnect=new Button("Disconnect"),sync=new Button("Synchronize with Minecraft"),cancel=new Button("Cancel Sync"),view=new Button("View Snapshot"),load=new Button("Open Snapshot");
     private final TableView<RuntimeData.Registry> registries=new TableView<>();
+    private final Label previewAvailability=new Label();
+    private CompletableFuture<?> previewRequest;
     private RuntimeData.Snapshot snapshot;private Path snapshotFile;private boolean busy,closed;
     public RuntimeIntegrationView(final CompanionConnectionService connection,final RuntimeSnapshotService snapshots,final BiConsumer<RuntimeData.Snapshot,Path> apply) {
         this.connection=connection;this.snapshots=snapshots;this.apply=apply;getStyleClass().add("workspace-view");session.setPromptText("Minecraft config/mre_companion/session.json — token is read privately, never displayed");HBox.setHgrow(session,Priority.ALWAYS);
@@ -33,13 +35,38 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
         load.setOnAction(e->{final var chooser=new FileChooser();chooser.setTitle("Open runtime snapshot (cached evidence, not a live connection)");chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Runtime snapshot","*.mresnapshot"));final var file=chooser.showOpenDialog(getScene().getWindow());if(file!=null){busy(true);CompletableFuture.supplyAsync(()->{try{return snapshots.load(file.toPath());}catch(java.io.IOException failure){throw new CompletionException(failure);}},storage).whenComplete((loaded,error)->Platform.runLater(()->{busy(false);if(error!=null){error(error);return;}accept(loaded,file.toPath(),true);}));}});
         progress.setMaxWidth(Double.MAX_VALUE);diagnostics.setEditable(false);
         final var actions=new FlowPane(connect,disconnect,sync,cancel,load,view);actions.getStyleClass().add("filter-row");
-        final var top=new VBox(new Label("Runtime connection · read only / localhost"),new HBox(10,session,browse),status,environment,actions,progress,counts,lastSync);top.getStyleClass().add("view-header");setTop(top);
+        final var top=new VBox(new Label("Runtime connection · read only / localhost"),new HBox(10,session,browse),status,previewAvailability,environment,actions,progress,counts,lastSync);top.getStyleClass().add("view-header");setTop(top);
         status.setWrapText(true);environment.setWrapText(true);counts.setWrapText(true);lastSync.setWrapText(true);
         registries.setPlaceholder(new EmptyStateView("No runtime snapshot","Select the Companion session file, connect and synchronize with an open Minecraft world, or open a previously saved snapshot. Static project data remains available."));
         registries.getColumns().add(column("Registry",r->r.kind().name(),140));registries.getColumns().add(column("ID",RuntimeData.Registry::id,300));registries.getColumns().add(column("Display name",RuntimeData.Registry::displayName,250));registries.getColumns().add(column("Runtime class",RuntimeData.Registry::runtimeClass,380));
         final var registryDetails=new TextArea();registryDetails.setEditable(false);registries.getSelectionModel().selectedItemProperty().addListener((o,a,b)->registryDetails.setText(b==null?"":b.metadata()+"\nBlockState property descriptors: "+b.stateProperties()+"\nConfirmed only in snapshot "+snapshot.snapshotId()+" @ "+snapshot.environment().collectedAt()));
-        final var registryTab=new Tab("Runtime Registry",new SplitPane(registries,registryDetails));registryTab.setClosable(false);final var diagnosticTab=new Tab("Diagnostics",diagnostics);diagnosticTab.setClosable(false);setCenter(new TabPane(registryTab,diagnosticTab));
+        final var registryTab=new Tab("Runtime Registry",new SplitPane(registries,registryDetails));registryTab.setClosable(false);final var diagnosticTab=new Tab("Diagnostics",diagnostics);diagnosticTab.setClosable(false);setCenter(new TabPane(registryTab,clientPreviewTab(),diagnosticTab));
         connection.addListener(value->Platform.runLater(()->{if(!closed){if(snapshot==null&&value==CompanionConnectionStatus.CONNECTED)environment.setText("Companion "+connection.companionVersion()+" authenticated. Open a world and synchronize for environment details.");status.setText(value+" — "+(snapshot==null?"no snapshot":"snapshot is historical evidence from "+snapshot.environment().collectedAt()));buttons();}}));buttons();
+    }
+    private Tab clientPreviewTab(){
+        final var item=new TextField("gtceu:aluminium_block");item.setId("client-preview-item-id");
+        final var request=new Button("Request client preview");request.setId("request-client-preview");
+        final var image=new javafx.scene.image.ImageView();image.setId("client-preview-image");image.setFitWidth(128);image.setFitHeight(128);image.setPreserveRatio(true);image.setSmooth(false);
+        final var trace=new Label("No client preview requested. A registry snapshot does not contain rendered PNG icons.");trace.setId("client-preview-trace");trace.setWrapText(true);
+        request.setOnAction(event->{
+            if(previewRequest!=null)previewRequest.cancel(false);image.setImage(null);
+            final String id=item.getText().strip();final boolean confirmed=snapshot!=null&&snapshot.registries().stream().anyMatch(row->row.kind()==RuntimeData.Kind.ITEM&&row.id().equals(id));
+            trace.setText("Registry: "+(confirmed?"REGISTRY_CONFIRMED":"UNKNOWN (no matching snapshot entry)")+"\n"+connection.previewUnavailableReason()+"\nPREVIEW_REQUESTED: "+id);
+            request.setDisable(true);
+            try{
+                final var future=dev.recipeeditor.ui.rendering.InventoryPreviewProvider.shared().requestClientPreview(id,128);previewRequest=future;
+                future.whenComplete((result,error)->Platform.runLater(()->{
+                    if(closed||previewRequest!=future)return;request.setDisable(false);
+                    if(error!=null){trace.setText("PREVIEW_FAILED: "+error.getClass().getSimpleName());return;}
+                    if(result.png().length==0){trace.setText("Registry: "+(confirmed?"REGISTRY_CONFIRMED":"UNKNOWN")+"\n"+connection.previewUnavailableReason()+"\n"+result.diagnostic());return;}
+                    final var decoded=new javafx.scene.image.Image(new java.io.ByteArrayInputStream(result.png()));
+                    if(decoded.isError()){trace.setText("PREVIEW_FAILED: PNG decode failed");return;}
+                    image.setImage(decoded);trace.setText("REGISTRY_CONFIRMED by native Item lookup\nCLIENT_CONNECTED\nPREVIEW_REQUESTED -> "+result.diagnostic()+"\nPNG decoded -> PREVIEW_AVAILABLE (JavaFX ImageView)\nSource: "+result.source()+"\n"+connection.previewStatistics());
+                }));
+            }catch(RuntimeException failure){request.setDisable(false);trace.setText("PREVIEW_FAILED: "+failure.getMessage());}
+        });
+        final var content=new VBox(12,new Label("Native ItemStack preview — no static fallback"),new HBox(10,item,request),image,trace);content.setPadding(new Insets(16));
+        final var tab=new Tab("Client Item Preview",content);tab.setClosable(false);return tab;
     }
     private void synchronize() {
         busy(true);progress.setProgress(-1);diagnostics.clear();
@@ -69,8 +96,8 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
         }));
     }
     private void busy(final boolean value){busy=value;buttons();}
-    private void buttons(){view.setDisable(busy||snapshot==null);final var s=connection.status();connect.setDisable(busy||s==CompanionConnectionStatus.CONNECTING||s==CompanionConnectionStatus.SYNCHRONIZING);disconnect.setDisable(s==CompanionConnectionStatus.DISCONNECTED);sync.setDisable(busy||s!=CompanionConnectionStatus.CONNECTED);cancel.setDisable(s!=CompanionConnectionStatus.SYNCHRONIZING);load.setDisable(busy);session.setDisable(busy);}
+    private void buttons(){previewAvailability.setText("Item preview: "+connection.previewUnavailableReason());view.setDisable(busy||snapshot==null);final var s=connection.status();connect.setDisable(busy||s==CompanionConnectionStatus.CONNECTING||s==CompanionConnectionStatus.SYNCHRONIZING);disconnect.setDisable(s==CompanionConnectionStatus.DISCONNECTED);sync.setDisable(busy||s!=CompanionConnectionStatus.CONNECTED);cancel.setDisable(s!=CompanionConnectionStatus.SYNCHRONIZING);load.setDisable(busy);session.setDisable(busy);}
     private void error(final Throwable failure){Throwable cause=failure;while(cause.getCause()!=null)cause=cause.getCause();diagnostics.appendText("\n"+cause.getClass().getSimpleName()+": "+cause.getMessage());status.setText(connection.status()+" — synchronization failed/cancelled; previous complete snapshot retained");}
     private TableColumn<RuntimeData.Registry,String> column(final String name,final java.util.function.Function<RuntimeData.Registry,String> text,final int width){final var c=new TableColumn<RuntimeData.Registry,String>(name);c.setCellValueFactory(v->new ReadOnlyStringWrapper(text.apply(v.getValue())));c.setPrefWidth(width);return c;}
-    @Override public void close(){closed=true;connection.disconnect();storage.shutdown();}
+    @Override public void close(){closed=true;if(previewRequest!=null)previewRequest.cancel(false);connection.disconnect();storage.shutdown();}
 }
