@@ -60,3 +60,8 @@
 - [Report](PHASE19_REPORT.md)
 - [Audit](PHASE19_RENDERING_AUDIT.md)
 - [Changed files](PHASE19_FILES.txt)
+
+## Phase 20 — Windows EXE distribution
+
+- [Report and actual artifact paths](PHASE20_REPORT.md)
+- [Build instructions](../WINDOWS_BUILD.md)

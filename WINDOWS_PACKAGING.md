@@ -1,3 +1,5 @@
+> Historical Phase 10 notes. Current commands, paths and version: [docs/WINDOWS_BUILD.md](docs/WINDOWS_BUILD.md).
+
 # Windows alpha packaging — Phase 10 Step 1–2
 
 The current package is **1.0.0-alpha.1, NOT READY for stable release**. The application is not signed. Settings/wizard/updater/Companion installation/recovery are later steps. Packaging is not permission to publish, select the project's license or create Git tags.
