@@ -13,6 +13,16 @@ final class InventoryModelTextures {
     record Data(Map<ResourceSource,byte[]> images,Map<String,byte[]> tinted,boolean tintUnknown){}
     private final TextureResourceService frames;
     InventoryModelTextures(final TextureResourceService frames){this.frames=frames;}
+    Data load(final GregTechMaterialPreview.Definition definition,final RegistryEntry resource,final Path root)throws Exception{
+        final var hashes=new HashMap<String,String>();if(resource!=null&&resource.metadata().containsKey("textureHashes"))new ResourceJsonReader().read(resource.metadata().get("textureHashes")).fields().forEachRemaining(e->hashes.put(e.getKey(),e.getValue().asText()));
+        final var images=new HashMap<ResourceSource,byte[]>();
+        for(final var entry:definition.textures().entrySet()){
+            final var visual=entry.getValue();final var checked=new ResourceVisual(visual.status(),visual.layers().stream().map(layer->new ResourceVisual.Layer(layer.source(),layer.argbTint(),hashes.getOrDefault(id(layer.source()),layer.expectedSha256()))).toList(),visual.explanation());
+            final var result=frames.previewAsync(checked,root).get(5,TimeUnit.SECONDS);
+            if(result.png().length==0)throw new IOException(result.explanation());images.put(entry.getKey(),result.png());
+        }
+        return new Data(Map.copyOf(images),Map.of(),false);
+    }
     Data load(final InventoryItemModel model,final RegistryEntry entry,final Path root)throws Exception{
         final var colors=new HashMap<String,Set<Integer>>();final var hashes=new HashMap<String,String>();
         if(entry!=null){
@@ -41,7 +51,7 @@ final class InventoryModelTextures {
     private String id(final ResourceSource source){final String[] parts=source.internalPath().split("/",4);return parts[1]+":"+parts[3].substring(0,parts[3].length()-4);}
     private byte[] color(final byte[] png,final int tint)throws IOException{
         final var image=ImageIO.read(new ByteArrayInputStream(png));if(image==null||image.getWidth()>256||image.getHeight()>256)throw new IOException("Invalid bounded tint texture");
-        for(int y=0;y<image.getHeight();y++)for(int x=0;x<image.getWidth();x++){final int pixel=image.getRGB(x,y);int output=((pixel>>>24)*(tint>>>24)/255)<<24;for(int shift=0;shift<=16;shift+=8)output|=(((pixel>>>shift)&255)*((tint>>>shift)&255)/255)<<shift;image.setRGB(x,y,output);}
+        final var color=new MaterialColor(tint);for(int y=0;y<image.getHeight();y++)for(int x=0;x<image.getWidth();x++){image.setRGB(x,y,color.multiply(image.getRGB(x,y)));}
         final var output=new ByteArrayOutputStream();ImageIO.write(image,"PNG",output);return output.toByteArray();
     }
 }

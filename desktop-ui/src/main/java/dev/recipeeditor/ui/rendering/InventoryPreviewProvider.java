@@ -30,11 +30,13 @@ public final class InventoryPreviewProvider implements AutoCloseable {
         private final RegistryIndex registry;private final InventoryItemModelResolver models;private final String id=UUID.randomUUID().toString();
         private final List<Path> files;private final String original;private long checked;private boolean dirty;
         private BlockItemRelationships relationships;
+        private final Map<ResourceLocation,GregTechMaterialPreview.Definition> dynamic=new HashMap<>();
+        private final Map<ResourceLocation,String> materialKeys=new HashMap<>();
         private final LinkedHashMap<ResourceLocation,InventoryItemModel> parsed=new LinkedHashMap<>(32,0.75f,true);
-        private Context(final RegistryIndex index){registry=index;models=new InventoryItemModelResolver(index.assetCatalog());final var paths=new HashSet<Path>();index.assetCatalog().records().forEach(a->{final var source=a.source();paths.add(Files.isDirectory(source.container())?source.container().resolve(source.internalPath()):source.container());});index.entries().forEach(e->e.sources().stream().filter(s->s.type()==SourceType.RUNTIME).forEach(s->paths.add(s.container())));files=paths.stream().sorted().toList();original=signature();checked=System.nanoTime();}
+        private Context(final RegistryIndex index){registry=index;index.materials().forEach(m->{final String identity=digest(m.id()+m.metadata().toString());m.forms().forEach(f->materialKeys.put(f.resourceId(),identity));});models=new InventoryItemModelResolver(index.assetCatalog());final var paths=new HashSet<Path>();index.assetCatalog().records().forEach(a->{final var source=a.source();paths.add(Files.isDirectory(source.container())?source.container().resolve(source.internalPath()):source.container());});index.entries().forEach(e->e.sources().stream().filter(s->s.type()==SourceType.RUNTIME).forEach(s->paths.add(s.container())));files=paths.stream().sorted().toList();original=signature();checked=System.nanoTime();}
         private String signature(){final var text=new StringBuilder();for(final var path:files)try{text.append(path).append(':').append(Files.size(path)).append(':').append(Files.getLastModifiedTime(path)).append(';');}catch(IOException missing){text.append(path).append(":MISSING;");}return digest(text.toString());}
         private boolean changed(){if(dirty)return false;final long now=System.nanoTime();if(now-checked<TimeUnit.SECONDS.toNanos(2))return false;checked=now;if(!original.equals(signature())){dirty=true;return true;}return false;}
-        private InventoryItemModel model(final ResourceLocation item){var result=parsed.get(item);if(result==null){result=models.resolve(item);parsed.put(item,result);while(parsed.size()>128)parsed.pollFirstEntry();}return result;}
+        private InventoryItemModel model(final ResourceLocation item){var result=parsed.get(item);if(result==null){try{result=models.resolve(item);}catch(BlockModelException unavailable){if(!materialKeys.containsKey(item))throw unavailable;final var generated=new GregTechMaterialPreview(registry).resolve(item);dynamic.put(item,generated);result=generated.model();}parsed.put(item,result);while(parsed.size()>128){final var removed=parsed.pollFirstEntry();dynamic.remove(removed.getKey());}}return result;}
         private ResourceLocation item(final PendingKey key){if(key.kind()==ResourceKind.ITEM)return key.id();if(relationships==null)relationships=new BlockItemRelationships(registry);final var items=relationships.items(key.id());if(items.size()!=1)throw new IllegalArgumentException("Technical Block has no unambiguous registered BlockItem; use Items catalog");return items.getFirst();}
     }
     private final ItemPreviewCache cache=new ItemPreviewCache(256,8*1024*1024);
@@ -71,7 +73,7 @@ public final class InventoryPreviewProvider implements AutoCloseable {
         }}catch(Exception failure){synchronized(pending){pending.values().forEach(p->p.future.complete(missing("Preview worker failed: "+failure.getClass().getSimpleName())));pending.clear();pumping=false;}}
     }
     private Context context(final RegistryIndex index){Context result=contexts.get(index);if(result==null){result=new Context(index);contexts.put(index,result);while(contexts.size()>2)contexts.pollFirstEntry();frames.clear();}if(result.changed()){cache.clear();frames.clear();notifyViews();}return result;}
-    private ItemPreviewCache.Key cacheKey(final PendingKey key,final Context context,final String runtime){return new ItemPreviewCache.Key(key.id().toString(),key.kind(),key.variant(),digest(key.nbt()),"1.20.1",context.id+":"+context.original+":"+runtime,key.size(),"inventory-renderer-1");}
+    private ItemPreviewCache.Key cacheKey(final PendingKey key,final Context context,final String runtime){return new ItemPreviewCache.Key(key.id().toString(),key.kind(),key.variant(),digest(key.nbt()),"1.20.1",context.id+":"+context.original+":"+context.materialKeys.getOrDefault(key.id(),"")+":"+runtime,key.size(),"inventory-renderer-1");}
     private void process(final List<Pending> batch){
         final var runtime=new ArrayList<Pending>();final var requests=new ArrayList<ItemPreviewRequest>();final var active=client;
         for(final var item:batch){
@@ -101,8 +103,9 @@ public final class InventoryPreviewProvider implements AutoCloseable {
         if(!pending.key.nbt().isEmpty()){pending.future.complete(missing("NBT variant needs Minecraft Client; "+clientDiagnostic));return;}
         final var itemId=context.item(pending.key);final var model=context.model(itemId);
         final var entries=context.registry.find(itemId).stream().filter(e->e.kind()==ResourceKind.ITEM).toList();
-        final var textures=new InventoryModelTextures(frames).load(model,entries.size()==1?entries.getFirst():null,pending.key.root());
-        final String diagnostic=clientDiagnostic+"; actual item model; static GUI approximation"+(textures.tintUnknown()?"; TINT_UNKNOWN: runtime color required":"");
+        final var loader=new InventoryModelTextures(frames);final var generated=context.dynamic.get(itemId);
+        final var textures=generated==null?loader.load(model,entries.size()==1?entries.getFirst():null,pending.key.root()):loader.load(generated,entries.size()==1?entries.getFirst():null,pending.key.root());
+        final String diagnostic=clientDiagnostic+"; actual item model; static GUI approximation"+(generated==null?"":"; GT8 material template: "+generated.identity())+(textures.tintUnknown()?"; TINT_UNKNOWN: runtime color required":"");
         byte[] png;
         try{
             final var pixels=renderer.render(model,textures.images(),textures.tinted(),pending.key.size()).get(5,TimeUnit.SECONDS);final var image=new BufferedImage(pixels.width(),pixels.height(),BufferedImage.TYPE_INT_ARGB);image.setRGB(0,0,pixels.width(),pixels.height(),pixels.argb(),0,pixels.width());final var output=new ByteArrayOutputStream();ImageIO.write(image,"PNG",output);png=output.toByteArray();

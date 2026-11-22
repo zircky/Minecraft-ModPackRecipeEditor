@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 /** Optional read-only public GT8 API. No generated IDs, private access, recipe-adapter activation or writes. */
 public final class GregTechMaterialCollector {
     private final Map<String,List<RuntimeData.MaterialForm>> forms=new HashMap<>();
+    private final Map<String,Map<String,Object>> previewForms=new HashMap<>();
     private Class<?> materialClass,keyClass;
     private Method materialId,entryLookup,entryMaterial,entryPrefix,prefixId;
     public List<Runnable> jobs(final Consumer<RuntimeData.Material> output,final List<String> diagnostics) {
@@ -53,6 +54,16 @@ public final class GregTechMaterialCollector {
             if(material==null||prefix==null)return;
             final String id=materialId.invoke(material).toString();
             forms.computeIfAbsent(id,k->new ArrayList<>()).add(new RuntimeData.MaterialForm(prefixId.invoke(prefix).toString(),kind,resource));
+            if(kind==RuntimeData.Kind.ITEM){
+                final Class<?> prefixClass=prefix.getClass();
+                final Object iconType=prefixClass.getMethod("getMaterialIconType",materialClass).invoke(prefix,material);
+                if(iconType!=null){
+                    final var details=new TreeMap<String,Object>();details.put("iconType",iconType.getClass().getMethod("name").invoke(iconType).toString());
+                    final var ores=(Map<?,?>)prefixClass.getField("ORES").get(null);final Object ore=ores.get(prefix);
+                    if(ore!=null)details.put("oreBaseModel",ore.getClass().getMethod("baseModelLocation").invoke(ore).toString());
+                    previewForms.computeIfAbsent(id,k->new TreeMap<>()).put(resource,details);
+                }
+            }
         } catch(ReflectiveOperationException|RuntimeException failure) { diagnostic(diagnostics,"Material item link unavailable: "+resource); }
     }
     private RuntimeData.Material collect(final Object material) throws ReflectiveOperationException {
@@ -91,6 +102,13 @@ public final class GregTechMaterialCollector {
         metadata.put("formula",Objects.toString(materialClass.getMethod("getChemicalFormula").invoke(material),""));
         metadata.put("components",Objects.toString(materialClass.getMethod("getMaterialComponents").invoke(material)));
         metadata.put("nameComponent",Component.Serializer.toJson(component));
+        final var colors=new ArrayList<String>();for(int layer=0;layer<10;layer++)colors.add(String.format(Locale.ROOT,"%08x",(Integer)materialClass.getMethod("getLayerARGB",int.class).invoke(material,layer)));
+        metadata.put("preview.layerArgb",dev.recipeeditor.companionprotocol.ProtocolCodec.GSON.toJson(colors));
+        final var iconSets=new ArrayList<String>();Object iconSet=materialClass.getMethod("getMaterialIconSet").invoke(material);final var seen=new HashSet<Object>();
+        while(iconSet!=null&&seen.add(iconSet)&&iconSets.size()<32){iconSets.add(iconSet.getClass().getField("id").get(iconSet).toString());iconSet=iconSet.getClass().getField("parentIconset").get(iconSet);}
+        metadata.put("preview.iconSets",dev.recipeeditor.companionprotocol.ProtocolCodec.GSON.toJson(iconSets));
+        metadata.put("preview.forms",dev.recipeeditor.companionprotocol.ProtocolCodec.GSON.toJson(previewForms.getOrDefault(id,Map.of())));
+        metadata.put("preview.rules","gtceu-e24b238-layer-argb-v1");
         return new RuntimeData.Material(id,component.getString(),key,Map.of(),properties,flags,actualForms.stream().distinct().toList(),metadata);
     }
     private void addFluid(final List<RuntimeData.MaterialForm> values,final String prefix,final Fluid fluid) {
