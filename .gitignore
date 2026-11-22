@@ -15,3 +15,5 @@ logs/
 .manual-tests/phase10/tools/
 .manual-tests/phase10/smoke-user-data/
 .manual-tests/phase10/smoke-working-directory/
+
+**/run-inventory/

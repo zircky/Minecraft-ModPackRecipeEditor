@@ -79,7 +79,7 @@ public final class ClientPresentationCollector {
             final String sprite=quad.getSprite().contents().name().toString();
             if(sprite.equals("minecraft:missingno"))continue;
             final var layer=new TreeMap<String,String>();layer.put("sprite",sprite);
-            if(quad.isTinted()&&!stack.isEmpty())layer.put("tint",String.format(Locale.ROOT,"%08x",0xff000000|Minecraft.getInstance().getItemColors().getColor(stack,quad.getTintIndex())));
+            if(quad.isTinted()&&!stack.isEmpty()){layer.put("tint",String.format(Locale.ROOT,"%08x",0xff000000|Minecraft.getInstance().getItemColors().getColor(stack,quad.getTintIndex())));layer.put("tintIndex",Integer.toString(quad.getTintIndex()));}
             // Block biome tint depends on position: do not substitute an invented color.
             if(quad.isTinted()&&stack.isEmpty())data.put("tintStatus","Biome/position tint unknown; untinted sample");
             layers.putIfAbsent(sprite+layer.getOrDefault("tint",""),layer);
