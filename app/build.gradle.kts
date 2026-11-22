@@ -46,11 +46,12 @@ tasks.processResources { dependsOn(generateBuildInfo) }
 tasks.test {
     dependsOn(":companion-server:classes")
     if(providers.gradleProperty("realModpack").isPresent) maxHeapSize="1536m"
+    if (providers.gradleProperty("phase19Evidence").isPresent) maxHeapSize="1536m"
     systemProperty("architectureRoot", rootProject.projectDir.absolutePath)
     systemProperty("expectedDesktopVersion", project.version.toString())
     providers.gradleProperty("realModpack").orNull?.let { systemProperty("realModpack", it) }
     providers.gradleProperty("kubeJsExportDirectory").orNull?.let { systemProperty("kubeJsExportDirectory", it) }
-    listOf("resourceAuditDirectory","resourceAuditSnapshot","resourceAuditLabel","previewSession","inventoryClientRegistry","inventoryReloadProbe").forEach { key -> providers.gradleProperty(key).orNull?.let { systemProperty(key,it) } }
+    listOf("resourceAuditDirectory","resourceAuditSnapshot","resourceAuditLabel","previewSession","inventoryClientRegistry","inventoryReloadProbe","phase19Snapshot").forEach { key -> providers.gradleProperty(key).orNull?.let { systemProperty(key,it) } }
     testLogging { events("failed", "skipped") }
 }
 

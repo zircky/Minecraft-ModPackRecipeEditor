@@ -1,0 +1,61 @@
+[ {
+  "staticSource" : "STATIC_ITEM_MODEL_2D",
+  "id" : "gtceu:steel_plate",
+  "staticDiagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation; GT8 material template: gtceu:steel/gtceu:item/material_sets/metallic/plate/[-5789785, -15590345, -1, -1, -1, -1, -1, -1, -1, -1]/{\"iconType\":\"plate\"}",
+  "nativeSource" : "MINECRAFT_CLIENT_INVENTORY",
+  "nativeStatus" : "READY"
+}, {
+  "staticSource" : "STATIC_ITEM_MODEL_2D",
+  "id" : "gtceu:steel_ingot",
+  "staticDiagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation; GT8 material template: gtceu:steel/gtceu:item/material_sets/metallic/ingot/[-5789785, -15590345, -1, -1, -1, -1, -1, -1, -1, -1]/{\"iconType\":\"ingot\"}",
+  "nativeSource" : "MINECRAFT_CLIENT_INVENTORY",
+  "nativeStatus" : "READY"
+}, {
+  "staticSource" : "STATIC_ITEM_MODEL_2D",
+  "id" : "gtceu:steel_dust",
+  "staticDiagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation; GT8 material template: gtceu:steel/gtceu:item/material_sets/metallic/dust/[-5789785, -15590345, -1, -1, -1, -1, -1, -1, -1, -1]/{\"iconType\":\"dust\"}",
+  "nativeSource" : "MINECRAFT_CLIENT_INVENTORY",
+  "nativeStatus" : "READY"
+}, {
+  "staticSource" : "STATIC_ITEM_MODEL_2D",
+  "id" : "gtceu:bronze_plate",
+  "staticDiagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation; GT8 material template: gtceu:bronze/gtceu:item/material_sets/metallic/plate/[-15504, -8362158, -1, -1, -1, -1, -1, -1, -1, -1]/{\"iconType\":\"plate\"}",
+  "nativeSource" : "MINECRAFT_CLIENT_INVENTORY",
+  "nativeStatus" : "READY"
+}, {
+  "staticSource" : "STATIC_ITEM_MODEL_2D",
+  "id" : "gtceu:bronze_ingot",
+  "staticDiagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation; GT8 material template: gtceu:bronze/gtceu:item/material_sets/metallic/ingot/[-15504, -8362158, -1, -1, -1, -1, -1, -1, -1, -1]/{\"iconType\":\"ingot\"}",
+  "nativeSource" : "MINECRAFT_CLIENT_INVENTORY",
+  "nativeStatus" : "READY"
+}, {
+  "staticSource" : "STATIC_ITEM_MODEL_2D",
+  "id" : "gtceu:bronze_dust",
+  "staticDiagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation; GT8 material template: gtceu:bronze/gtceu:item/material_sets/metallic/dust/[-15504, -8362158, -1, -1, -1, -1, -1, -1, -1, -1]/{\"iconType\":\"dust\"}",
+  "nativeSource" : "MINECRAFT_CLIENT_INVENTORY",
+  "nativeStatus" : "READY"
+}, {
+  "staticSource" : "STATIC_ITEM_MODEL_3D",
+  "id" : "gtceu:green_sapphire_ore",
+  "staticDiagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation; GT8 material template: gtceu:green_sapphire/gtceu:block/material_sets/diamond/ore/[-6625616, -10172286, -1, -1, -1, -1, -1, -1, -1, -1]/{\"iconType\":\"ore\",\"oreBaseModel\":\"minecraft:block/stone\"}",
+  "nativeSource" : "MINECRAFT_CLIENT_INVENTORY",
+  "nativeStatus" : "READY"
+}, {
+  "staticSource" : "STATIC_ITEM_MODEL_3D",
+  "id" : "gtceu:deepslate_green_sapphire_ore",
+  "staticDiagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation; GT8 material template: gtceu:green_sapphire/gtceu:block/material_sets/diamond/ore/[-6625616, -10172286, -1, -1, -1, -1, -1, -1, -1, -1]/{\"iconType\":\"ore\",\"oreBaseModel\":\"minecraft:block/deepslate\"}",
+  "nativeSource" : "MINECRAFT_CLIENT_INVENTORY",
+  "nativeStatus" : "READY"
+}, {
+  "staticSource" : "STATIC_ITEM_MODEL_3D",
+  "id" : "gtceu:netherrack_green_sapphire_ore",
+  "staticDiagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation; GT8 material template: gtceu:green_sapphire/gtceu:block/material_sets/diamond/ore/[-6625616, -10172286, -1, -1, -1, -1, -1, -1, -1, -1]/{\"iconType\":\"ore\",\"oreBaseModel\":\"minecraft:block/netherrack\"}",
+  "nativeSource" : "MINECRAFT_CLIENT_INVENTORY",
+  "nativeStatus" : "READY"
+}, {
+  "staticSource" : "STATIC_ITEM_MODEL_3D",
+  "id" : "gtceu:endstone_green_sapphire_ore",
+  "staticDiagnostic" : "Minecraft Client inventory preview unavailable; actual item model; static GUI approximation; GT8 material template: gtceu:green_sapphire/gtceu:block/material_sets/diamond/ore/[-6625616, -10172286, -1, -1, -1, -1, -1, -1, -1, -1]/{\"iconType\":\"ore\",\"oreBaseModel\":\"minecraft:block/end_stone\"}",
+  "nativeSource" : "MINECRAFT_CLIENT_INVENTORY",
+  "nativeStatus" : "READY"
+} ]

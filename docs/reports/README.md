@@ -54,3 +54,9 @@
 - [Inventory rendering results](PHASE18_INVENTORY_REPORT.md)
 - [Changed files](PHASE18_INVENTORY_FILES.txt)
 - [Actual Minecraft client capture](phase18-inventory-evidence/client-inventory.png)
+
+## Phase 19 — Dynamic material previews (Steps 1–4)
+
+- [Report](PHASE19_REPORT.md)
+- [Audit](PHASE19_RENDERING_AUDIT.md)
+- [Changed files](PHASE19_FILES.txt)

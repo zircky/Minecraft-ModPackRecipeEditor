@@ -17,3 +17,5 @@ logs/
 .manual-tests/phase10/smoke-working-directory/
 
 **/run-inventory/
+
+.manual-tests/phase19/
