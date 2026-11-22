@@ -1,19 +1,21 @@
 package dev.recipeeditor.ui;
 
 import dev.recipeeditor.core.ResourceLocation;
+import dev.recipeeditor.registry.ResourceIdentity;
+import javafx.beans.InvalidationListener;
+import javafx.beans.WeakInvalidationListener;
 import javafx.beans.property.ReadOnlyObjectProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.WeakChangeListener;
 import javafx.css.PseudoClass;
 import javafx.scene.control.Button;
 
-/** Card selection belongs to the resource identity, never to a recycled row or page position. */
+/** Selection uses both registry kind and ID, including equal Item and Block IDs. */
 public final class ResourceCardView extends Button {
-    private final ChangeListener<ResourceLocation> selectionListener;
-    public ResourceCardView(final ResourceLocation id,final ReadOnlyObjectProperty<ResourceLocation> selection) {
+    private final InvalidationListener selectionListener;
+    public ResourceCardView(final ResourceLocation id,final ReadOnlyObjectProperty<ResourceLocation> selection){this(id,id,selection);}
+    public ResourceCardView(final ResourceIdentity identity,final ReadOnlyObjectProperty<ResourceIdentity> selection){this(identity,identity.id(),selection);}
+    private ResourceCardView(final Object key,final ResourceLocation id,final ReadOnlyObjectProperty<?> selection){
         getStyleClass().add("resource-card");setUserData(id);
-        selectionListener=(o,a,b)->pseudoClassStateChanged(PseudoClass.getPseudoClass("selected"),id.equals(b));
-        selection.addListener(new WeakChangeListener<>(selectionListener));
-        pseudoClassStateChanged(PseudoClass.getPseudoClass("selected"),id.equals(selection.get()));
+        selectionListener=observable->pseudoClassStateChanged(PseudoClass.getPseudoClass("selected"),key.equals(selection.get()));
+        selection.addListener(new WeakInvalidationListener(selectionListener));selectionListener.invalidated(selection);
     }
 }
