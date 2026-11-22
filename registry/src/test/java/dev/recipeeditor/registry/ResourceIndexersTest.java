@@ -12,7 +12,7 @@ final class ResourceIndexersTest {
         final var texture=new ResourceSource(SourceType.MOD_JAR,List.of("test"),java.nio.file.Path.of("test.jar"),"assets/test/textures/item/a.png","test");
         final var scan=new ResourceScanResult(documents,List.of(texture),List.of()); final var tags=new TagIndex(documents);
         final var localization=new LocalizationService(documents); final var diagnostics=new ArrayList<dev.recipeeditor.core.importing.ImportDiagnostic>();
-        final var items=new ItemResourceIndexer().index(scan,localization,tags,"en_us",diagnostics);
+        final var items=new ItemResourceIndexer().index(scan,localization,tags,"en_us",diagnostics,List.of(new ResourceReference(ResourceKind.ITEM,ResourceLocation.parse("test:a"),ResourceFixtures.document("data/test/recipes/evidence.json","{}").source())));
         final var blocks=new BlockResourceIndexer().index(scan,localization,tags,"en_us",diagnostics);
         final var fluids=new FluidResourceIndexer().index(scan,localization,tags,"en_us",diagnostics);
         assertEquals(1,items.size()); assertEquals(1,items.getFirst().textures().size());

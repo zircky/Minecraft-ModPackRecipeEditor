@@ -37,7 +37,7 @@ Failure regressions проверяют source drift/quarantine, corrupt primary 
 .\gradlew.bat :companion-client:externalTest --tests '*RuntimeLiveIntegrationTest' '-PruntimeSessionFile=<absolute-path-to-session.json>'
 ```
 
-Замените placeholders фактическими путями. Список обязательных свойств/изолированного Minecraft окружения для старых runtime probes см. PHASE6_REPORT.md и PHASE7_REPORT.md; их примеры `:companion-client:test` нужно заменить на `:companion-client:externalTest`. Без требуемых свойств opt-in tests SKIPPED — это не успешная runtime verification. Не публикуйте содержимое session.json. Успешная генерация export scripts не означает RUNTIME_VERIFIED.
+Замените placeholders фактическими путями. Список обязательных свойств/изолированного Minecraft окружения для старых runtime probes см. [PHASE6_REPORT.md](docs/reports/PHASE6_REPORT.md) и [PHASE7_REPORT.md](docs/reports/PHASE7_REPORT.md); их примеры `:companion-client:test` нужно заменить на `:companion-client:externalTest`. Без требуемых свойств opt-in tests SKIPPED — это не успешная runtime verification. Не публикуйте содержимое session.json. Успешная генерация export scripts не означает RUNTIME_VERIFIED.
 
 ## Нагрузка и профилирование
 

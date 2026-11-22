@@ -1,5 +1,7 @@
 # Minecraft Recipe Editor
 
+Отчёты фаз, аудиты и перечни файлов: [docs/reports](docs/reports/README.md).
+
 Настольное приложение для Windows x64, Java 21 и JavaFX. Реализованы основа проекта, импорт сборок, статическое индексирование Minecraft 1.20.1, система редактирования рецептов через отдельный проект и экспорт сохранённых изменений и локальная runtime-интеграция (Phase 6) и версионный GregTech профиль (Phase 7, Step 1–2). Основная проверенная конфигурация — Forge 1.20.1.
 
 ## Сборка и запуск
@@ -32,7 +34,7 @@ Items / Blocks / Fluids используют карточки фиксирова
 
 Wire protocol остаётся v1: новый запрос согласуется через capabilities, со старым Companion каталог материалов недоступен. Snapshot schema v2 добавляет `materials.jsonl`; schema v1 по-прежнему читается. Старый Desktop не сможет открыть v2-снимок. После обновления Companion перезапустите Minecraft и выполните Runtime → Synchronize; старые снимки не получают новые texture/component/material metadata автоматически.
 
-Реальные замеры до/после, ограничения и команды воспроизведения: [RESOURCE_BROWSER_REPORT.md](RESOURCE_BROWSER_REPORT.md).
+Реальные замеры до/после, ограничения и команды воспроизведения: [RESOURCE_BROWSER_REPORT.md](docs/reports/RESOURCE_BROWSER_REPORT.md).
 
 Откройте **Recipes**. Исходные записи сохраняются неизменными; пользовательские изменения накладываются через ChangeSet. При одинаковом ID в нескольких JAR исходные определения остаются доступны; одно проектное UPDATE перекрывает все эти кандидаты, о чём редактор предупреждает. Фактический победитель в Minecraft не угадывается.
 
@@ -100,7 +102,7 @@ GTCEu 7.1.4: typed profile для assembler / macerator / chemical_reactor, item
 
 Запись выполняется через staging, проверку хешей, резервные копии и замену файлов; при сбое восстанавливаются уже применённые output-файлы. Обнаруженные символьные ссылки/junction-перенаправления и Windows special paths отклоняются. Перезапись вне namespace профиля невозможна. Резервные копии: `.recipe-editor-backups/<transaction>/...`; lock-файлы `.recipe-editor-export.lock` и `<project>.exports.json.lock` могут оставаться после экспорта; сами блокировки ОС освобождаются после операции. Нельзя обеспечить одну атомарную операцию для множества файлов и metadata: при аварийном завершении процесса/питания нужен ручной разбор `.recipe-editor-stage-*/journal.txt` и `old/`. При конфликте во время отката возвращается **RECOVERY_REQUIRED**, данные восстановления сохраняются. Конкурирующее внешнее изменение не перетирается откатом. Это защита от обычных файловых конфликтов; активная подмена файлов другой программой на каждой инструкции не является гарантированно изолированной файловой системой.
 
-Подробные архитектурные решения, список файлов, источники API и результаты проверок: [PHASE5_REPORT.md](PHASE5_REPORT.md).
+Подробные архитектурные решения, список файлов, источники API и результаты проверок: [PHASE5_REPORT.md](docs/reports/PHASE5_REPORT.md).
 
 ## Поддержка и ограничения
 
@@ -150,7 +152,7 @@ Phase 4: редактируемый JSON до 2 MiB UTF-8, проект до 48 
 .\gradlew.bat :app:test --tests '*ExportIntegrationTest' '-PrealModpack=G:\PrismLauncher\instances\Cosmic Frontiers'
 ```
 
-Отчёт — `app/build/real-export-result.txt`. Это проверка генерации, не Minecraft runtime. Матрица ручных runtime-проверок для отдельного тестового инстанса описана в PHASE5_REPORT.md; Runtime Companion реализован отдельно в Phase 6; этот тест экспорта его не запускает.
+Отчёт — `app/build/real-export-result.txt`. Это проверка генерации, не Minecraft runtime. Матрица ручных runtime-проверок для отдельного тестового инстанса описана в [PHASE5_REPORT.md](docs/reports/PHASE5_REPORT.md); Runtime Companion реализован отдельно в Phase 6; этот тест экспорта его не запускает.
 
 
 ```powershell
@@ -161,7 +163,7 @@ Phase 4: редактируемый JSON до 2 MiB UTF-8, проект до 48 
 
 Логи: консоль и `%USERPROFILE%/.minecraft-recipe-editor/logs/application.log`, ежедневная ротация, 14 дней.
 
-Перечень файлов и результаты: [Phase 4](PHASE4_REPORT.md). Исторические отчёты: [Phase 2](PHASE2_REPORT.md), [Phase 3](PHASE3_REPORT.md). Phase 5: [отчёт об экспорте](PHASE5_REPORT.md). Phase 6: [Runtime Companion](PHASE6_REPORT.md). Phase 7: реализованы Step 1–2 (framework и GTCEu 7.1.4); Create/Mekanism не начаты.
+Перечень файлов и результаты: [Phase 4](docs/reports/PHASE4_REPORT.md). Исторические отчёты: [Phase 2](docs/reports/PHASE2_REPORT.md), [Phase 3](docs/reports/PHASE3_REPORT.md). Phase 5: [отчёт об экспорте](docs/reports/PHASE5_REPORT.md). Phase 6: [Runtime Companion](docs/reports/PHASE6_REPORT.md). Phase 7: реализованы Step 1–2 (framework и GTCEu 7.1.4); Create/Mekanism не начаты.
 
 
 ## Runtime Companion — Phase 6
@@ -200,7 +202,7 @@ Merge выполняется только для открытого проект
 .\gradlew.bat :companion-client:test --tests '*RuntimeRecipeAdapterTest' '-PruntimeSnapshotFile=L:\My Add\RecipeEditor\.manual-tests\phase6\evidence\gt-runtime.mresnapshot'
 ```
 
-Подробности исходного протокола и ограничений Phase 6: [PHASE6_REPORT.md](PHASE6_REPORT.md). Отдельный просмотр материалов и расширение материалов описаны в [RESOURCE_BROWSER_REPORT.md](RESOURCE_BROWSER_REPORT.md). Редактирование материалов не реализовано. Поддержка рецептов GregTech описана ниже в Phase 7.
+Подробности исходного протокола и ограничений Phase 6: [PHASE6_REPORT.md](docs/reports/PHASE6_REPORT.md). Отдельный просмотр материалов и расширение материалов описаны в [RESOURCE_BROWSER_REPORT.md](docs/reports/RESOURCE_BROWSER_REPORT.md). Редактирование материалов не реализовано. Поддержка рецептов GregTech описана ниже в Phase 7.
 
 
 ## Phase 7 — Integration Framework и GregTech
@@ -212,7 +214,7 @@ Merge выполняется только для открытого проект
 - Toolbar **GregTech capabilities** показывает версию и возможности импортированной среды. Это диагностический диалог, не реализация будущего Step 5 Integration Manager.
 - Для статического GT JSON и проектных GT copies доступны **GregTech Recipe Editor**, Advanced, Raw JSON и Diff. Поля создаются из существующих данных: Duration, item/fluid references, quantities, tick EU, chance/maxChance/boost. Кнопка Apply изменяет только выбранное поле. Не применённые поля блокируют Save; Save повторно валидирует через общий RecipeEditorService. Undo/Redo/Save Project/экспорт используют прежний ChangeSet.
 - После успешного runtime merge в Recipes → Runtime выберите GT 7.1.4 рецепт и **Copy supported GT state to NEW project recipe**. Это явная новая копия нормализованного состояния, а не восстановленный оригинал. Неоднозначные runtimeVariants отклоняются. UPDATE/DELETE runtime-only оригинала без проверяемого source reference не разрешаются; статические оригиналы используют обычные Edit/Delete.
-- KubeJS профиль: **2001.6.4-build.120**, типы `gtceu:assembler`, `gtceu:macerator`, `gtceu:chemical_reactor`; фактическая runtime-матрица приведена в PHASE7_REPORT.md. Полный набор свойств каждого рецепта проверяется заново. Chance/boost и non-consumable сохраняются. Unknown/custom/research/conditions без проверенного codec profile блокируют экспорт целиком, сохраняя Raw JSON.
+- KubeJS профиль: **2001.6.4-build.120**, типы `gtceu:assembler`, `gtceu:macerator`, `gtceu:chemical_reactor`; фактическая runtime-матрица приведена в [PHASE7_REPORT.md](docs/reports/PHASE7_REPORT.md). Полный набор свойств каждого рецепта проверяется заново. Chance/boost и non-consumable сохраняются. Unknown/custom/research/conditions без проверенного codec profile блокируют экспорт целиком, сохраняя Raw JSON.
 - GT schema factory добавляет machine prefix к ID. Поэтому экспортируемый ID должен иметь вид `recipe_editor:assembler/name`, `recipe_editor:macerator/name` либо `recipe_editor:chemical_reactor/name`. Namespace `minecraft` отклоняется из-за переименования в GT API. Генератор не меняет ID молча. UPDATE выполняет exact-ID remove перед добавлением; DELETE — exact-ID remove.
 - Runtime codec может кодировать EnergyStack числом; KubeJS 7.1.4 component требует `{voltage,amperage}`. Генератор переводит scalar в эквивалентный `(voltage,1)`, подтверждённый установленным EnergyStack constructor. Представление модели/исходник остаются неизменными.
 - Machine/config-specific IO limits не выдумываются: без достоверных runtime ограничений отображается предупреждение. Неизвестные properties/conditions/circuit/custom ingredients сохраняются полностью; это не обещание возможности их экспорта.
@@ -223,7 +225,7 @@ Merge выполняется только для открытого проект
 .\gradlew.bat :app:previewGregTech '-PruntimeSnapshotFile=L:\My Add\RecipeEditor\.manual-tests\phase6\evidence\gt-runtime.mresnapshot'
 ```
 
-Продуктовый запуск остаётся `.\gradlew.bat :app:run`. Подробная матрица чтения/редактирования/экспорта и результаты реальных проверок: [PHASE7_REPORT.md](PHASE7_REPORT.md).
+Продуктовый запуск остаётся `.\gradlew.bat :app:run`. Подробная матрица чтения/редактирования/экспорта и результаты реальных проверок: [PHASE7_REPORT.md](docs/reports/PHASE7_REPORT.md).
 
 
 ## Phase 8 — Analysis Framework, Conflicts, Dependency Graph
@@ -243,12 +245,12 @@ Merge выполняется только для открытого проект
 .\gradlew.bat :recipe-analyzer:performanceTest
 ```
 
-Opt-in snapshot test читает реальные ранее сохранённые Minecraft данные; он не запускает Minecraft. Stress test использует явно синтетические recipes/mod identities. Подробности, бюджеты, API пример, результаты и ограничения: [PHASE8_REPORT.md](PHASE8_REPORT.md). Файлы: [PHASE8_FILES.txt](PHASE8_FILES.txt).
+Opt-in snapshot test читает реальные ранее сохранённые Minecraft данные; он не запускает Minecraft. Stress test использует явно синтетические recipes/mod identities. Подробности, бюджеты, API пример, результаты и ограничения: [PHASE8_REPORT.md](docs/reports/PHASE8_REPORT.md). Файлы: [PHASE8_FILES.txt](docs/reports/PHASE8_FILES.txt).
 
 
 ## Phase 9 — Technical Audit и Test Infrastructure
 
-Выполнены только Step 1–2. Аудит и приоритеты: [PHASE9_AUDIT.md](PHASE9_AUDIT.md). Архитектура тестов, Gradle suites и воспроизведение: [TESTING.md](TESTING.md). Результаты и release gates: [PHASE9_REPORT.md](PHASE9_REPORT.md).
+Выполнены только Step 1–2. Аудит и приоритеты: [PHASE9_AUDIT.md](docs/reports/PHASE9_AUDIT.md). Архитектура тестов, Gradle suites и воспроизведение: [TESTING.md](TESTING.md). Результаты и release gates: [PHASE9_REPORT.md](docs/reports/PHASE9_REPORT.md).
 
 `test` теперь исключает integration/external/performance tags. `integrationTest` запускает воспроизводимые межмодульные проверки без Minecraft и входит в `build`. `testReport` создаёт сводный HTML; `verifyArchitecture` проверяет зависимости модулей. Старые environment-dependent probes перенесены в `externalTest`; stress — в `performanceTest`. Нагрузочные и live tests не запускаются обычным build.
 
@@ -278,11 +280,11 @@ Opt-in snapshot test читает реальные ранее сохранённ
 
 Application Image: `app/build/windows/image/MinecraftRecipeEditor/MinecraftRecipeEditor.exe`. Java 21 и JavaFX включены; для запуска пользователю не нужны Gradle/IDE/системная Java. Для portable запуска нужен весь каталог image, а не один EXE. Installers: `app/build/windows/installers`; собранный alpha bundle с ZIP/EXE/MSI/Companion/SHA256/manifest: `app/build/windows/artifacts/1.0.0-alpha.1`.
 
-Новые логи/кэши/snapshots размещаются в Windows APPDATA/LOCALAPPDATA; проекты остаются в выбранных пользователем каталогах. Подробнее: [WINDOWS_PACKAGING.md](WINDOWS_PACKAGING.md), [Release Readiness](RELEASE_READINESS.md), [PHASE10_REPORT.md](PHASE10_REPORT.md). Публичная публикация и git tags не выполняются. Step 3–8, а также ранее отложенные функции Phase 7–9 не реализуются этим запросом.
+Новые логи/кэши/snapshots размещаются в Windows APPDATA/LOCALAPPDATA; проекты остаются в выбранных пользователем каталогах. Подробнее: [WINDOWS_PACKAGING.md](WINDOWS_PACKAGING.md), [Release Readiness](RELEASE_READINESS.md), [PHASE10_REPORT.md](docs/reports/PHASE10_REPORT.md). Публичная публикация и git tags не выполняются. Step 3–8, а также ранее отложенные функции Phase 7–9 не реализуются этим запросом.
 
 ## Происхождение рецептов
 
-Фильтры **Recipe Namespace** и **Source Mod** независимы. Source Mod означает metadata физического контейнера, а не доказанное авторство. Например, `minecraft:tnt` действительно найден в JAR Biomes O' Plenty. В Export Wizard вкладка **Sources / provenance** показывает все кандидаты, archive/internal paths, project overlay и confidence. Статический порядок сканирования не определяет активный источник; неизвестный runtime-источник показывается как UNKNOWN. Проекты сохраняют исходные ссылки и происхождение replacement; старые проекты формата 1 продолжают читаться. Подробности и результаты проверок: [RECIPE_PROVENANCE_REPORT.md](RECIPE_PROVENANCE_REPORT.md).
+Фильтры **Recipe Namespace** и **Source Mod** независимы. Source Mod означает metadata физического контейнера, а не доказанное авторство. Например, `minecraft:tnt` действительно найден в JAR Biomes O' Plenty. В Export Wizard вкладка **Sources / provenance** показывает все кандидаты, archive/internal paths, project overlay и confidence. Статический порядок сканирования не определяет активный источник; неизвестный runtime-источник показывается как UNKNOWN. Проекты сохраняют исходные ссылки и происхождение replacement; старые проекты формата 1 продолжают читаться. Подробности и результаты проверок: [RECIPE_PROVENANCE_REPORT.md](docs/reports/RECIPE_PROVENANCE_REPORT.md).
 
 ## KubeJS JavaScript / Data JSON
 
@@ -294,4 +296,4 @@ Application Image: `app/build/windows/image/MinecraftRecipeEditor/MinecraftRecip
 | DATA JSON | CREATE/UPDATE в `kubejs/data/<namespace>/recipes/<nested-path>.json`; DELETE возвращает UNSUPPORTED |
 | AUTO / COMBINED | Data для совместимых additions/updates, JS для удалений/проверенных JS-only адаптеров; один механизм на Recipe ID |
 
-Preview показывает фактический механизм, target files и отказы, Generated files — содержимое и замены/удаления файлов. Перед записью обязателен Review. Перезапись возможна только для неизменённых файлов, принадлежащих manifest профиля. Неизвестные кастомные/GT serializers не получают Data-поддержку автоматически. Подробнее: [KUBEJS_EXPORT_REPORT.md](KUBEJS_EXPORT_REPORT.md).
+Preview показывает фактический механизм, target files и отказы, Generated files — содержимое и замены/удаления файлов. Перед записью обязателен Review. Перезапись возможна только для неизменённых файлов, принадлежащих manifest профиля. Неизвестные кастомные/GT serializers не получают Data-поддержку автоматически. Подробнее: [KUBEJS_EXPORT_REPORT.md](docs/reports/KUBEJS_EXPORT_REPORT.md).

@@ -1,0 +1,41 @@
+{
+  "pack": "G:\\PrismLauncher\\instances\\ISG-0.6.0-alpha.1-harsh",
+  "snapshot": "L:\\My Add\\RecipeEditor\\.manual-tests\\resources\\isg-materials.mresnapshot",
+  "mods": 72,
+  "registered_blocks": 11286,
+  "registered_items": 29442,
+  "block_items": 10322,
+  "confirmed_blocks_without_item": 0,
+  "unknown_block_item_links": 10322,
+  "static_block_candidates": 7246,
+  "asset_definitions": 50696,
+  "model_only_definitions": 10361,
+  "excluded_block_model_definitions": 7827,
+  "elapsed_seconds": 30.6283047,
+  "rendered_3d_previews": "NOT IMPLEMENTED: deferred to Steps 5-7",
+  "verification": {
+    "unit": {
+      "tests": 337,
+      "failures": 0,
+      "skipped": 2
+    },
+    "integration": {
+      "tests": 82,
+      "failures": 0,
+      "skipped": 0
+    },
+    "external": {
+      "tests": 2,
+      "failures": 0
+    },
+    "performance": {
+      "tests": 1,
+      "records": 70000,
+      "seconds": 1.265
+    },
+    "clean_build": "SUCCESS",
+    "test": "SUCCESS",
+    "forge_companion_build": "SUCCESS",
+    "gui": "manual JavaFX check passed; cached genuine snapshot, no live Minecraft Client"
+  }
+}

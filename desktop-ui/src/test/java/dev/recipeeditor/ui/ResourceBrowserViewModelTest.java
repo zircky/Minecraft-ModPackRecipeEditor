@@ -36,4 +36,12 @@ final class ResourceBrowserViewModelTest {
         assertTrue(model.form(new MaterialDefinition.Form("fluid",ResourceKind.FLUID,id)).isEmpty());
         assertTrue(model.form(new MaterialDefinition.Form("plate",ResourceKind.ITEM,ResourceLocation.parse("gtceu:not_registered"))).isEmpty());
     }
+    @Test void unifiedFiltersUseNamespaceAndEvidenceIndependentlyOfPhysicalMod(){
+        final var entry=entry(Map.of("ru_ru","Localized"));final var model=new ResourceBrowserViewModel(new RegistryIndex(List.of(entry,entry)));
+        assertEquals(1,model.unifiedSearch(UnifiedResourceIndex.Type.ALL,"localized",ResourceBrowserViewModel.FilterMode.NAMESPACE,"minecraft",ResourceBrowserViewModel.Evidence.STATIC).size());
+        assertEquals(1,model.unifiedSearch(UnifiedResourceIndex.Type.ALL,"",ResourceBrowserViewModel.FilterMode.SOURCE_MOD,"differentmod",ResourceBrowserViewModel.Evidence.ALL).size());
+        assertTrue(model.unifiedSearch(UnifiedResourceIndex.Type.ALL,"",ResourceBrowserViewModel.FilterMode.SOURCE_MOD,"minecraft",ResourceBrowserViewModel.Evidence.ALL).isEmpty());
+        assertTrue(model.unifiedSearch(UnifiedResourceIndex.Type.ALL,"",ResourceBrowserViewModel.FilterMode.NAMESPACE,"",ResourceBrowserViewModel.Evidence.RUNTIME).isEmpty());
+        assertFalse(model.matches(entry,ResourceBrowserViewModel.Evidence.MISSING_TEXTURE),"Unknown runtime texture is not proof of a missing file");
+    }
 }

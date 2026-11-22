@@ -26,7 +26,9 @@ public final class RegistryMergeService {
                 if(!id.toString().equals(name)&&resolver.localization().resolvedRuntimeName(name,runtime.metadata().get("nameComponent")))names.put(language,name);
             }
             final var visual=resolver.visual(kind,id,runtime.metadata(),old);
-            entries.put(key,new RegistryEntry(id,kind,runtime.displayName(),translationKey,names,List.of(source),visual.layers().stream().map(ResourceVisual.Layer::source).toList(),DiscoveryConfidence.CONFIRMED_BY_RUNTIME,source.method(),visual,runtime.metadata()));
+            final var metadata=new HashMap<>(runtime.metadata());metadata.put("runtimeClass",runtime.runtimeClass());
+            if(!runtime.stateProperties().isEmpty())metadata.put("blockStateProperties",dev.recipeeditor.companionprotocol.ProtocolCodec.GSON.toJson(runtime.stateProperties()));
+            entries.put(key,new RegistryEntry(id,kind,runtime.displayName(),translationKey,names,List.of(source),visual.layers().stream().map(ResourceVisual.Layer::source).toList(),DiscoveryConfidence.CONFIRMED_BY_RUNTIME,source.method(),visual,metadata));
         }
         final var documents=new ArrayList<ResourceDocument>();
         for(final var tag:snapshot.tags()) {final var kind=kind(tag.kind());final String folder=switch(kind){case ITEM->"items";case BLOCK->"blocks";case FLUID->"fluids";};final var id=ResourceLocation.parse(tag.id());final var source=new ResourceSource(SourceType.RUNTIME,List.of(),snapshotFile,"data/"+id.namespace()+"/tags/"+folder+"/"+id.path()+".json","Resolved runtime tag @ "+snapshot.environment().collectedAt());final var json=new com.google.gson.JsonObject();json.addProperty("replace",false);json.add("values",dev.recipeeditor.companionprotocol.ProtocolCodec.GSON.toJsonTree(tag.entries()));documents.add(new ResourceDocument(source,json.toString()));}

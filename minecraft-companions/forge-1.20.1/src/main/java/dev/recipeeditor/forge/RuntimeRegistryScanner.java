@@ -13,9 +13,11 @@ public final class RuntimeRegistryScanner {
             final var metadata=new TreeMap<>(row.metadata());metadata.putAll(presentation.getOrDefault(row.kind()+":"+row.id(),Map.of()));
             output.accept(new RuntimeData.Registry(row.kind(),row.id(),row.displayName(),row.runtimeClass(),metadata,row.stateProperties()));
         };
+        final var blocksWithItems=new HashSet<net.minecraft.world.level.block.Block>();
+        ForgeRegistries.ITEMS.forEach(item->{if(item instanceof net.minecraft.world.item.BlockItem blockItem)blocksWithItems.add(blockItem.getBlock());});
         final var jobs=new ArrayList<Runnable>();
         ForgeRegistries.ITEMS.forEach(value->jobs.add(()->decorated.accept(new ItemRegistryCollector().collect(ForgeRegistries.ITEMS.getKey(value),value))));
-        ForgeRegistries.BLOCKS.forEach(value->jobs.add(()->decorated.accept(new BlockRegistryCollector().collect(ForgeRegistries.BLOCKS.getKey(value),value))));
+        ForgeRegistries.BLOCKS.forEach(value->jobs.add(()->decorated.accept(new BlockRegistryCollector().collect(ForgeRegistries.BLOCKS.getKey(value),value,blocksWithItems.contains(value)))));
         ForgeRegistries.FLUIDS.forEach(value->jobs.add(()->decorated.accept(new FluidRegistryCollector().collect(ForgeRegistries.FLUIDS.getKey(value),value))));
         metadata(ForgeRegistries.RECIPE_TYPES,RuntimeData.Kind.RECIPE_TYPE,jobs,output);metadata(ForgeRegistries.RECIPE_SERIALIZERS,RuntimeData.Kind.RECIPE_SERIALIZER,jobs,output);return jobs;
     }

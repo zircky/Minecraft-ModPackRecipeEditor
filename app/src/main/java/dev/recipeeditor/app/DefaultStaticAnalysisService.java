@@ -45,16 +45,16 @@ public final class DefaultStaticAnalysisService implements StaticAnalysisService
         diagnostics.addAll(scan.diagnostics());
         final var localization=new LocalizationService(scan.documents()); diagnostics.addAll(localization.diagnostics());
         final var tags=new TagIndex(scan.documents()); diagnostics.addAll(tags.diagnostics());
+        final var semanticNames=new RecipeSemanticLocalization();
+        final var recipes=new StaticRecipeScanner(integration.parsers(),integration.layout()).scan(scan.documents(),diagnostics).stream().map(recipe->semanticNames.localize(recipe,localization)).toList();
+        final var references=new RecipeResourceReferences().collect(recipes);
         final var resources=new ArrayList<RegistryEntry>();
         report(progress,"Indexing items...",0.55);
-        resources.addAll(new ItemResourceIndexer().index(scan,localization,tags,"en_us",diagnostics));
+        resources.addAll(new ItemResourceIndexer().index(scan,localization,tags,"en_us",diagnostics,references));
         report(progress,"Indexing blocks...",0.65);
         resources.addAll(new BlockResourceIndexer().index(scan,localization,tags,"en_us",diagnostics));
         report(progress,"Indexing fluids...",0.72);
-        resources.addAll(new FluidResourceIndexer().index(scan,localization,tags,"en_us",diagnostics));
-        report(progress,"Parsing recipes...",0.8);
-        final var semanticNames=new RecipeSemanticLocalization();
-        final var recipes=new StaticRecipeScanner(integration.parsers(),integration.layout()).scan(scan.documents(),diagnostics).stream().map(recipe->semanticNames.localize(recipe,localization)).toList();
+        resources.addAll(new FluidResourceIndexer().index(scan,localization,tags,"en_us",diagnostics,references));
         report(progress,"Building search indexes...",0.95);
         final var index=new RecipeIndex(recipes,tags);
         index.conflicts().forEach((id,values)->diagnostics.add(new ImportDiagnostic(ScanStatus.WARNING,id.toString(),
