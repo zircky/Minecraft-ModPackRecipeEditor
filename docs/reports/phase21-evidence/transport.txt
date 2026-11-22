@@ -1,0 +1,2 @@
+requested=12, sent=12, PNG transferred=12, failed=0
+Actual client connection refreshed an already-mounted aluminium block placeholder. Disconnect restored explicit failure.

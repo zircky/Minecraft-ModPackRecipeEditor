@@ -1,0 +1,37 @@
+[ {
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "gtceu:aluminium_block",
+  "imageViews" : 2,
+  "visiblePixels" : 11116,
+  "status" : "PREVIEW_AVAILABLE"
+}, {
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "gtceu:aluminium_ingot",
+  "imageViews" : 2,
+  "visiblePixels" : 7296,
+  "status" : "PREVIEW_AVAILABLE"
+}, {
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "gtceu:aluminium_dust",
+  "imageViews" : 2,
+  "visiblePixels" : 5632,
+  "status" : "PREVIEW_AVAILABLE"
+}, {
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "gtceu:aluminium_plate",
+  "imageViews" : 2,
+  "visiblePixels" : 5504,
+  "status" : "PREVIEW_AVAILABLE"
+}, {
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "gtceu:aluminium_ore",
+  "imageViews" : 2,
+  "visiblePixels" : 11116,
+  "status" : "PREVIEW_AVAILABLE"
+}, {
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "botania:floating_daffomill",
+  "imageViews" : 2,
+  "visiblePixels" : 1824,
+  "status" : "PREVIEW_AVAILABLE"
+} ]
