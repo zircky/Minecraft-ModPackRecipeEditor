@@ -35,7 +35,7 @@ public final class RecipeSlotView extends ToggleButton {
         String name=content.kind().name();
         if(entry.isPresent()) {
             name=content.kind()==RecipeSlotContent.Kind.TAG?"Tag #"+content.id():new ResourceBrowserViewModel(discovery.registry()).displayName(entry.get(),language);
-            graphic.getChildren().add(new ResourcePreview(entry.get().visual(),discovery.selectedRoot(),textures,(int)size-8,()->getScene()!=null,preview->{}));
+            graphic.getChildren().add(new ResourcePreview(entry.get(),discovery,textures,(int)size-8,()->getScene()!=null,preview->{} ,sample.nbt()));
         } else if(content.kind()!=RecipeSlotContent.Kind.EMPTY)graphic.getChildren().add(new Label(content.kind()==RecipeSlotContent.Kind.TAG?"#":content.kind()==RecipeSlotContent.Kind.CHEMICAL?"C":"?"));
         if(content.amount()>1){final var quantity=new Label(Long.toString(content.amount()));quantity.getStyleClass().add("slot-quantity");StackPane.setAlignment(quantity,Pos.BOTTOM_RIGHT);graphic.getChildren().add(quantity);}
         if(content.kind()==RecipeSlotContent.Kind.ALTERNATIVES){final var badge=new Label("◇");StackPane.setAlignment(badge,Pos.TOP_LEFT);graphic.getChildren().add(badge);}
