@@ -1,0 +1,193 @@
+[ {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 2651,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "minecraft:stone",
+  "nontransparent_pixels" : 2744
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 3637,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "minecraft:oak_planks",
+  "nontransparent_pixels" : 2744
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 3466,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "minecraft:oak_stairs",
+  "nontransparent_pixels" : 2499
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 2565,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "minecraft:oak_slab",
+  "nontransparent_pixels" : 1764
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 2304,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "minecraft:oak_fence",
+  "nontransparent_pixels" : 1275
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 401,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "minecraft:oak_door",
+  "nontransparent_pixels" : 1856
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 3586,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "minecraft:crafting_table",
+  "nontransparent_pixels" : 2744
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 3341,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "minecraft:furnace",
+  "nontransparent_pixels" : 2744
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 568,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "minecraft:diamond",
+  "nontransparent_pixels" : 1920
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 498,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "minecraft:iron_ingot",
+  "nontransparent_pixels" : 2160
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 3798,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "gtceu:steam_machine_casing",
+  "nontransparent_pixels" : 2744
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 2994,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "gtceu:heatproof_machine_casing",
+  "nontransparent_pixels" : 2744
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 2810,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "gtceu:frostproof_machine_casing",
+  "nontransparent_pixels" : 2744
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 2910,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "ad_astra:aeronos_planks",
+  "nontransparent_pixels" : 2744
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 2914,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "ad_astra:strophar_planks",
+  "nontransparent_pixels" : 2744
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 3113,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "ad_astra:glacian_planks",
+  "nontransparent_pixels" : 2744
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 3000,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "botania:livingwood_planks",
+  "nontransparent_pixels" : 2744
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 2998,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "botania:livingwood_planks_stairs",
+  "nontransparent_pixels" : 2499
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 2252,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "botania:livingwood_planks_slab",
+  "nontransparent_pixels" : 1764
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 2453,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "nuclearcraft:fission_reactor_casing",
+  "nontransparent_pixels" : 2744
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 2352,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "nuclearcraft:fusion_reactor_casing",
+  "nontransparent_pixels" : 2744
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 1406,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "nuclearcraft:fusion_reactor_casing_glass",
+  "nontransparent_pixels" : 620
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 2788,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "gtceu:lv_macerator",
+  "nontransparent_pixels" : 2744
+}, {
+  "context" : "1a570e3a-7e01-455f-98fe-fff0f97e636f:1",
+  "status" : "READY",
+  "png_bytes" : 560,
+  "diagnostic" : "Registered Item default stack; other NBT variants may differ",
+  "source" : "MINECRAFT_CLIENT_INVENTORY",
+  "id" : "gtceu:aluminium_fluid_cell",
+  "nontransparent_pixels" : 2112
+} ]
