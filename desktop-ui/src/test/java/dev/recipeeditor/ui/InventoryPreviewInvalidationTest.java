@@ -33,7 +33,8 @@ final class InventoryPreviewInvalidationTest {
             provider.preview(entry,index,root,64).get(8,TimeUnit.SECONDS);assertEquals(1,client.calls.get());
             client.context=UUID.randomUUID().toString();provider.preview(entry,index,root,64).get(8,TimeUnit.SECONDS);assertEquals(2,client.calls.get());
             provider.preview(entry,new RegistryIndex(List.of(entry)),root,64).get(8,TimeUnit.SECONDS);assertEquals(3,client.calls.get());
-            client.available=false;final var offline=provider.preview(entry,index,root,64).get(8,TimeUnit.SECONDS);assertEquals("PLACEHOLDER",offline.source());assertTrue(offline.diagnostic().contains("MISSING_MODEL"));
+            // The fixture has no connection events; publish its transition as the real service does.
+            client.available=false;provider.client(client);final var offline=provider.preview(entry,index,root,64).get(8,TimeUnit.SECONDS);assertEquals("PLACEHOLDER",offline.source());assertTrue(offline.diagnostic().contains("MISSING_MODEL"),offline.diagnostic());assertTrue(offline.diagnostic().contains("CLIENT_RENDERER_UNAVAILABLE"),offline.diagnostic());
         }
     }
     @Test void changingNestedResourcePackFileInvalidatesPreviouslyCapturedImage()throws Exception{
