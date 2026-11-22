@@ -81,7 +81,7 @@ public final class InventoryPreviewProvider implements AutoCloseable {
                 if(item.key.kind()==ResourceKind.FLUID){item.future.complete(texture(item.key));continue;}
                 final String token=active!=null&&active.itemPreviewsAvailable()?active.previewContext():"offline";
                 final var cached=cache.get(cacheKey(item.key,context,token));if(cached.isPresent()){item.future.complete(cached.get());continue;}
-                if(active!=null&&active.itemPreviewsAvailable()){runtime.add(item);requests.add(new ItemPreviewRequest(context.item(item.key).toString(),item.key.size(),item.key.variant(),item.key.nbt()));}
+                if(active!=null&&active.itemPreviewsAvailable()){final var request=new ItemPreviewRequest(context.item(item.key).toString(),item.key.size(),item.key.variant(),item.key.nbt());runtime.add(item);requests.add(request);}
                 else completeStatic(item,context,"Minecraft Client inventory preview unavailable");
             }catch(Exception failure){item.future.complete(missing(message(failure)));}
         }
