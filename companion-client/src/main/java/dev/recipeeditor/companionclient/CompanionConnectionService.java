@@ -27,6 +27,8 @@ public final class CompanionConnectionService implements AutoCloseable,ItemPrevi
     private boolean materialsSupported;
     private volatile boolean previewsSupported;
     private volatile String previewContext="";
+    private final java.util.concurrent.atomic.AtomicLong previewRequested=new java.util.concurrent.atomic.AtomicLong(),previewSent=new java.util.concurrent.atomic.AtomicLong(),previewTransferred=new java.util.concurrent.atomic.AtomicLong(),previewFailed=new java.util.concurrent.atomic.AtomicLong();
+    public String previewStatistics(){return "requested="+previewRequested.get()+", sent="+previewSent.get()+", PNG transferred="+previewTransferred.get()+", failed="+previewFailed.get();}
     private final Semaphore previewSlots=new Semaphore(8);
     private final Set<CompletableFuture<List<ItemPreviewResponse>>> previewFutures=ConcurrentHashMap.newKeySet();
     private final long syncKeepaliveNanos;
@@ -36,6 +38,7 @@ public final class CompanionConnectionService implements AutoCloseable,ItemPrevi
     public CompanionConnectionStatus status(){return status;}
     public String companionVersion(){return companionVersion;}
     public void addListener(final Consumer<CompanionConnectionStatus> listener){listeners.add(listener);}
+    public void removeListener(final Consumer<CompanionConnectionStatus> listener){listeners.remove(listener);}
     private void state(final CompanionConnectionStatus value){status=value;listeners.forEach(listener->listener.accept(value));}
     public CompletableFuture<Void> connect(final Path sessionFile){return CompletableFuture.runAsync(()->{try{open(SessionCredentials.load(sessionFile));}catch(Exception failure){fail(failure);}},worker);}
     public CompletableFuture<Void> connect(final SessionCredentials session){return CompletableFuture.runAsync(()->{try{open(session);}catch(Exception failure){fail(failure);}},worker);}
@@ -52,11 +55,17 @@ public final class CompanionConnectionService implements AutoCloseable,ItemPrevi
     }
     public boolean itemPreviewsAvailable(){return status==CompanionConnectionStatus.CONNECTED&&previewsSupported;}
     public String previewContext(){return previewContext;}
+    @Override public String previewUnavailableReason(){
+        if(status==CompanionConnectionStatus.CONNECTED)return previewsSupported?"CLIENT_CONNECTED; item-previews-v1 available":"CLIENT_PREVIEW_CAPABILITY_MISSING: authenticated Companion has no client item renderer; update the client Companion (dedicated server cannot render)";
+        if(status==CompanionConnectionStatus.SYNCHRONIZING)return "CLIENT_SYNCHRONIZING: previews resume after synchronization";
+        return "CLIENT_"+status+": connect the running Minecraft client session in Runtime; a saved snapshot is not a live renderer";
+    }
     public CompletableFuture<List<ItemPreviewResponse>> itemPreviews(final List<ItemPreviewRequest> items){
         final var requests=List.copyOf(items);if(requests.isEmpty()||requests.size()>4)return CompletableFuture.failedFuture(new IllegalArgumentException("Batch limit: 1..4"));
-        if(!itemPreviewsAvailable())return CompletableFuture.failedFuture(new IllegalStateException("Client inventory preview unavailable"));
-        if(!previewSlots.tryAcquire())return CompletableFuture.failedFuture(new RejectedExecutionException("Preview queue full"));
-        final var result=new CompletableFuture<List<ItemPreviewResponse>>();previewFutures.add(result);result.whenComplete((value,error)->previewFutures.remove(result));
+        previewRequested.addAndGet(requests.size());
+        if(!itemPreviewsAvailable()){previewFailed.addAndGet(requests.size());return CompletableFuture.failedFuture(new IllegalStateException(previewUnavailableReason()));}
+        if(!previewSlots.tryAcquire()){previewFailed.addAndGet(requests.size());return CompletableFuture.failedFuture(new RejectedExecutionException("Preview queue full"));}
+        final var result=new CompletableFuture<List<ItemPreviewResponse>>();previewFutures.add(result);result.whenComplete((value,error)->{previewFutures.remove(result);if(error!=null)previewFailed.addAndGet(requests.size());});
         try{worker.execute(()->{
             try{
                 if(result.isDone())return;if(!itemPreviewsAvailable())throw new IOException("Runtime disconnected or synchronizing");
@@ -64,7 +73,7 @@ public final class CompanionConnectionService implements AutoCloseable,ItemPrevi
                 final var response=request(MessageType.ITEM_PREVIEW_REQUEST,payload,MessageType.ITEM_PREVIEW_RESPONSE);
                 if(!response.keySet().equals(Set.of("items"))||!response.get("items").isJsonArray()||response.getAsJsonArray("items").size()!=requests.size())throw new ProtocolException("Invalid preview batch response");
                 final var rows=new ArrayList<ItemPreviewResponse>();int index=0;
-                for(final var item:response.getAsJsonArray("items")){final var row=ProtocolCodec.GSON.fromJson(item,ItemPreviewResponse.class);if(!row.request().equals(requests.get(index++)))throw new ProtocolException("Preview identity mismatch");rows.add(row);if(row.status().equals("READY"))previewContext=row.context();}
+                for(final var item:response.getAsJsonArray("items")){final var row=ProtocolCodec.GSON.fromJson(item,ItemPreviewResponse.class);if(!row.request().equals(requests.get(index++)))throw new ProtocolException("Preview identity mismatch");rows.add(row);if(row.status().equals("READY")){previewContext=row.context();previewTransferred.incrementAndGet();}else previewFailed.incrementAndGet();}
                 result.complete(List.copyOf(rows));
             }catch(PreviewUnavailable unavailable){result.completeExceptionally(unavailable);}
             catch(Exception failure){closeSocket();state(cancelled?CompanionConnectionStatus.DISCONNECTED:CompanionConnectionStatus.ERROR);result.completeExceptionally(failure);}
@@ -106,7 +115,7 @@ public final class CompanionConnectionService implements AutoCloseable,ItemPrevi
         },id,response,type,p->progress.accept(p.has("stage")?p.get("stage").getAsString():"Synchronizing"));
     }
     private JsonObject request(final MessageType type,final JsonObject payload,final MessageType expected)throws IOException {
-        final String id=UUID.randomUUID().toString();codec.write(socket.getOutputStream(),new ProtocolMessage(type,id,payload));final var response=readMessage();if(type==MessageType.ITEM_PREVIEW_REQUEST&&response.requestId().equals(id)&&(response.messageType()==MessageType.ITEM_PREVIEW_ERROR||response.messageType()==MessageType.ERROR))throw new PreviewUnavailable(response.payload().has("code")?response.payload().get("code").getAsString():"Preview temporarily unavailable");if(type==MessageType.PING&&response.payload().has("previewContext"))previewContext=response.payload().get("previewContext").getAsString();if(!response.requestId().equals(id)||response.messageType()!=expected)throw new ProtocolException("Unexpected response to "+type);return response.payload();
+        final String id=UUID.randomUUID().toString();codec.write(socket.getOutputStream(),new ProtocolMessage(type,id,payload));if(type==MessageType.ITEM_PREVIEW_REQUEST)previewSent.addAndGet(payload.getAsJsonArray("items").size());final var response=readMessage();if(type==MessageType.ITEM_PREVIEW_REQUEST&&response.requestId().equals(id)&&(response.messageType()==MessageType.ITEM_PREVIEW_ERROR||response.messageType()==MessageType.ERROR))throw new PreviewUnavailable(response.payload().has("code")?response.payload().get("code").getAsString():"Preview temporarily unavailable");if(type==MessageType.PING&&response.payload().has("previewContext"))previewContext=response.payload().get("previewContext").getAsString();if(!response.requestId().equals(id)||response.messageType()!=expected)throw new ProtocolException("Unexpected response to "+type);return response.payload();
     }
     private ProtocolMessage readMessage() throws IOException {
         while(true) {
