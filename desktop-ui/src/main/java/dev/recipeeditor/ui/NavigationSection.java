@@ -4,7 +4,6 @@ public enum NavigationSection {
     PROJECTS("Projects", "No project open", "Use Import Modpack to select an existing Minecraft instance."),
     MODS("Mods", "No mods loaded", "Use Import Modpack to load installed mods."),
     ITEMS("Items", "No items loaded", "Import a Minecraft 1.20.1 instance to index static resource candidates."),
-    BLOCKS("Blocks", "No blocks indexed", "Block models and blockstates are static evidence, not runtime registration."),
     FLUIDS("Fluids", "No fluid references indexed", "Only explicit fluid tag references are indexed. Programmatic registrations may be absent."),
     MATERIALS("Materials", "Runtime Companion required", "Synchronize a materials-v1 snapshot from a supported GregTech runtime to inspect actual materials and registered forms."),
     RECIPES("Recipes", "No recipes loaded", "Import and index a Minecraft 1.20.1 instance to edit saved project recipes."),

@@ -217,7 +217,6 @@ public final class MainWindow {
       }
       final var kind = switch (section) {
         case ITEMS -> ResourceKind.ITEM;
-        case BLOCKS -> ResourceKind.BLOCK;
         case FLUIDS -> ResourceKind.FLUID;
         default -> null;
       };
@@ -333,7 +332,7 @@ public final class MainWindow {
         resources = createResources(result);
         materials = new MaterialsBrowserView(result, textures, this::forForm);
         recipes = new RecipeBrowserView(result, editor, editorTasks, this::openExport, dev.recipeeditor.integrations.api.IntegrationContext.from(imported.modpack()));
-        recipes.resourceNavigation((kind,id)->{select(kind==ResourceKind.FLUID?NavigationSection.FLUIDS:kind==ResourceKind.BLOCK?NavigationSection.BLOCKS:NavigationSection.ITEMS);resources.showResource(kind,id);});
+        recipes.resourceNavigation((kind,id)->{select(kind==ResourceKind.FLUID?NavigationSection.FLUIDS:NavigationSection.ITEMS);resources.showResource(kind,id);});
         editor.addListener(id -> Platform.runLater(() -> {
           if (!closed) updateProjectState();
         }));
@@ -403,7 +402,7 @@ public final class MainWindow {
   private void forForm(final MaterialDefinition.Form form) {
     select(switch (form.kind()) {
       case ITEM -> NavigationSection.ITEMS;
-      case BLOCK -> NavigationSection.BLOCKS;
+      case BLOCK -> NavigationSection.ITEMS;
       case FLUID -> NavigationSection.FLUIDS;
     });
     resources.showResource(form.kind(), form.resourceId());
