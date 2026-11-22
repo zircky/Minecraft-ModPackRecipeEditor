@@ -157,3 +157,28 @@ tasks.register<Exec>("buildCompanion") {
         environment("JAVA_HOME", launcher.metadata.installationPath.asFile.absolutePath)
     }
 }
+
+
+// Public distribution entry points reuse the existing jlink/jpackage configuration.
+val windowsDistribution = layout.buildDirectory.dir("distributions/windows")
+val packageWindowsApp by tasks.registering(Sync::class) {
+    group = "distribution"
+    description = "Stages the verified portable EXE, dependencies and bundled Java 21 runtime."
+    dependsOn(":app:packageWindows")
+    from(project(":app").layout.buildDirectory.dir("windows/image"))
+    into(windowsDistribution.map { it.dir("portable") })
+}
+val packageWindowsInstaller by tasks.registering(Sync::class) {
+    group = "distribution"
+    description = "Stages the EXE installer produced by the existing jpackage/WiX task."
+    dependsOn(":app:createInstaller")
+    from(project(":app").layout.buildDirectory.file("windows/installers/MinecraftRecipeEditor-$desktopVersion-windows-x64.exe")) {
+        rename { "MinecraftRecipeEditor-$desktopVersion-setup.exe" }
+    }
+    into(windowsDistribution.map { it.dir("installer") })
+}
+tasks.register("packageWindowsAll") {
+    group = "distribution"
+    description = "Creates both portable and installer distributions; does not publish."
+    dependsOn(packageWindowsApp, packageWindowsInstaller)
+}

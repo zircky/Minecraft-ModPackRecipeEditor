@@ -83,6 +83,23 @@ val stageWindows by tasks.registering(Sync::class) {
     from(rootProject.file("packaging/licenses")) { into("legal/supplemental") }
 }
 
+val verifyWindowsInputs by tasks.registering {
+    group = "verification"
+    description = "Checks real staged application resources and JavaFX Windows native dependencies."
+    dependsOn(stageWindows)
+    inputs.dir(inputDirectory)
+    doLast {
+        val jars = inputDirectory.get().asFile.listFiles().orEmpty().filter { it.extension == "jar" }
+        val required = setOf("dev/recipeeditor/app/Launcher.class", "dev/recipeeditor/app/build-info.properties",
+            "logback.xml", "dev/recipeeditor/ui/theme.css", "dev/recipeeditor/app/icons/app-32.png")
+        val entries = jars.flatMap { jar -> ZipFile(jar).use { zip -> zip.entries().asSequence().map { it.name }.toList() } }.toSet()
+        check(entries.containsAll(required)) { "Missing packaged resources: ${required - entries}" }
+        check(entries.any { it.endsWith("glass.dll") } && entries.any { it.endsWith("prism_d3d.dll") }) {
+            "JavaFX Windows native DLLs are missing from Gradle runtime dependencies"
+        }
+    }
+}
+
 val runtimeImage by tasks.registering(Exec::class) {
     group = "distribution"
     description = "Creates a Java 21 runtime with jlink; JavaFX/native JARs stay in the app classpath."
@@ -100,7 +117,7 @@ val runtimeImage by tasks.registering(Exec::class) {
 val packageWindows by tasks.registering(Exec::class) {
     group = "distribution"
     description = "Builds the actual Windows app-image with bundled Java 21 and JavaFX."
-    dependsOn(rootProject.tasks.named("build"), stageWindows, runtimeImage)
+    dependsOn(rootProject.tasks.named("build"), verifyWindowsInputs, runtimeImage)
     inputs.dir(inputDirectory); inputs.dir(runtimeDirectory); inputs.file(icon)
     inputs.property("version", fullVersion)
     outputs.dir(imageDirectory)
@@ -130,6 +147,10 @@ fun installer(taskName: String, kind: String) = tasks.register<Exec>(taskName) {
             val directory = file(wix)
             check(File(directory, "candle.exe").isFile && File(directory, "light.exe").isFile) { "wixHome must contain WiX 3 candle.exe and light.exe" }
             environment("PATH", directory.absolutePath + File.pathSeparator + System.getenv("PATH"))
+        }
+        val searchPath = environment["PATH"]?.toString() ?: System.getenv("PATH").orEmpty()
+        check(listOf("candle.exe", "light.exe").all { name -> searchPath.split(File.pathSeparator).any { File(it, name).isFile } }) {
+            "Windows installer requires WiX 3 candle.exe/light.exe. Set -PwixHome=<WiX 3 directory> or WIX/PATH. Portable packageWindowsApp needs no WiX."
         }
         val destination = installerDirectory.get().asFile; destination.mkdirs()
         val generated = File(destination, "$applicationName-$nativeVersion.$kind")

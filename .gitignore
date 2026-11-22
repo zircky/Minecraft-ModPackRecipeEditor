@@ -19,3 +19,5 @@ logs/
 **/run-inventory/
 
 .manual-tests/phase19/
+
+.manual-tests/phase20/
