@@ -33,4 +33,14 @@ final class RegistryMergeServiceTest {
             if(mixed)assertTrue(names.isEmpty());else assertEquals("Металл",names.get("ru_ru"));
         }
     }
+    @Test void explicitBlockLinksAndStatePropertiesSurviveSnapshotRoundTrip()throws Exception {
+        final var base=new RuntimeFixtures().snapshot(root,"s",1);
+        final var item=new RuntimeData.Registry(RuntimeData.Kind.ITEM,"test:placing_item","Item","test.BlockItem",Map.of("blockItem","true","blockId","other:block"),Map.of());
+        final var block=new RuntimeData.Registry(RuntimeData.Kind.BLOCK,"other:block","Block","test.Block",Map.of("hasBlockItem","true"),Map.of("facing",List.of("north","south")));
+        final var snapshot=new RuntimeData.Snapshot(1,"links",true,base.environment(),List.of(item,block),List.of(),List.of(),List.of(),List.of());
+        final var path=root.resolve("links.mresnapshot");final var service=new RuntimeSnapshotService();service.save(path,snapshot);
+        final var index=new RegistryMergeService().merge(new RegistryIndex(List.of()),service.load(path),path).preferred();
+        assertEquals(ResourceLocation.parse("other:block"),new BlockItemRelationships(index).block(ResourceLocation.parse(item.id())).orElseThrow());
+        final var metadata=index.entries(ResourceKind.BLOCK).getFirst().metadata();assertEquals("test.Block",metadata.get("runtimeClass"));assertEquals("{\"facing\":[\"north\",\"south\"]}",metadata.get("blockStateProperties"));
+    }
 }
