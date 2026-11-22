@@ -26,6 +26,7 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
     private final TableView<RuntimeData.Registry> registries=new TableView<>();
     private final Label previewAvailability=new Label();
     private CompletableFuture<?> previewRequest;
+    private java.util.function.Consumer<CompanionConnectionStatus> previewListener;
     private RuntimeData.Snapshot snapshot;private Path snapshotFile;private boolean busy,closed;
     public RuntimeIntegrationView(final CompanionConnectionService connection,final RuntimeSnapshotService snapshots,final BiConsumer<RuntimeData.Snapshot,Path> apply) {
         this.connection=connection;this.snapshots=snapshots;this.apply=apply;getStyleClass().add("workspace-view");session.setPromptText("Minecraft config/mre_companion/session.json — token is read privately, never displayed");HBox.setHgrow(session,Priority.ALWAYS);
@@ -48,6 +49,13 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
         final var request=new Button("Request client preview");request.setId("request-client-preview");
         final var image=new javafx.scene.image.ImageView();image.setId("client-preview-image");image.setFitWidth(128);image.setFitHeight(128);image.setPreserveRatio(true);image.setSmooth(false);
         final var trace=new Label("No client preview requested. A registry snapshot does not contain rendered PNG icons.");trace.setId("client-preview-trace");trace.setWrapText(true);
+        previewListener=value->Platform.runLater(()->{
+            if(closed||connection.itemPreviewsAvailable())return;
+            final var previous=previewRequest;previewRequest=null;if(previous!=null)previous.cancel(false);
+            request.setDisable(false);image.setImage(null);
+            trace.setText(connection.previewUnavailableReason()+"\nNo live preview available. Request again after connecting.");
+        });
+        connection.addListener(previewListener);
         request.setOnAction(event->{
             if(previewRequest!=null)previewRequest.cancel(false);image.setImage(null);
             final String id=item.getText().strip();final boolean confirmed=snapshot!=null&&snapshot.registries().stream().anyMatch(row->row.kind()==RuntimeData.Kind.ITEM&&row.id().equals(id));
@@ -66,7 +74,9 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
             }catch(RuntimeException failure){request.setDisable(false);trace.setText("PREVIEW_FAILED: "+failure.getMessage());}
         });
         final var content=new VBox(12,new Label("Native ItemStack preview — no static fallback"),new HBox(10,item,request),image,trace);content.setPadding(new Insets(16));
-        final var tab=new Tab("Client Item Preview",content);tab.setClosable(false);return tab;
+        trace.setMinHeight(Region.USE_PREF_SIZE);
+        final var scroll=new ScrollPane(content);scroll.setFitToWidth(true);
+        final var tab=new Tab("Client Item Preview",scroll);tab.setClosable(false);return tab;
     }
     private void synchronize() {
         busy(true);progress.setProgress(-1);diagnostics.clear();
@@ -99,5 +109,5 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
     private void buttons(){previewAvailability.setText("Item preview: "+connection.previewUnavailableReason());view.setDisable(busy||snapshot==null);final var s=connection.status();connect.setDisable(busy||s==CompanionConnectionStatus.CONNECTING||s==CompanionConnectionStatus.SYNCHRONIZING);disconnect.setDisable(s==CompanionConnectionStatus.DISCONNECTED);sync.setDisable(busy||s!=CompanionConnectionStatus.CONNECTED);cancel.setDisable(s!=CompanionConnectionStatus.SYNCHRONIZING);load.setDisable(busy);session.setDisable(busy);}
     private void error(final Throwable failure){Throwable cause=failure;while(cause.getCause()!=null)cause=cause.getCause();diagnostics.appendText("\n"+cause.getClass().getSimpleName()+": "+cause.getMessage());status.setText(connection.status()+" — synchronization failed/cancelled; previous complete snapshot retained");}
     private TableColumn<RuntimeData.Registry,String> column(final String name,final java.util.function.Function<RuntimeData.Registry,String> text,final int width){final var c=new TableColumn<RuntimeData.Registry,String>(name);c.setCellValueFactory(v->new ReadOnlyStringWrapper(text.apply(v.getValue())));c.setPrefWidth(width);return c;}
-    @Override public void close(){closed=true;if(previewRequest!=null)previewRequest.cancel(false);connection.disconnect();storage.shutdown();}
+    @Override public void close(){closed=true;connection.removeListener(previewListener);if(previewRequest!=null)previewRequest.cancel(false);connection.disconnect();storage.shutdown();}
 }
