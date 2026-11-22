@@ -26,7 +26,7 @@ final class StaticAnalysisServiceTest {
         final var stages=new CopyOnWriteArrayList<String>();
         try(final var service=new DefaultStaticAnalysisService()) {
             final var result=service.start(pack("1.20.1"),p->stages.add(p.stage())).result().get(10,TimeUnit.SECONDS);
-            assertEquals(1,result.registry().entries(ResourceKind.ITEM).size()); assertEquals(1,result.recipes().recipes().size());
+            assertEquals(Set.of("test:a","test:ore"),result.registry().entries(ResourceKind.ITEM).stream().map(e->e.id().toString()).collect(java.util.stream.Collectors.toSet())); assertEquals(1,result.recipes().recipes().size());
             assertTrue(stages.contains("Indexing items...")); assertEquals("Completed.",stages.getLast());
         }
     }

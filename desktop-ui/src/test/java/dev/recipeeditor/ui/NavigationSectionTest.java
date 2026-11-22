@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 final class NavigationSectionTest {
     @Test
     void exposesRequiredNavigationInOrder() {
-        assertEquals(java.util.List.of("Projects", "Mods", "Items", "Blocks", "Fluids", "Materials", "Recipes", "Runtime", "Analyzer", "Settings"),
+        assertEquals(java.util.List.of("Projects", "Mods", "Items", "Fluids", "Materials", "Recipes", "Runtime", "Analyzer", "Settings"),
                 Arrays.stream(NavigationSection.values()).map(NavigationSection::title).toList());
     }
 
