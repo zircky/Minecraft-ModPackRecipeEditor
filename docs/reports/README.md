@@ -72,3 +72,8 @@
 - [Pipeline audit and reproduced causes](PHASE21_AUDIT.md)
 - [Changed files](PHASE21_FILES.txt)
 - [Actual Minecraft metrics](phase21-evidence/metrics.json)
+
+## Phase 22 — Runtime snapshot storage
+
+- [Аудит текущего Runtime и Persistence](PHASE22_AUDIT.md)
+- [Результаты шагов 2–4](PHASE22_REPORT.md)
