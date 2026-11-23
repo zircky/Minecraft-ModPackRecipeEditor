@@ -270,6 +270,7 @@ public final class MainWindow {
         return;
       }
       imported = result;
+      runtime.selectModpack(null);
       catalog.show(result);
       project.setText(result.modpack().selectedDirectory().getFileName().toString());
       discovered = null;
@@ -339,6 +340,7 @@ public final class MainWindow {
         setBusy(false);
         select(NavigationSection.ITEMS);
         updateProjectState();
+        runtime.selectModpack(imported.modpack());
         status.setText("Completed: " + result.registry().entries().size() + " resources, " + result.recipes().recipes().size() + " recipes · " + editor.conflicts().size() + " blocked changes");
         notifications.show(editor.conflicts().isEmpty()?NotificationBanner.Kind.SUCCESS:NotificationBanner.Kind.WARNING,status.getText());
       }, failure -> finishError(false, "Restore project", failure));

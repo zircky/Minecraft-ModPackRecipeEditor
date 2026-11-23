@@ -2,6 +2,9 @@ package dev.recipeeditor.ui;
 
 import dev.recipeeditor.companionclient.*;
 import dev.recipeeditor.companionprotocol.RuntimeData;
+import dev.recipeeditor.core.ApplicationDirectories;
+import dev.recipeeditor.core.importing.ModpackDefinition;
+import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -25,6 +28,11 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
     private final Button connect=new Button("Connect"),disconnect=new Button("Disconnect"),sync=new Button("Synchronize with Minecraft"),cancel=new Button("Cancel Sync"),view=new Button("View Snapshot"),load=new Button("Open Snapshot");
     private final TableView<RuntimeData.Registry> registries=new TableView<>();
     private final Label previewAvailability=new Label();
+    private final Label snapshotStatus=new Label("Snapshot: NOT_AVAILABLE");
+    private final SnapshotLifecycle lifecycle=new SnapshotLifecycle(
+            new SqliteSnapshotStore(ApplicationDirectories.current().cache()));
+    private ModpackDefinition pack;
+    private long inspectionRevision;
     private CompletableFuture<?> previewRequest;
     private java.util.function.Consumer<CompanionConnectionStatus> previewListener;
     private RuntimeData.Snapshot snapshot;private Path snapshotFile;private boolean busy,closed;
@@ -36,7 +44,8 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
         load.setOnAction(e->{final var chooser=new FileChooser();chooser.setTitle("Open runtime snapshot (cached evidence, not a live connection)");chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Runtime snapshot","*.mresnapshot"));final var file=chooser.showOpenDialog(getScene().getWindow());if(file!=null){busy(true);CompletableFuture.supplyAsync(()->{try{return snapshots.load(file.toPath());}catch(java.io.IOException failure){throw new CompletionException(failure);}},storage).whenComplete((loaded,error)->Platform.runLater(()->{busy(false);if(error!=null){error(error);return;}accept(loaded,file.toPath(),true);}));}});
         progress.setMaxWidth(Double.MAX_VALUE);diagnostics.setEditable(false);
         final var actions=new FlowPane(connect,disconnect,sync,cancel,load,view);actions.getStyleClass().add("filter-row");
-        final var top=new VBox(new Label("Runtime connection · read only / localhost"),new HBox(10,session,browse),status,previewAvailability,environment,actions,progress,counts,lastSync);top.getStyleClass().add("view-header");setTop(top);
+        final var top=new VBox(new Label("Runtime connection · read only / localhost"),new HBox(10,session,browse),status,snapshotStatus,previewAvailability,environment,actions,progress,counts,lastSync);top.getStyleClass().add("view-header");setTop(top);
+        snapshotStatus.setWrapText(true);
         status.setWrapText(true);environment.setWrapText(true);counts.setWrapText(true);lastSync.setWrapText(true);
         registries.setPlaceholder(new EmptyStateView("No runtime snapshot","Select the Companion session file, connect and synchronize with an open Minecraft world, or open a previously saved snapshot. Static project data remains available."));
         registries.getColumns().add(column("Registry",r->r.kind().name(),140));registries.getColumns().add(column("ID",RuntimeData.Registry::id,300));registries.getColumns().add(column("Display name",RuntimeData.Registry::displayName,250));registries.getColumns().add(column("Runtime class",RuntimeData.Registry::runtimeClass,380));
@@ -78,9 +87,59 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
         final var scroll=new ScrollPane(content);scroll.setFitToWidth(true);
         final var tab=new Tab("Client Item Preview",scroll);tab.setClosable(false);return tab;
     }
+    void selectModpack(final ModpackDefinition selected) {
+        pack=selected;
+        inspectSnapshot();
+    }
+
+    private void inspectSnapshot() {
+        final long revision=++inspectionRevision;
+        final var selected=pack;
+        if(selected==null){snapshotStatus.setText("Snapshot: NOT_AVAILABLE");return;}
+        snapshotStatus.setText("Checking local snapshot…");
+        CompletableFuture.supplyAsync(()->{
+            try{return lifecycle.inspect(selected,fingerprint(selected));}
+            catch(IOException failure){throw new CompletionException(failure);}
+        },storage).whenComplete((inspection,failure)->Platform.runLater(()->{
+            if(closed||inspectionRevision!=revision)return;
+            snapshotStatus.setText(failure==null
+                    ?"Snapshot: "+inspection.status()+" · "+inspection.detail()
+                    :"Snapshot fingerprint unavailable: "+failure.getCause().getMessage());
+        }));
+    }
+
+    private ModpackFingerprint fingerprint(final ModpackDefinition selected) {
+        try{return ModpackFingerprint.calculate(selected);}
+        catch(IOException failure){throw new CompletionException(failure);}
+    }
+
     private void synchronize() {
         busy(true);progress.setProgress(-1);diagnostics.clear();
-        connection.synchronize(stage->Platform.runLater(()->status.setText(stage))).thenApplyAsync(data->{try{final var path=dev.recipeeditor.core.ApplicationDirectories.current().snapshots().resolve(data.snapshotId()+".mresnapshot");snapshots.save(path,data);return Map.entry(data,path);}catch(java.io.IOException failure){throw new CompletionException(failure);}},storage).whenComplete((result,error)->Platform.runLater(()->{busy(false);progress.setProgress(error==null?1:0);if(error!=null){error(error);return;}accept(result.getKey(),result.getValue(),false);}));
+        ++inspectionRevision;snapshotStatus.setText("Snapshot: COLLECTING");
+        final var selected=pack;
+        final var fingerprint=selected==null?CompletableFuture.<ModpackFingerprint>completedFuture(null)
+                :CompletableFuture.supplyAsync(()->fingerprint(selected),storage);
+        fingerprint.thenCompose(before->connection.synchronize(stage->Platform.runLater(()->status.setText(stage)))
+                .thenApplyAsync(data->saveCollected(selected,before,data),storage))
+                .whenComplete((result,error)->Platform.runLater(()->{
+                    if(closed)return;
+                    busy(false);progress.setProgress(error==null?1:0);
+                    if(error!=null){error(error);inspectSnapshot();return;}
+                    if(pack!=selected)return;
+                    if(selected!=null)snapshotStatus.setText("Snapshot: AVAILABLE · "+result.getValue());
+                    else snapshotStatus.setText("Snapshot saved as portable evidence. Import a modpack for fingerprinted storage.");
+                    accept(result.getKey(),result.getValue(),false);
+                }));
+    }
+
+    private Map.Entry<RuntimeData.Snapshot,Path> saveCollected(final ModpackDefinition selected,
+            final ModpackFingerprint before,final RuntimeData.Snapshot data) {
+        try{
+            if(selected!=null)return Map.entry(data,lifecycle.publish(selected,before,data));
+            final var path=ApplicationDirectories.current().snapshots().resolve(data.snapshotId()+".mresnapshot");
+            snapshots.save(path,data);
+            return Map.entry(data,path);
+        }catch(IOException failure){throw new CompletionException(failure);}
     }
     private void accept(final RuntimeData.Snapshot data,final Path file,final boolean cached) {
         snapshot=data;snapshotFile=file;status.setText(connection.status()+" — snapshot is historical evidence from "+data.environment().collectedAt());environment.setText(data.environment().minecraftVersion()+" / "+data.environment().loader()+" "+data.environment().loaderVersion()+" / Companion "+data.environment().companionVersion()+" / source: "+data.environment().sourceInstance());
