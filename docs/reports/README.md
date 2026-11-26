@@ -77,3 +77,8 @@
 
 - [Аудит текущего Runtime и Persistence](PHASE22_AUDIT.md)
 - [Результаты шагов 2–4](PHASE22_REPORT.md)
+
+## Phase 23 — Version-independent recipe engine
+
+- [Аудит, матрица форматов и результаты](PHASE23_REPORT.md)
+- [Изменённые файлы](PHASE23_FILES.txt)
