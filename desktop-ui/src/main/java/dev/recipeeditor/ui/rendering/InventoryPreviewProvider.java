@@ -137,13 +137,31 @@ public final class InventoryPreviewProvider implements AutoCloseable {
         }catch(Exception unavailable){for(final var item:runtime)if(!item.future.isDone())try{completeStatic(item,context(item.key.registry()),"Client preview failed: "+message(unavailable));}catch(Exception failure){item.future.complete(missing(message(failure)));}}
     }
     private void completeStatic(final Pending pending,final Context context,final String clientDiagnostic){
-        try{renderStatic(pending,context,clientDiagnostic);}catch(Exception failure){pending.future.complete(missing(clientDiagnostic+"; static fallback: "+message(failure)));}
+        try {
+            renderStatic(pending,context,clientDiagnostic);
+        } catch(Exception unavailable) {
+            final String diagnostic=clientDiagnostic+"; static model: "+message(unavailable);
+            try {
+                final var entries=context.registry.find(context.item(pending.key)).stream().filter(entry->entry.kind()==ResourceKind.ITEM).toList();
+                if(entries.size()==1&&!entries.getFirst().visual().layers().isEmpty()) {
+                    final var preview=frames.previewAsync(entries.getFirst().visual(),pending.key.root()).get(5,TimeUnit.SECONDS);
+                    if(preview.png().length>0&&pending.key.epoch()==epoch.get()) {
+                        final var result=new ItemPreviewCache.Image(preview.png(),"STATIC_TEXTURE",diagnostic+"; "+preview.explanation());
+                        cache.put(cacheKey(pending.key,context,"offline"),result);
+                        pending.future.complete(result);
+                        return;
+                    }
+                }
+                pending.future.complete(missing(diagnostic));
+            } catch(Exception fallback) {
+                pending.future.complete(missing(diagnostic+"; texture fallback: "+message(fallback)));
+            }
+        }
     }
     private void renderStatic(final Pending pending,final Context context,final String clientDiagnostic)throws Exception{
         if(pending.consumers.get()==0){pending.future.cancel(false);return;}
         if(!pending.key.nbt().isEmpty()){pending.future.complete(missing("NBT variant needs Minecraft Client; "+clientDiagnostic));return;}
-        final var itemId=context.item(pending.key);final InventoryItemModel model;
-        try{model=context.model(itemId);}catch(Exception unavailable){pending.future.complete(missing(clientDiagnostic+"; static fallback: "+message(unavailable)));return;}
+        final var itemId=context.item(pending.key);final var model=context.model(itemId);
         final var entries=context.registry.find(itemId).stream().filter(e->e.kind()==ResourceKind.ITEM).toList();
         final var loader=new InventoryModelTextures(frames);final var generated=context.dynamic.get(itemId);
         final var textures=generated==null?loader.load(model,entries.size()==1?entries.getFirst():null,pending.key.root()):loader.load(generated,entries.size()==1?entries.getFirst():null,pending.key.root());
