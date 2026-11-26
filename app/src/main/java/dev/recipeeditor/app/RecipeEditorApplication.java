@@ -1,6 +1,5 @@
 package dev.recipeeditor.app;
 
-import dev.recipeeditor.core.ApplicationInfo;
 import dev.recipeeditor.companionclient.*;
 import dev.recipeeditor.exporters.*;
 import java.util.List;
@@ -9,7 +8,6 @@ import dev.recipeeditor.ui.MainWindow;
 import dev.recipeeditor.modpackparser.DefaultModpackImportService;
 import javafx.application.Application;
 import dev.recipeeditor.app.project.FileProjectPersistence;
-import dev.recipeeditor.integrations.Vanilla1201Parsers;
 import dev.recipeeditor.recipeengine.editor.*;
 import dev.recipeeditor.registry.TextureResourceService;
 import javafx.stage.Stage;
@@ -31,7 +29,10 @@ public final class RecipeEditorApplication extends Application {
         final var metadata = dev.recipeeditor.app.release.BuildMetadata.load();
         final var info = metadata.applicationInfo();
         dev.recipeeditor.ui.rendering.InventoryPreviewProvider.shared().client(companion);
-        new MainWindow(info, importService, analysisService, textures, persistence, result -> new RecipeEditorService(result.recipes(), new RecipeValidator(new dev.recipeeditor.integrations.ProjectRecipeParsers().parsers(), result.registry())) ,exports,path->getHostServices().showDocument(path.toUri().toString()),companion,runtimeSnapshots).show(stage);
+        new MainWindow(info, importService, analysisService, textures, persistence,
+                (result, format) -> new RecipeEditorService(result.recipes(),
+                        new RecipeValidator(format.parsers(), result.registry(), format.layout())),
+                exports, path -> getHostServices().showDocument(path.toUri().toString()), companion, runtimeSnapshots).show(stage);
         new dev.recipeeditor.app.release.ReleaseInformationView(metadata,
                 path -> getHostServices().showDocument(path.toUri().toString())).attach(stage);
         logger.info("Started {} {}", info.name(), info.version());

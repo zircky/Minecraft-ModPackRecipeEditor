@@ -11,6 +11,8 @@ import dev.recipeeditor.core.importing.*;
 import dev.recipeeditor.exporters.ExportFormat;
 import dev.recipeeditor.exporters.ExportWorkspace;
 import dev.recipeeditor.exporters.RecipeExportService;
+import dev.recipeeditor.integrations.MinecraftCompatibilityRegistry;
+import dev.recipeeditor.integrations.RecipeFormatAdapter;
 import dev.recipeeditor.recipeengine.*;
 import dev.recipeeditor.recipeengine.editor.*;
 import dev.recipeeditor.registry.MaterialDefinition;
@@ -44,7 +46,7 @@ public final class MainWindow {
   private final Button importButton = new Button("Import Modpack"), indexButton = new Button("Index resources"), diagnosticsButton = new Button("Diagnostics");
   private final Map<NavigationSection, ToggleButton> navigation = new EnumMap<>(NavigationSection.class);
   private final ProjectPersistence persistence;
-  private final java.util.function.Function<DiscoveryResult, RecipeEditorService> editorFactory;
+  private final java.util.function.BiFunction<DiscoveryResult, RecipeFormatAdapter, RecipeEditorService> editorFactory;
   private final EditorTasks editorTasks = new EditorTasks();
   private final Button openProjectButton = new Button("Open Project"), saveProjectButton = new Button("Save Project");
   private final RecipeExportService exports;
@@ -62,12 +64,14 @@ public final class MainWindow {
   private ResourceBrowserView resources;
   private MaterialsBrowserView materials;
   private RecipeBrowserView recipes;
+  private StaticRecipeCatalogView staticRecipes;
+  private final MinecraftCompatibilityRegistry compatibility = new MinecraftCompatibilityRegistry();
   private Stage stage;
   private boolean closed, busy;
   private long generation;
   private final java.util.prefs.Preferences directoryPreferences=java.util.prefs.Preferences.userNodeForPackage(MainWindow.class);
 
-  public MainWindow(final ApplicationInfo info, final ModpackImportService importer, final StaticAnalysisService analyzer, final TextureResourceService textures, final ProjectPersistence persistence, final java.util.function.Function<DiscoveryResult, RecipeEditorService> editorFactory, final RecipeExportService exports, final java.util.function.Consumer<Path> openDirectory, final CompanionConnectionService connection, final RuntimeSnapshotService snapshots) {
+  public MainWindow(final ApplicationInfo info, final ModpackImportService importer, final StaticAnalysisService analyzer, final TextureResourceService textures, final ProjectPersistence persistence, final java.util.function.BiFunction<DiscoveryResult, RecipeFormatAdapter, RecipeEditorService> editorFactory, final RecipeExportService exports, final java.util.function.Consumer<Path> openDirectory, final CompanionConnectionService connection, final RuntimeSnapshotService snapshots) {
     this.runtime = new RuntimeIntegrationView(connection, snapshots, this::applyRuntime);
     this.exports = Objects.requireNonNull(exports);
     this.openDirectory = Objects.requireNonNull(openDirectory);
@@ -211,8 +215,8 @@ public final class MainWindow {
         return;
       }
       if (section == NavigationSection.RECIPES) {
-        recipes.all();
-        workspace.setCenter(recipes);
+        if (recipes != null) recipes.all();
+        workspace.setCenter(recipes == null ? staticRecipes : recipes);
         return;
       }
       final var kind = switch (section) {
@@ -269,9 +273,9 @@ public final class MainWindow {
         finishError(operation.result().isCancelled(), "Import", error);
         return;
       }
-      imported = result;
+      imported = withManualMinecraftVersion(result);
       runtime.selectModpack(null);
-      catalog.show(result);
+      catalog.show(imported);
       project.setText(result.modpack().selectedDirectory().getFileName().toString());
       discovered = null;
       if (resources != null) resources.deactivate();
@@ -281,6 +285,7 @@ public final class MainWindow {
       resources = null;
       materials = null;
       recipes = null;
+      staticRecipes = null;
       editor = null;
       projectFile = null;
       analyze();
@@ -305,14 +310,23 @@ public final class MainWindow {
         finishError(operation.result().isCancelled(), "Indexing", error);
         return;
       }
-      if (!imported.modpack().minecraftVersion().value().equals("1.20.1")) {
+      final var version = imported.modpack().minecraftVersion().value();
+      final var editableFormat = compatibility.find(version).filter(RecipeFormatAdapter::editingSupported);
+      if (editableFormat.isEmpty()) {
+        discovered = result;
+        resources = createResources(result);
+        materials = new MaterialsBrowserView(result, textures, this::forForm);
+        staticRecipes = new StaticRecipeCatalogView(result.recipes());
+        runtime.selectModpack(imported.modpack());
         setBusy(false);
-        select(NavigationSection.MODS);
-        status.setText("Recipe editing currently requires confirmed Minecraft 1.20.1 metadata. Project changes were not applied.");
+        select(NavigationSection.RECIPES);
+        status.setText("Minecraft " + version + " · " + result.recipes().recipes().size()
+                + " static recipes · no verified editor for this format"
+                + (pendingProject == null ? "" : " · saved project changes were not applied"));
         return;
       }
       editorTasks.submit(() -> {
-        final var prepared = editorFactory.apply(result);
+        final var prepared = editorFactory.apply(result, editableFormat.orElseThrow());
         if (pendingProject != null)
           prepared.restore(pendingProject.materialize(prepared.validator(), pendingProjectFile));
         else if (restoreChanges != null) {
@@ -345,6 +359,25 @@ public final class MainWindow {
         notifications.show(editor.conflicts().isEmpty()?NotificationBanner.Kind.SUCCESS:NotificationBanner.Kind.WARNING,status.getText());
       }, failure -> finishError(false, "Restore project", failure));
     }));
+  }
+
+  private ModpackImportResult withManualMinecraftVersion(final ModpackImportResult result) {
+    final var pack = result.modpack();
+    if (pack.minecraftVersion().known()) return result;
+    final var dialog = new TextInputDialog();
+    dialog.initOwner(workspace.getScene().getWindow());
+    dialog.setTitle("Minecraft version");
+    dialog.setHeaderText("Minecraft version could not be determined");
+    dialog.setContentText("Enter the release number, or cancel to index resources only:");
+    new UiTheme().apply(dialog.getDialogPane());
+    final var input = dialog.getEditor().textProperty();
+    dialog.getDialogPane().lookupButton(ButtonType.OK).disableProperty()
+            .bind(javafx.beans.binding.Bindings.createBooleanBinding(
+                    () -> !input.get().strip().matches("[0-9]{1,4}\\.[0-9]{1,4}(?:\\.[0-9]{1,4})?"), input));
+    return dialog.showAndWait().map(String::strip).map(version -> new ModpackImportResult(
+            new ModpackDefinition(pack.selectedDirectory(), pack.gameDirectory(), pack.structure(),
+                    new MinecraftVersion(version, List.of("Manual selection")), pack.loader(), pack.jars()),
+            result.diagnostics())).orElse(result);
   }
 
   private OperationProgressView progressView(final String title, final String path) {
@@ -389,16 +422,18 @@ public final class MainWindow {
   }
 
   private void forItem(final ResourceLocation id, final boolean uses) {
+    if (recipes == null) return;
     select(NavigationSection.RECIPES);
     recipes.forItem(id, uses);
   }
 
   private ResourceBrowserView createResources(final DiscoveryResult result) {
     return new ResourceBrowserView(result, textures, query -> {
+      if (recipes == null) return;
       select(NavigationSection.RECIPES);
       recipes.forResource(query.kind(), query.id(), query.uses());
     },
-        (entry, uses) -> !(uses ? editor.effective().findRecipesUsing(entry.kind(), entry.id()) : editor.effective().findRecipesProducing(entry.kind(), entry.id())).isEmpty());
+        (entry, uses) -> editor != null && !(uses ? editor.effective().findRecipesUsing(entry.kind(), entry.id()) : editor.effective().findRecipesProducing(entry.kind(), entry.id())).isEmpty());
   }
 
   private void forForm(final MaterialDefinition.Form form) {

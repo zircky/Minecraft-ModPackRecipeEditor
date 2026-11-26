@@ -3,10 +3,10 @@ package dev.recipeeditor.ui;
 public enum NavigationSection {
     PROJECTS("Projects", "No project open", "Use Import Modpack to select an existing Minecraft instance."),
     MODS("Mods", "No mods loaded", "Use Import Modpack to load installed mods."),
-    ITEMS("Items", "No items loaded", "Import a Minecraft 1.20.1 instance to index static resource candidates."),
+    ITEMS("Items", "No items loaded", "Import a Minecraft instance to index static resource candidates."),
     FLUIDS("Fluids", "No fluid references indexed", "Only explicit fluid tag references are indexed. Programmatic registrations may be absent."),
     MATERIALS("Materials", "Runtime Companion required", "Synchronize a materials-v1 snapshot from a supported GregTech runtime to inspect actual materials and registered forms."),
-    RECIPES("Recipes", "No recipes loaded", "Import and index a Minecraft 1.20.1 instance to edit saved project recipes."),
+    RECIPES("Recipes", "No recipes loaded", "Import a Minecraft instance to discover recipes for its format."),
     RUNTIME("Runtime", "No runtime connection", "Connect to the read-only Minecraft Companion and collect a complete snapshot."),
     ANALYZER("Analyzer", "Analyzer workspace unavailable", "Analysis services are implemented, but this screen is not connected yet. Recipe browsing and editing are available in Recipes."),
     SETTINGS("Settings", "No settings available yet", "Application preferences will be added in a later phase.");
