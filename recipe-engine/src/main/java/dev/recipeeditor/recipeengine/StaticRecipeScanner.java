@@ -15,7 +15,7 @@ public final class StaticRecipeScanner {
         for (final var document:documents) {
             SafeFiles.checkCancelled();
             final String path=document.source().internalPath();
-            if (!path.matches("data/[^/]+/"+layout.recipesDirectory()+"/.+\\.json")) continue;
+            if (!layout.isRecipe(path)) continue;
             final var parts=path.split("/",4);
             try {
                 final var id=new ResourceLocation(parts[1],parts[3].substring(0,parts[3].length()-5));

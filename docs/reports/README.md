@@ -60,3 +60,25 @@
 - [Report](PHASE19_REPORT.md)
 - [Audit](PHASE19_RENDERING_AUDIT.md)
 - [Changed files](PHASE19_FILES.txt)
+
+## Phase 20 — Windows EXE distribution
+
+- [Report and actual artifact paths](PHASE20_REPORT.md)
+- [Build instructions](../WINDOWS_BUILD.md)
+
+## Phase 21 — Client item preview pipeline
+
+- [Results and reproduction](PHASE21_REPORT.md)
+- [Pipeline audit and reproduced causes](PHASE21_AUDIT.md)
+- [Changed files](PHASE21_FILES.txt)
+- [Actual Minecraft metrics](phase21-evidence/metrics.json)
+
+## Phase 22 — Runtime snapshot storage
+
+- [Аудит текущего Runtime и Persistence](PHASE22_AUDIT.md)
+- [Результаты шагов 2–4](PHASE22_REPORT.md)
+
+## Phase 23 — Version-independent recipe engine
+
+- [Аудит, матрица форматов и результаты](PHASE23_REPORT.md)
+- [Изменённые файлы](PHASE23_FILES.txt)

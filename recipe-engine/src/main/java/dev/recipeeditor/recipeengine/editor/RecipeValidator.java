@@ -8,15 +8,21 @@ import java.util.*;
 /** The existing version-specific parsers remain the semantic authority. */
 public final class RecipeValidator {
     private final StaticRecipeScanner scanner;
+    private final ResourceLayout layout;
     private volatile RegistryIndex registry;
     public RecipeValidator(final List<RecipeParser> parsers,final RegistryIndex registry) {
-        scanner=new StaticRecipeScanner(parsers,ResourceLayout.minecraft1201()); this.registry=Objects.requireNonNull(registry);
+        this(parsers,registry,ResourceLayout.minecraft1201());
+    }
+    public RecipeValidator(final List<RecipeParser> parsers,final RegistryIndex registry,final ResourceLayout layout) {
+        this.layout=Objects.requireNonNull(layout);
+        scanner=new StaticRecipeScanner(parsers,layout);
+        this.registry=Objects.requireNonNull(registry);
     }
     public void updateRegistry(final RegistryIndex registry) {this.registry=Objects.requireNonNull(registry);}
     public RecipeValidationResult validate(final ResourceLocation id,final String raw,final RecipeSource source) {
         Objects.requireNonNull(id); Objects.requireNonNull(raw); Objects.requireNonNull(source);
         if(raw.getBytes(StandardCharsets.UTF_8).length>2*1024*1024) throw new IllegalArgumentException("Recipe JSON exceeds 2 MiB");
-        final var resource=new ResourceSource(source.type(),source.modIds(),source.archivePath(),"data/"+id.namespace()+"/recipes/"+id.path()+".json",source.discoveryMethod());
+        final var resource=new ResourceSource(source.type(),source.modIds(),source.archivePath(),layout.recipePath(id),source.discoveryMethod());
         final var parsed=scanner.scan(List.of(new ResourceDocument(resource,raw)),new ArrayList<>());
         if(parsed.isEmpty()) throw new IllegalArgumentException("Invalid recipe path");
         final var original=parsed.getFirst();

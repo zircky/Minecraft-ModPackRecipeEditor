@@ -4,7 +4,8 @@ import dev.recipeeditor.core.io.SafeFiles;
 import dev.recipeeditor.core.importing.*;
 import dev.recipeeditor.recipeengine.*;
 import dev.recipeeditor.registry.*;
-import dev.recipeeditor.integrations.Minecraft1201Integration;
+import dev.recipeeditor.integrations.MinecraftCompatibilityRegistry;
+import dev.recipeeditor.integrations.RecipeFormatAdapter;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -16,6 +17,7 @@ public final class DefaultStaticAnalysisService implements StaticAnalysisService
     private final Logger logger=LoggerFactory.getLogger(DefaultStaticAnalysisService.class);
     private final ExecutorService worker=Executors.newSingleThreadExecutor(Thread.ofVirtual().name("resource-index-",0).factory());
     private final Set<DiscoveryOperation> active=ConcurrentHashMap.newKeySet();
+    private final MinecraftCompatibilityRegistry compatibility = new MinecraftCompatibilityRegistry();
     @Override public DiscoveryOperation start(final ModpackDefinition pack,final Consumer<ImportProgress> progress) {
         Objects.requireNonNull(pack); Objects.requireNonNull(progress);
         final var future=new CompletableFuture<DiscoveryResult>();
@@ -36,17 +38,20 @@ public final class DefaultStaticAnalysisService implements StaticAnalysisService
     private DiscoveryResult analyze(final ModpackDefinition pack,final Consumer<ImportProgress> progress) {
         final long start=System.nanoTime(); final var diagnostics=new ArrayList<ImportDiagnostic>();
         report(progress,"Indexing modpack...",0);
-        final var integration=new Minecraft1201Integration();
-        if (!integration.supports(pack.minecraftVersion().value())) {
-            diagnostics.add(new ImportDiagnostic(ScanStatus.WARNING,"Version","Static indexing currently supports Minecraft 1.20.1 only; no version was guessed"));
-            return new DiscoveryResult(pack.selectedDirectory(),new RegistryIndex(List.of()),new RecipeIndex(List.of(),new TagIndex(List.of())),diagnostics,0);
-        }
-        final var scan=new ResourceScanner(new DiscoveryLimits(),integration.layout()).scan(pack,progress);
+        final var selected = compatibility.find(pack.minecraftVersion().value());
+        if (selected.isEmpty())
+            diagnostics.add(new ImportDiagnostic(ScanStatus.WARNING, "Version", "No matching recipe format. Only resources will be indexed."));
+        else if (!selected.orElseThrow().editingSupported())
+            diagnostics.add(new ImportDiagnostic(ScanStatus.WARNING, "Version", "Recipe discovery only for " + pack.minecraftVersion().value()
+                    + ". Programmatically registered recipes require a separate adapter or runtime evidence."));
+        final var layout = selected.map(RecipeFormatAdapter::layout).orElseGet(ResourceLayout::noRecipeFiles);
+        final List<RecipeParser> parsers = selected.map(RecipeFormatAdapter::parsers).orElseGet(List::of);
+        final var scan=new ResourceScanner(new DiscoveryLimits(),layout).scan(pack,progress);
         diagnostics.addAll(scan.diagnostics());
         final var localization=new LocalizationService(scan.documents()); diagnostics.addAll(localization.diagnostics());
-        final var tags=new TagIndex(scan.documents()); diagnostics.addAll(tags.diagnostics());
+        final var tags=new TagIndex(scan.documents(), layout); diagnostics.addAll(tags.diagnostics());
         final var semanticNames=new RecipeSemanticLocalization();
-        final var recipes=new StaticRecipeScanner(integration.parsers(),integration.layout()).scan(scan.documents(),diagnostics).stream().map(recipe->semanticNames.localize(recipe,localization)).toList();
+        final var recipes=new StaticRecipeScanner(parsers,layout).scan(scan.documents(),diagnostics).stream().map(recipe->semanticNames.localize(recipe,localization)).toList();
         final var references=new RecipeResourceReferences().collect(recipes);
         final var resources=new ArrayList<RegistryEntry>();
         report(progress,"Indexing items...",0.55);

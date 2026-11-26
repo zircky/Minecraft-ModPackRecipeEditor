@@ -12,3 +12,5 @@ dependencies {
     api("org.openjfx:javafx-graphics:21.0.6:win")
     api("org.openjfx:javafx-base:21.0.6:win")
 }
+
+dependencies { testImplementation(project(":companion-server")) }

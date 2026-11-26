@@ -48,7 +48,9 @@ public final class ResourceScanner {
                     if (entry.isDirectory()) continue;
                     if (!validPath(name)) { state.warn(archive+"!"+name,"Unsafe resource path ignored"); continue; }
                     if (!relevant(name)) continue;
-                    if(type==SourceType.VANILLA_ASSET&&!name.startsWith("assets/minecraft/")&&!name.startsWith("data/minecraft/tags/"))continue;
+                    if(type==SourceType.VANILLA_ASSET&&!name.startsWith("assets/minecraft/")
+                            && !(layout.usesDatapacks() && name.startsWith("data/minecraft/tags/"))
+                            && !(layout.includeVanillaRecipes() && name.startsWith("data/minecraft/") && layout.isRecipe(name)))continue;
                     final var source=new ResourceSource(type,mods,archive,name,type==SourceType.VANILLA_ASSET?"Vanilla client assets; available preview, active resource order UNKNOWN":"Static resource scan");
                     if (!state.reserve(source)) break;
                     if (name.endsWith(".png")) { state.textures.add(source); continue; }
@@ -65,6 +67,7 @@ public final class ResourceScanner {
     private void scanLocal(final ModpackDefinition pack,final State state) {
         final var game=pack.gameDirectory();
         scanPackCollection(pack.selectedDirectory(),game.resolve("resourcepacks"),state);
+        if (!layout.usesDatapacks()) return;
         scanPackCollection(pack.selectedDirectory(),game.resolve("datapacks"),state);
         scanPackCollection(pack.selectedDirectory(),game.resolve("config/openloader/data"),state);
         scanTree(pack.selectedDirectory(),game.resolve("kubejs"),SourceType.LOCAL_RESOURCE,state);
@@ -135,7 +138,8 @@ public final class ResourceScanner {
     private boolean relevant(final String path) {
         return path.matches("assets/[a-z0-9_.-]+/(lang|models|blockstates|atlases)/[a-z0-9/._-]+\\.json")
                 || path.matches("assets/[a-z0-9_.-]+/textures/[a-z0-9/._-]+\\.png(\\.mcmeta)?")
-                || path.matches("data/[a-z0-9_.-]+/("+layout.recipesDirectory()+"|tags)/[a-z0-9/._-]+\\.json");
+                || layout.isRecipe(path)
+                || (layout.usesDatapacks() && path.matches("data/[a-z0-9_.-]+/tags/[a-z0-9/._-]+\\.json"));
     }
     private final class State {
         private final List<ResourceDocument> documents=new ArrayList<>();

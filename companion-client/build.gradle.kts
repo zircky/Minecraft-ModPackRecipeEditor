@@ -2,6 +2,7 @@ plugins { `java-library` }
 java { toolchain { languageVersion.set(JavaLanguageVersion.of(21)) } }
 tasks.withType<JavaCompile>().configureEach { options.release.set(21) }
 dependencies { api(project(":companion-protocol"));api(project(":recipe-engine")); }
+dependencies { runtimeOnly("org.xerial:sqlite-jdbc:3.50.3.0") }
 
 dependencies { testImplementation(project(":companion-server")) }
 tasks.test {

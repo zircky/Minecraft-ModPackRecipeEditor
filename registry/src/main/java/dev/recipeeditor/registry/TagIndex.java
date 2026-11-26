@@ -10,14 +10,19 @@ public final class TagIndex {
     private final List<ImportDiagnostic> diagnostics=new ArrayList<>();
     private record Key(ResourceKind kind,ResourceLocation id) { }
     public TagIndex(final List<ResourceDocument> documents) {
+        this(documents, ResourceLayout.minecraft1201());
+    }
+    public TagIndex(final List<ResourceDocument> documents, final ResourceLayout layout) {
         final var parsed=new ArrayList<TagDefinition>(); final var reader=new ResourceJsonReader();
-        for (final var document:documents) {
+        final String kinds = layout.recipesDirectory().equals("recipe") ? "item|block|fluid" : "items|blocks|fluids";
+        final var tagPath = java.util.regex.Pattern.compile("data/[^/]+/tags/(" + kinds + ")/.+\\.json");
+        for (final var document:layout.usesDatapacks() ? documents : List.<ResourceDocument>of()) {
             dev.recipeeditor.core.io.SafeFiles.checkCancelled();
             final String path=document.source().internalPath();
-            if (!path.matches("data/[^/]+/tags/(items|blocks|fluids)/.+\\.json")) continue;
+            if (!tagPath.matcher(path).matches()) continue;
             try {
                 final String[] parts=path.split("/",5);
-                final var kind=switch(parts[3]) { case "items"->ResourceKind.ITEM; case "blocks"->ResourceKind.BLOCK; default->ResourceKind.FLUID; };
+                final var kind=switch(parts[3]) { case "item", "items"->ResourceKind.ITEM; case "block", "blocks"->ResourceKind.BLOCK; default->ResourceKind.FLUID; };
                 final var id=new ResourceLocation(parts[1],parts[4].substring(0,parts[4].length()-5));
                 final var json=reader.read(document.text());
                 if (!json.path("values").isArray()) throw new IllegalArgumentException("Tag values must be an array");

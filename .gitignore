@@ -19,3 +19,11 @@ logs/
 **/run-inventory/
 
 .manual-tests/phase19/
+
+.manual-tests/phase20/
+
+.manual-tests/phase21/
+
+.manual-tests/phase22/
+
+.manual-tests/phase23/

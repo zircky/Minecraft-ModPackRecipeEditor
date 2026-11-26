@@ -13,6 +13,8 @@ import java.util.function.Consumer;
 
 /** All socket I/O runs on one worker. Cancellation closes the socket to release blocked reads. */
 public final class CompanionConnectionService implements AutoCloseable,ItemPreviewClient {
+    private static final List<CompanionRuntimeProfile> DEFAULT_PROFILES =
+            List.of(new CompanionRuntimeProfile("1.20.1", "FORGE", "47."));
     private static final class PreviewUnavailable extends IOException {private PreviewUnavailable(final String message){super(message);}}
     private final ExecutorService worker=Executors.newSingleThreadExecutor(Thread.ofVirtual().name("companion-client",0).factory());
     private final List<Consumer<CompanionConnectionStatus>> listeners=new CopyOnWriteArrayList<>();
@@ -27,15 +29,25 @@ public final class CompanionConnectionService implements AutoCloseable,ItemPrevi
     private boolean materialsSupported;
     private volatile boolean previewsSupported;
     private volatile String previewContext="";
+    private final java.util.concurrent.atomic.AtomicLong previewRequested=new java.util.concurrent.atomic.AtomicLong(),previewSent=new java.util.concurrent.atomic.AtomicLong(),previewTransferred=new java.util.concurrent.atomic.AtomicLong(),previewFailed=new java.util.concurrent.atomic.AtomicLong();
+    public String previewStatistics(){return "requested="+previewRequested.get()+", sent="+previewSent.get()+", PNG transferred="+previewTransferred.get()+", failed="+previewFailed.get();}
     private final Semaphore previewSlots=new Semaphore(8);
     private final Set<CompletableFuture<List<ItemPreviewResponse>>> previewFutures=ConcurrentHashMap.newKeySet();
     private final long syncKeepaliveNanos;
+    private final List<CompanionRuntimeProfile> runtimeProfiles;
     private final Set<String> pendingKeepalives=new HashSet<>();
     public CompanionConnectionService(){this(java.time.Duration.ofSeconds(30));}
-    CompanionConnectionService(final java.time.Duration keepaliveInterval){syncKeepaliveNanos=keepaliveInterval.toNanos();if(syncKeepaliveNanos<=0)throw new IllegalArgumentException("Positive keepalive interval required");heartbeat.scheduleWithFixedDelay(()->{if(status==CompanionConnectionStatus.CONNECTED&&heartbeatPending.compareAndSet(false,true))try{worker.submit(()->{try{if(status==CompanionConnectionStatus.CONNECTED)request(MessageType.PING,new JsonObject(),MessageType.PONG);}catch(Exception lost){closeSocket();state(cancelled?CompanionConnectionStatus.DISCONNECTED:CompanionConnectionStatus.ERROR);}finally{heartbeatPending.set(false);}});}catch(RejectedExecutionException ended){heartbeatPending.set(false);}},5,5,TimeUnit.SECONDS);}
+    public CompanionConnectionService(final List<CompanionRuntimeProfile> runtimeProfiles) {
+        this(java.time.Duration.ofSeconds(30), runtimeProfiles);
+    }
+    CompanionConnectionService(final java.time.Duration keepaliveInterval) {
+        this(keepaliveInterval, DEFAULT_PROFILES);
+    }
+    private CompanionConnectionService(final java.time.Duration keepaliveInterval, final List<CompanionRuntimeProfile> runtimeProfiles){this.runtimeProfiles=List.copyOf(runtimeProfiles);syncKeepaliveNanos=keepaliveInterval.toNanos();if(syncKeepaliveNanos<=0)throw new IllegalArgumentException("Positive keepalive interval required");heartbeat.scheduleWithFixedDelay(()->{if(status==CompanionConnectionStatus.CONNECTED&&heartbeatPending.compareAndSet(false,true))try{worker.submit(()->{try{if(status==CompanionConnectionStatus.CONNECTED)request(MessageType.PING,new JsonObject(),MessageType.PONG);}catch(Exception lost){closeSocket();state(cancelled?CompanionConnectionStatus.DISCONNECTED:CompanionConnectionStatus.ERROR);}finally{heartbeatPending.set(false);}});}catch(RejectedExecutionException ended){heartbeatPending.set(false);}},5,5,TimeUnit.SECONDS);}
     public CompanionConnectionStatus status(){return status;}
     public String companionVersion(){return companionVersion;}
     public void addListener(final Consumer<CompanionConnectionStatus> listener){listeners.add(listener);}
+    public void removeListener(final Consumer<CompanionConnectionStatus> listener){listeners.remove(listener);}
     private void state(final CompanionConnectionStatus value){status=value;listeners.forEach(listener->listener.accept(value));}
     public CompletableFuture<Void> connect(final Path sessionFile){return CompletableFuture.runAsync(()->{try{open(SessionCredentials.load(sessionFile));}catch(Exception failure){fail(failure);}},worker);}
     public CompletableFuture<Void> connect(final SessionCredentials session){return CompletableFuture.runAsync(()->{try{open(session);}catch(Exception failure){fail(failure);}},worker);}
@@ -52,11 +64,17 @@ public final class CompanionConnectionService implements AutoCloseable,ItemPrevi
     }
     public boolean itemPreviewsAvailable(){return status==CompanionConnectionStatus.CONNECTED&&previewsSupported;}
     public String previewContext(){return previewContext;}
+    @Override public String previewUnavailableReason(){
+        if(status==CompanionConnectionStatus.CONNECTED)return previewsSupported?"CLIENT_CONNECTED; item-previews-v1 available":"CLIENT_PREVIEW_CAPABILITY_MISSING: authenticated Companion has no client item renderer; update the client Companion (dedicated server cannot render)";
+        if(status==CompanionConnectionStatus.SYNCHRONIZING)return "CLIENT_SYNCHRONIZING: previews resume after synchronization";
+        return "CLIENT_"+status+": connect the running Minecraft client session in Runtime; a saved snapshot is not a live renderer";
+    }
     public CompletableFuture<List<ItemPreviewResponse>> itemPreviews(final List<ItemPreviewRequest> items){
         final var requests=List.copyOf(items);if(requests.isEmpty()||requests.size()>4)return CompletableFuture.failedFuture(new IllegalArgumentException("Batch limit: 1..4"));
-        if(!itemPreviewsAvailable())return CompletableFuture.failedFuture(new IllegalStateException("Client inventory preview unavailable"));
-        if(!previewSlots.tryAcquire())return CompletableFuture.failedFuture(new RejectedExecutionException("Preview queue full"));
-        final var result=new CompletableFuture<List<ItemPreviewResponse>>();previewFutures.add(result);result.whenComplete((value,error)->previewFutures.remove(result));
+        previewRequested.addAndGet(requests.size());
+        if(!itemPreviewsAvailable()){previewFailed.addAndGet(requests.size());return CompletableFuture.failedFuture(new IllegalStateException(previewUnavailableReason()));}
+        if(!previewSlots.tryAcquire()){previewFailed.addAndGet(requests.size());return CompletableFuture.failedFuture(new RejectedExecutionException("Preview queue full"));}
+        final var result=new CompletableFuture<List<ItemPreviewResponse>>();previewFutures.add(result);result.whenComplete((value,error)->{previewFutures.remove(result);if(error!=null)previewFailed.addAndGet(requests.size());});
         try{worker.execute(()->{
             try{
                 if(result.isDone())return;if(!itemPreviewsAvailable())throw new IOException("Runtime disconnected or synchronizing");
@@ -64,7 +82,7 @@ public final class CompanionConnectionService implements AutoCloseable,ItemPrevi
                 final var response=request(MessageType.ITEM_PREVIEW_REQUEST,payload,MessageType.ITEM_PREVIEW_RESPONSE);
                 if(!response.keySet().equals(Set.of("items"))||!response.get("items").isJsonArray()||response.getAsJsonArray("items").size()!=requests.size())throw new ProtocolException("Invalid preview batch response");
                 final var rows=new ArrayList<ItemPreviewResponse>();int index=0;
-                for(final var item:response.getAsJsonArray("items")){final var row=ProtocolCodec.GSON.fromJson(item,ItemPreviewResponse.class);if(!row.request().equals(requests.get(index++)))throw new ProtocolException("Preview identity mismatch");rows.add(row);if(row.status().equals("READY"))previewContext=row.context();}
+                for(final var item:response.getAsJsonArray("items")){final var row=ProtocolCodec.GSON.fromJson(item,ItemPreviewResponse.class);if(!row.request().equals(requests.get(index++)))throw new ProtocolException("Preview identity mismatch");rows.add(row);if(row.status().equals("READY")){previewContext=row.context();previewTransferred.incrementAndGet();}else previewFailed.incrementAndGet();}
                 result.complete(List.copyOf(rows));
             }catch(PreviewUnavailable unavailable){result.completeExceptionally(unavailable);}
             catch(Exception failure){closeSocket();state(cancelled?CompanionConnectionStatus.DISCONNECTED:CompanionConnectionStatus.ERROR);result.completeExceptionally(failure);}
@@ -84,7 +102,9 @@ public final class CompanionConnectionService implements AutoCloseable,ItemPrevi
                 final var base=registries.completion();for(final var other:List.of(tags.completion(),recipes.completion(),mods.completion()))if(!other.get("snapshotId").equals(base.get("snapshotId"))||!other.get("environment").equals(base.get("environment")))throw new ProtocolException("Environment changed during synchronization");
                 final var environment=ProtocolCodec.GSON.fromJson(base.get("environment"),Environment.class);
                 if(materials!=null&&(!materials.completion().get("snapshotId").equals(base.get("snapshotId"))||!materials.completion().get("environment").equals(base.get("environment"))))throw new ProtocolException("Material environment changed during synchronization");
-                if(!environment.sessionId().equals(credentials.sessionId())||!environment.minecraftVersion().equals("1.20.1")||!environment.loader().equals("FORGE")||!environment.loaderVersion().startsWith("47."))throw new ProtocolException("Unsupported or mismatched runtime environment");
+                if(!environment.sessionId().equals(credentials.sessionId())
+                        ||runtimeProfiles.stream().noneMatch(profile->profile.matches(environment)))
+                    throw new ProtocolException("Unsupported or mismatched runtime environment");
                 final var ping=request(MessageType.PING,new JsonObject(),MessageType.PONG);if(!ping.get("ready").getAsBoolean()||ping.get("generation").getAsLong()!=environment.generation())throw new ProtocolException("Runtime reloaded during synchronization");
                 final var diagnostics=new ArrayList<String>();base.getAsJsonArray("diagnostics").forEach(d->diagnostics.add(d.getAsString()));
                 if(!materialsSupported)diagnostics.add("Companion does not support materials-v1; material catalog requires an updated Companion");
@@ -106,7 +126,7 @@ public final class CompanionConnectionService implements AutoCloseable,ItemPrevi
         },id,response,type,p->progress.accept(p.has("stage")?p.get("stage").getAsString():"Synchronizing"));
     }
     private JsonObject request(final MessageType type,final JsonObject payload,final MessageType expected)throws IOException {
-        final String id=UUID.randomUUID().toString();codec.write(socket.getOutputStream(),new ProtocolMessage(type,id,payload));final var response=readMessage();if(type==MessageType.ITEM_PREVIEW_REQUEST&&response.requestId().equals(id)&&(response.messageType()==MessageType.ITEM_PREVIEW_ERROR||response.messageType()==MessageType.ERROR))throw new PreviewUnavailable(response.payload().has("code")?response.payload().get("code").getAsString():"Preview temporarily unavailable");if(type==MessageType.PING&&response.payload().has("previewContext"))previewContext=response.payload().get("previewContext").getAsString();if(!response.requestId().equals(id)||response.messageType()!=expected)throw new ProtocolException("Unexpected response to "+type);return response.payload();
+        final String id=UUID.randomUUID().toString();codec.write(socket.getOutputStream(),new ProtocolMessage(type,id,payload));if(type==MessageType.ITEM_PREVIEW_REQUEST)previewSent.addAndGet(payload.getAsJsonArray("items").size());final var response=readMessage();if(type==MessageType.ITEM_PREVIEW_REQUEST&&response.requestId().equals(id)&&(response.messageType()==MessageType.ITEM_PREVIEW_ERROR||response.messageType()==MessageType.ERROR))throw new PreviewUnavailable(response.payload().has("code")?response.payload().get("code").getAsString():"Preview temporarily unavailable");if(type==MessageType.PING&&response.payload().has("previewContext"))previewContext=response.payload().get("previewContext").getAsString();if(!response.requestId().equals(id)||response.messageType()!=expected)throw new ProtocolException("Unexpected response to "+type);return response.payload();
     }
     private ProtocolMessage readMessage() throws IOException {
         while(true) {

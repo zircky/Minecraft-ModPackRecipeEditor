@@ -25,4 +25,24 @@ final class MinecraftVersionDetectorTest {
         assertEquals("UNKNOWN",new MinecraftVersionDetector().detect(TestFixtures.evidence(root),diagnostics).value());
         assertTrue(diagnostics.stream().anyMatch(d -> d.message().contains("Conflicting")));
     }
+    @Test void detectsStandaloneModrinthManifest() throws Exception {
+        TestFixtures.write(root, "modrinth.index.json", """
+                {"formatVersion":1,"game":"minecraft","dependencies":{"minecraft":"1.21.1","neoforge":"21.1.172"}}
+                """);
+        final var instance = new ModpackDetector().detect(root);
+        assertTrue(instance.recognized());
+        assertEquals("Modrinth", instance.structure());
+        assertEquals("1.21.1", new MinecraftVersionDetector()
+                .detect(new InstanceMetadataReader().read(instance), new ArrayList<>()).value());
+    }
+
+    @Test void detectsExplicitVanillaMetadata() throws Exception {
+        TestFixtures.write(root, "version.json", """
+                {"id":"1.16.5","assetIndex":{"id":"1.16"},"mainClass":"net.minecraft.client.main.Main"}
+                """);
+        final var instance = new ModpackDetector().detect(root);
+        assertTrue(instance.recognized());
+        assertEquals("1.16.5", new MinecraftVersionDetector()
+                .detect(new InstanceMetadataReader().read(instance), new ArrayList<>()).value());
+    }
 }

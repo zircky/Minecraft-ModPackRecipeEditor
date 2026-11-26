@@ -32,6 +32,7 @@ public final class ResourceBrowserView extends BorderPane {
     private List<RegistryEntry> filtered=List.of();
     private long generation,selectionGeneration;
     private boolean active,updating;
+    private javafx.beans.InvalidationListener previewConnectionListener;
     public ResourceBrowserView(final DiscoveryResult result,final TextureResourceService textures,
             final Consumer<ResourceBrowserViewModel.RecipeQuery> showRecipes,final BiPredicate<RegistryEntry,Boolean> hasRecipes) {
         this.result=result;this.textures=textures;this.showRecipes=showRecipes;this.hasRecipes=hasRecipes;model=new ResourceBrowserViewModel(result.registry());
@@ -44,7 +45,12 @@ public final class ResourceBrowserView extends BorderPane {
         evidence.getItems().setAll(ResourceBrowserViewModel.Evidence.values());evidence.getSelectionModel().selectFirst();evidence.setAccessibleText("Resource evidence");
         layout.getItems().setAll(Layout.values());layout.getSelectionModel().selectFirst();layout.setAccessibleText("Resource layout");
         final var filters=new FlowPane(search,resourceType,mode,source,evidence,layout,new Label("Language:"),language);filters.getStyleClass().add("filter-row");
-        final var header=new VBox(summary,notice,filters);header.getStyleClass().add("view-header");setTop(header);
+        final var provider=dev.recipeeditor.ui.rendering.InventoryPreviewProvider.shared();
+        final var clientStatus=new Label(provider.clientStatus());clientStatus.setId("inventory-client-status");clientStatus.setWrapText(true);
+        previewConnectionListener=observable->clientStatus.setText(provider.clientStatus());
+        final var weak=new javafx.beans.WeakInvalidationListener(previewConnectionListener);
+        sceneProperty().addListener((observable,oldScene,newScene)->{if(oldScene!=null)provider.revisionProperty().removeListener(weak);if(newScene!=null){provider.revisionProperty().addListener(weak);clientStatus.setText(provider.clientStatus());}});
+        final var header=new VBox(summary,notice,clientStatus,filters);header.getStyleClass().add("view-header");setTop(header);
         details.setEditable(false);details.setWrapText(true);VBox.setVgrow(details,Priority.ALWAYS);previewStatus.setWrapText(true);
         selection.setPadding(new Insets(12));selection.getChildren().setAll(new Label("Select a resource to inspect its image, localization and discovery evidence."));
         final var split=new SplitPane(pages,selection);split.setDividerPositions(0.70);setCenter(split);
