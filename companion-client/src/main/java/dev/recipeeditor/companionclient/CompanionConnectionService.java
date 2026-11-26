@@ -13,6 +13,8 @@ import java.util.function.Consumer;
 
 /** All socket I/O runs on one worker. Cancellation closes the socket to release blocked reads. */
 public final class CompanionConnectionService implements AutoCloseable,ItemPreviewClient {
+    private static final List<CompanionRuntimeProfile> DEFAULT_PROFILES =
+            List.of(new CompanionRuntimeProfile("1.20.1", "FORGE", "47."));
     private static final class PreviewUnavailable extends IOException {private PreviewUnavailable(final String message){super(message);}}
     private final ExecutorService worker=Executors.newSingleThreadExecutor(Thread.ofVirtual().name("companion-client",0).factory());
     private final List<Consumer<CompanionConnectionStatus>> listeners=new CopyOnWriteArrayList<>();
@@ -32,9 +34,16 @@ public final class CompanionConnectionService implements AutoCloseable,ItemPrevi
     private final Semaphore previewSlots=new Semaphore(8);
     private final Set<CompletableFuture<List<ItemPreviewResponse>>> previewFutures=ConcurrentHashMap.newKeySet();
     private final long syncKeepaliveNanos;
+    private final List<CompanionRuntimeProfile> runtimeProfiles;
     private final Set<String> pendingKeepalives=new HashSet<>();
     public CompanionConnectionService(){this(java.time.Duration.ofSeconds(30));}
-    CompanionConnectionService(final java.time.Duration keepaliveInterval){syncKeepaliveNanos=keepaliveInterval.toNanos();if(syncKeepaliveNanos<=0)throw new IllegalArgumentException("Positive keepalive interval required");heartbeat.scheduleWithFixedDelay(()->{if(status==CompanionConnectionStatus.CONNECTED&&heartbeatPending.compareAndSet(false,true))try{worker.submit(()->{try{if(status==CompanionConnectionStatus.CONNECTED)request(MessageType.PING,new JsonObject(),MessageType.PONG);}catch(Exception lost){closeSocket();state(cancelled?CompanionConnectionStatus.DISCONNECTED:CompanionConnectionStatus.ERROR);}finally{heartbeatPending.set(false);}});}catch(RejectedExecutionException ended){heartbeatPending.set(false);}},5,5,TimeUnit.SECONDS);}
+    public CompanionConnectionService(final List<CompanionRuntimeProfile> runtimeProfiles) {
+        this(java.time.Duration.ofSeconds(30), runtimeProfiles);
+    }
+    CompanionConnectionService(final java.time.Duration keepaliveInterval) {
+        this(keepaliveInterval, DEFAULT_PROFILES);
+    }
+    private CompanionConnectionService(final java.time.Duration keepaliveInterval, final List<CompanionRuntimeProfile> runtimeProfiles){this.runtimeProfiles=List.copyOf(runtimeProfiles);syncKeepaliveNanos=keepaliveInterval.toNanos();if(syncKeepaliveNanos<=0)throw new IllegalArgumentException("Positive keepalive interval required");heartbeat.scheduleWithFixedDelay(()->{if(status==CompanionConnectionStatus.CONNECTED&&heartbeatPending.compareAndSet(false,true))try{worker.submit(()->{try{if(status==CompanionConnectionStatus.CONNECTED)request(MessageType.PING,new JsonObject(),MessageType.PONG);}catch(Exception lost){closeSocket();state(cancelled?CompanionConnectionStatus.DISCONNECTED:CompanionConnectionStatus.ERROR);}finally{heartbeatPending.set(false);}});}catch(RejectedExecutionException ended){heartbeatPending.set(false);}},5,5,TimeUnit.SECONDS);}
     public CompanionConnectionStatus status(){return status;}
     public String companionVersion(){return companionVersion;}
     public void addListener(final Consumer<CompanionConnectionStatus> listener){listeners.add(listener);}
@@ -93,7 +102,9 @@ public final class CompanionConnectionService implements AutoCloseable,ItemPrevi
                 final var base=registries.completion();for(final var other:List.of(tags.completion(),recipes.completion(),mods.completion()))if(!other.get("snapshotId").equals(base.get("snapshotId"))||!other.get("environment").equals(base.get("environment")))throw new ProtocolException("Environment changed during synchronization");
                 final var environment=ProtocolCodec.GSON.fromJson(base.get("environment"),Environment.class);
                 if(materials!=null&&(!materials.completion().get("snapshotId").equals(base.get("snapshotId"))||!materials.completion().get("environment").equals(base.get("environment"))))throw new ProtocolException("Material environment changed during synchronization");
-                if(!environment.sessionId().equals(credentials.sessionId())||!environment.minecraftVersion().equals("1.20.1")||!environment.loader().equals("FORGE")||!environment.loaderVersion().startsWith("47."))throw new ProtocolException("Unsupported or mismatched runtime environment");
+                if(!environment.sessionId().equals(credentials.sessionId())
+                        ||runtimeProfiles.stream().noneMatch(profile->profile.matches(environment)))
+                    throw new ProtocolException("Unsupported or mismatched runtime environment");
                 final var ping=request(MessageType.PING,new JsonObject(),MessageType.PONG);if(!ping.get("ready").getAsBoolean()||ping.get("generation").getAsLong()!=environment.generation())throw new ProtocolException("Runtime reloaded during synchronization");
                 final var diagnostics=new ArrayList<String>();base.getAsJsonArray("diagnostics").forEach(d->diagnostics.add(d.getAsString()));
                 if(!materialsSupported)diagnostics.add("Companion does not support materials-v1; material catalog requires an updated Companion");
