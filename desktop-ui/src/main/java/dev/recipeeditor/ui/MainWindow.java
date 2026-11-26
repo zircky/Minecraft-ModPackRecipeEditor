@@ -592,6 +592,12 @@ public final class MainWindow {
       resources = createResources(unified);
       materials = new MaterialsBrowserView(unified, textures, this::forForm);
       recipes.runtime(merged.recipes());
+      runtime.enableRecipeCreation(snapshot, serializer -> {
+        if (!busy && editor == current && recipes != null) {
+          select(NavigationSection.RECIPES);
+          recipes.createFromRuntime(serializer);
+        }
+      });
       runtime.addDiagnostic("Runtime merged for matching instance. Static definitions and all persistent/unsaved project changes retained; " + current.conflicts().size() + " changes require conflict review. Undo history is reset only if new runtime conflicts were quarantined.");
       runtime.addDiagnostics(merged.registry().diagnostics());
       runtime.addDiagnostics(merged.recipes().diagnostics().stream().filter(message -> message.contains("differ") || message.contains("absent")).toList());

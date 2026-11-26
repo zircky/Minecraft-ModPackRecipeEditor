@@ -14,12 +14,14 @@ public final class RuntimeRecipeBrowserView extends BorderPane {
     private final FilteredList<RecipeMergeService.Entry> rows;
     private boolean runtimeOnly;
     private final TextField search=new TextField();    private final ComboBox<dev.recipeeditor.recipeengine.RecipeFilterMode> sourceMode=new ComboBox<>(FXCollections.observableArrayList(dev.recipeeditor.recipeengine.RecipeFilterMode.values()));    private final ComboBox<String> sourceValue=new ComboBox<>();
-    public RuntimeRecipeBrowserView(final List<RecipeMergeService.Entry> entries) { this(entries,null); }
-    public RuntimeRecipeBrowserView(final List<RecipeMergeService.Entry> entries,final java.util.function.Consumer<dev.recipeeditor.companionprotocol.RuntimeData.Recipe> copy) {
+    public RuntimeRecipeBrowserView(final List<RecipeMergeService.Entry> entries) { this(entries,null,recipe->false); }
+    public RuntimeRecipeBrowserView(final List<RecipeMergeService.Entry> entries,
+            final java.util.function.Consumer<dev.recipeeditor.companionprotocol.RuntimeData.Recipe> copy,
+            final java.util.function.Predicate<dev.recipeeditor.companionprotocol.RuntimeData.Recipe> canCopy) {
         rows=new FilteredList<>(FXCollections.observableArrayList(entries));table.setItems(rows);search.setPromptText("Search runtime / static Recipe ID, type or adapter");search.textProperty().addListener((o,a,b)->filter());setTop(new VBox(8,new Label("Runtime properties are normalized loaded state, not original source JSON. Read only."),search,new HBox(10,sourceMode,sourceValue)));        sourceMode.setValue(dev.recipeeditor.recipeengine.RecipeFilterMode.SOURCE_MOD);        sourceValue.getItems().addAll("All","UNKNOWN");sourceValue.setValue("All");        sourceMode.valueProperty().addListener((o,a,b)->{sourceValue.getItems().setAll("All");if(b==dev.recipeeditor.recipeengine.RecipeFilterMode.RECIPE_NAMESPACE)entries.stream().map(e->e.id().namespace()).distinct().sorted().forEach(sourceValue.getItems()::add);else {sourceValue.getItems().add("UNKNOWN");entries.stream().flatMap(e->e.provenance().sourceModIds().stream()).distinct().sorted().forEach(sourceValue.getItems()::add);}sourceValue.setValue("All");filter();});        entries.stream().flatMap(e->e.provenance().sourceModIds().stream()).distinct().sorted().forEach(sourceValue.getItems()::add);        sourceValue.valueProperty().addListener((o,a,b)->filter());
         if(copy!=null) {
-            final var button=new Button("Copy supported GT state to NEW project recipe…");button.setDisable(true);
-            table.getSelectionModel().selectedItemProperty().addListener((o,a,b)->button.setDisable(b==null||b.runtime()==null||!b.runtime().adapter().equals("gtceu-7.1.4")));
+            final var button=new Button("Copy to New Project Recipe…");button.setDisable(true);
+            table.getSelectionModel().selectedItemProperty().addListener((o,a,b)->button.setDisable(b==null||b.runtime()==null||!canCopy.test(b.runtime())));
             button.setOnAction(e->{final var selected=table.getSelectionModel().getSelectedItem();if(selected!=null&&selected.runtime()!=null)copy.accept(selected.runtime());});
             ((VBox)getTop()).getChildren().add(button);
         }

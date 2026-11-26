@@ -90,6 +90,17 @@ public final class SqliteSnapshotStore {
                 writeRows(connection, "recipes", generation, snapshot.recipes(), Recipe::id, budget);
                 writeRows(connection, "mods", generation, snapshot.mods(), Mod::id, budget);
                 writeRows(connection, "materials", generation, snapshot.materials(), Material::id, budget);
+                try (var statement = connection.createStatement()) {
+                    statement.executeUpdate("""
+                            CREATE TABLE IF NOT EXISTS recipe_types (
+                              generation INTEGER NOT NULL REFERENCES snapshots(generation),
+                              ordinal INTEGER NOT NULL, resource_key TEXT NOT NULL, payload TEXT NOT NULL,
+                              PRIMARY KEY (generation, ordinal), UNIQUE (generation, resource_key)
+                            ) WITHOUT ROWID
+                            """);
+                }
+                writeRows(connection, "recipe_types", generation, new RecipeTypeRegistry().discover(snapshot),
+                        RecipeTypeRegistry.Descriptor::type, budget);
                 connection.commit();
             } catch (SQLException | IOException | RuntimeException failure) {
                 try { connection.rollback(); } catch (SQLException rollback) { failure.addSuppressed(rollback); }
@@ -98,6 +109,42 @@ public final class SqliteSnapshotStore {
         } catch (SQLException | RuntimeException failure) {
             throw new IOException("Could not save runtime snapshot database", failure);
         }
+    }
+
+    /** Older generations and portable bundles derive the same catalog from their original evidence. */
+    public List<RecipeTypeRegistry.Descriptor> recipeTypes(final ModpackFingerprint fingerprint, final Snapshot snapshot)
+            throws IOException {
+        final Path file = database(fingerprint);
+        checkPath(file);
+        if (Files.notExists(file)) return new RecipeTypeRegistry().discover(snapshot);
+        try (var connection = connect(file, true)) {
+            final var rows = new ArrayList<RecipeTypeRegistry.Descriptor>();
+            try (var statement = connection.prepareStatement("""
+                    SELECT rt.payload FROM recipe_types rt
+                    JOIN snapshots s ON s.generation = rt.generation
+                    WHERE rt.generation = (SELECT MAX(generation) FROM snapshots WHERE fingerprint = ? AND snapshot_id = ?)
+                    ORDER BY rt.ordinal
+                    """)) {
+                statement.setString(1, fingerprint.value());
+                statement.setString(2, snapshot.snapshotId());
+                try (var result = statement.executeQuery()) {
+                    final var budget = new Budget();
+                    while (result.next()) {
+                        final String json = result.getString(1);
+                        budget.add(json);
+                        rows.add(decode(json, RecipeTypeRegistry.Descriptor.class, ProtocolCodec.MAX_RECORD_BYTES));
+                    }
+                }
+            }
+            if (!rows.isEmpty()) return List.copyOf(rows);
+        } catch (SQLException failure) {
+            if (!Objects.toString(failure.getMessage(), "").contains("no such table: recipe_types")) {
+                throw new IOException("Could not read persisted recipe types", failure);
+            }
+        } catch (RuntimeException invalid) {
+            throw new IOException("Invalid persisted recipe type descriptor", invalid);
+        }
+        return new RecipeTypeRegistry().discover(snapshot);
     }
 
     public Optional<Snapshot> loadLatest(final ModpackFingerprint fingerprint) throws IOException {

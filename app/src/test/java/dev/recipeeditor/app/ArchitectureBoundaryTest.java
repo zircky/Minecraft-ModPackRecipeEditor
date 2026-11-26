@@ -9,13 +9,15 @@ import org.junit.jupiter.api.Test;
 
 /** Checks compiled production references, including descriptors, without an extra test library. */
 final class ArchitectureBoundaryTest {
-    private final Path root = Path.of(System.getProperty("architectureRoot"));
+    private Path classes(final String module) {
+        return Path.of(Objects.requireNonNull(System.getProperty("architectureClasses." + module), module));
+    }
 
     @Test
     void businessBytecodeDoesNotReferenceUiOrMinecraftApis() throws Exception {
         for (final String module : List.of("core", "registry", "recipe-engine", "modpack-parser",
                 "integrations", "exporters", "recipe-analyzer", "companion-client", "companion-protocol", "companion-server")) {
-            final var classes = root.resolve(module + "/build/classes/java/main");
+            final var classes = classes(module);
             assertTrue(Files.isDirectory(classes), "Compile production classes before testing: " + module);
             try (final var paths = Files.walk(classes)) {
                 for (final var file : paths.filter(p -> p.toString().endsWith(".class")).toList()) {
@@ -33,7 +35,7 @@ final class ArchitectureBoundaryTest {
     @Test
     void protocolAndServerStayJava17Compatible() throws Exception {
         for (final String module : List.of("companion-protocol", "companion-server")) {
-            try (final var files = Files.walk(root.resolve(module + "/build/classes/java/main"))) {
+            try (final var files = Files.walk(classes(module))) {
                 for (final var file : files.filter(p -> p.toString().endsWith(".class")).toList()) {
                     try (final var input = new DataInputStream(Files.newInputStream(file))) {
                         assertEquals(0xCAFEBABE, input.readInt());
