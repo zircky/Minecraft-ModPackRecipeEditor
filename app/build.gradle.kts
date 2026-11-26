@@ -47,7 +47,10 @@ tasks.test {
     dependsOn(":companion-server:classes")
     if(providers.gradleProperty("realModpack").isPresent) maxHeapSize="1536m"
     if (providers.gradleProperty("phase19Evidence").isPresent) maxHeapSize="1536m"
-    systemProperty("architectureRoot", rootProject.projectDir.absolutePath)
+    rootProject.subprojects.forEach { module ->
+        systemProperty("architectureClasses.${module.name}",
+            module.layout.buildDirectory.dir("classes/java/main").get().asFile.absolutePath)
+    }
     systemProperty("expectedDesktopVersion", project.version.toString())
     providers.gradleProperty("realModpack").orNull?.let { systemProperty("realModpack", it) }
     providers.gradleProperty("kubeJsExportDirectory").orNull?.let { systemProperty("kubeJsExportDirectory", it) }
