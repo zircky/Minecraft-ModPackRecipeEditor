@@ -9,6 +9,9 @@ import java.util.function.Consumer;
 /** Per-project overlay and command context. Imported definitions are never mutated. */
 public final class RecipeEditorService {
     private final RecipeIndex originals;
+    private RecipeIndex authoringBases;
+    private RecipeIndex visibleBases;
+    private Set<ResourceLocation> incompatible=Set.of();
     private Set<ResourceLocation> runtimeIds=Set.of();
     private final RecipeValidator validator;
     private final EffectiveRecipeIndex effective;
@@ -19,13 +22,30 @@ public final class RecipeEditorService {
     private RecipeChangeSet persisted=new RecipeChangeSet();
     public RecipeEditorService(final RecipeIndex originals,final RecipeValidator validator) {
         this.originals=Objects.requireNonNull(originals); this.validator=Objects.requireNonNull(validator); effective=new EffectiveRecipeIndex(originals);
+        authoringBases=originals;visibleBases=originals;
     }
     /** Reuses source conflict quarantine without changing the persistent project change records. */
     public synchronized void applyRuntimeEvidence(final dev.recipeeditor.registry.RegistryIndex registry,final dev.recipeeditor.registry.TagIndex tags,final Set<ResourceLocation> incompatible,final Set<ResourceLocation> runtimeIds,final String environment) {
-        this.runtimeIds=Set.copyOf(runtimeIds);validator.updateRegistry(registry);effective.updateTags(tags);final var affected=new ArrayList<ResourceLocation>();
+        effective.updateTags(tags);
+        reconcileRuntime(registry,incompatible,runtimeIds,environment);
+    }
+
+    /** The display projection may contain inspection-only definitions. Only verified bases enter authoring. */
+    public synchronized void applyRuntimeCatalog(final dev.recipeeditor.registry.RegistryIndex registry, final RecipeIndex visible,
+            final RecipeIndex authorable, final Set<ResourceLocation> incompatible, final Set<ResourceLocation> runtimeIds, final String environment) {
+        authoringBases=authorable;
+        visibleBases=visible;
+        effective.replaceBase(visible);
+        reconcileRuntime(registry,incompatible,runtimeIds,environment);
+    }
+
+    private void reconcileRuntime(final dev.recipeeditor.registry.RegistryIndex registry, final Set<ResourceLocation> incompatible,
+            final Set<ResourceLocation> runtimeIds, final String environment) {
+        this.incompatible=Set.copyOf(incompatible);
+        this.runtimeIds=Set.copyOf(runtimeIds);validator.updateRegistry(registry);final var affected=new ArrayList<ResourceLocation>();
         final var blockedIds=new HashSet<ResourceLocation>();
         for(final var change:changes.values()) {
-            final boolean blocked=change.type()==RecipeChangeType.CREATE?runtimeIds.contains(change.id()):incompatible.contains(change.id());
+            final boolean blocked=change.type()==RecipeChangeType.CREATE?runtimeIds.contains(change.id()):!matchesBase(change);
             if(blocked) {
                 blockedIds.add(change.id());
                 final String peer=change.metadata().get(RecipeMigrationLink.PEER);
@@ -36,13 +56,41 @@ public final class RecipeEditorService {
             final var change=changes.remove(id);
             if(change==null)continue;
             effective.apply(id,null);
-            conflicts.put(id,new SourceConflict(id,"Runtime evidence conflicts with project base in "+environment+". Static original references are retained; review before applying/exporting.",change,references(id)));
+            conflicts.put(id,new SourceConflict(id,"Runtime evidence conflicts with project base in "+environment+". Original references are retained.",change,references(id)));
             affected.add(id);
+        }
+        for(final var conflict:List.copyOf(conflicts.values())) {
+            final var change=conflict.savedChange();
+            if(runtimeChange(change) && matchesBase(change)) {
+                final String linked=change.metadata().get(RecipeMigrationLink.PEER);
+                if(linked!=null) {
+                    final var peer=conflicts.get(ResourceLocation.parse(linked));
+                    if(peer==null||!matchesBase(peer.savedChange())||!RecipeMigrationLink.valid(change,Map.of(peer.recipeId(),peer.savedChange())))continue;
+                    conflicts.remove(peer.recipeId());
+                    applyWithoutNotification(peer.recipeId(),peer.savedChange());
+                    affected.add(peer.recipeId());
+                }
+                conflicts.remove(change.id());
+                applyWithoutNotification(change.id(),change);
+                affected.add(change.id());
+            }
         }
         if(!affected.isEmpty())history.clear();affected.forEach(this::notifyChanged);
     }
     public RecipeValidator validator() { return validator; }
     public RecipeIndex originals() { return originals; }
+    public synchronized RecipeIndex authoringBases() { return authoringBases; }
+    public synchronized boolean canChange(final ResourceLocation id) {
+        if(conflicts.containsKey(id)||effective.findById(id).isEmpty())return false;
+        final var existing=changes.get(id);
+        if(existing!=null&&existing.metadata().containsKey(RecipeMigrationLink.PEER))return false;
+        return existing!=null&&existing.type()==RecipeChangeType.CREATE
+                || !incompatible.contains(id)&&!authoringBases.findById(id).isEmpty();
+    }
+    public synchronized boolean canReset(final ResourceLocation id) {
+        final var existing=changes.get(id);
+        return conflicts.containsKey(id) || existing!=null&&!existing.metadata().containsKey(RecipeMigrationLink.PEER);
+    }
     public EffectiveRecipeIndex effective() { return effective; }
     public synchronized RecipeChangeSet snapshot() { return new RecipeChangeSet(changes); }
     public synchronized List<SourceConflict> conflicts() { return List.copyOf(conflicts.values()); }
@@ -54,7 +102,7 @@ public final class RecipeEditorService {
         return switch(change.type()) { case CREATE->RecipeModificationStatus.CREATED; case UPDATE->RecipeModificationStatus.MODIFIED; case DELETE->RecipeModificationStatus.DELETED; };
     }
     public synchronized List<RecipeDefinition> displayed(final ResourceLocation id) {
-        final var current=effective.findById(id); return current.isEmpty()?originals.findById(id):current;
+        final var current=effective.findById(id); return current.isEmpty()?visibleBases.findById(id):current;
     }
     public synchronized boolean dirty() { return !persistentSnapshot().equals(persisted); }
     public synchronized RecipeChangeSet persistedSnapshot() { return persisted; }
@@ -67,13 +115,18 @@ public final class RecipeEditorService {
     public synchronized void update(final ResourceLocation id,final RecipeDefinition definition) {
         requireNoConflict(id);
         requireUnlinked(id);
+        if(!canChange(id))throw new IllegalArgumentException("No verified active base for this recipe");
         if(!id.equals(definition.id())) throw new IllegalArgumentException("Editing cannot rename an ID; use Duplicate");
         if(effective.findById(id).isEmpty()) throw new IllegalArgumentException("Recipe is deleted or missing");
         final var valid=validated(definition); final var old=changes.get(id);
         final var type=old!=null&&old.type()==RecipeChangeType.CREATE?RecipeChangeType.CREATE:RecipeChangeType.UPDATE;
         final var bases=type==RecipeChangeType.CREATE?List.<OriginalRecipeReference>of():references(id);
-        if(type==RecipeChangeType.UPDATE && originals.findById(id).size()==1 && new RecipeDiffService().compare(originals.findById(id).getFirst().rawJson(),valid.rawJson()).isEmpty()) { reset(id); return; }
-        change(id,new RecipeChange(id,type,bases,List.of(valid),Instant.now(),Map.of()));
+        final var baseline=authoringBases.findById(id);
+        if(type==RecipeChangeType.UPDATE && baseline.size()==1 && new RecipeDiffService().compare(baseline.getFirst().rawJson(),valid.rawJson()).isEmpty()) { reset(id); return; }
+        if(type==RecipeChangeType.UPDATE && baseline.size()==1 && new RuntimeRecipeBase().matches(baseline.getFirst().source())
+                && !baseline.getFirst().type().equals(valid.type()))
+            throw new IllegalArgumentException("Changing this runtime serializer requires a verified recipe migration");
+        change(id,new RecipeChange(id,type,bases,List.of(valid),Instant.now(),runtimeMetadata(id)));
     }
     private RecipeDefinition validated(final RecipeDefinition recipe) {
         final var validation=validator.validate(recipe.id(),recipe.rawJson(),recipe.source());
@@ -82,10 +135,11 @@ public final class RecipeEditorService {
     public synchronized void delete(final ResourceLocation id) {
         requireNoConflict(id);
         requireUnlinked(id);
+        if(!canChange(id))throw new IllegalArgumentException("No verified active base for this recipe");
         if(effective.findById(id).isEmpty()) throw new IllegalArgumentException("Recipe is already deleted or missing");
         final var old=changes.get(id);
         if(old!=null && old.type()==RecipeChangeType.CREATE) change(id,null);
-        else change(id,new RecipeChange(id,RecipeChangeType.DELETE,references(id),List.of(),Instant.now(),Map.of()));
+        else change(id,new RecipeChange(id,RecipeChangeType.DELETE,references(id),List.of(),Instant.now(),runtimeMetadata(id)));
     }
     public synchronized RecipeDefinition duplicate(final RecipeDefinition source,final ResourceLocation target) {
         if(hasConflict(source.id()) || effective.findById(source.id()).stream().noneMatch(r->r.equals(source))) throw new IllegalArgumentException("Source is not an active effective definition");
@@ -98,13 +152,14 @@ public final class RecipeEditorService {
         requireNoConflict(originalId);
         final var targetId=target.id();
         if(originalId.equals(targetId))throw new IllegalArgumentException("This migration requires an explicit new ID");
-        if(originals.findById(originalId).size()!=1 || changes.containsKey(originalId))
+        if(!canChange(originalId)||authoringBases.findById(originalId).size()!=1 || changes.containsKey(originalId))
             throw new IllegalArgumentException("Machine replacement needs one unchanged original project definition");
         if(runtimeIds.contains(targetId)||!originals.findById(targetId).isEmpty()||changes.containsKey(targetId)||conflicts.containsKey(targetId))
             throw new IllegalArgumentException("Target recipe ID already exists");
         final var valid=validated(target);
-        final var removed=new RecipeChange(originalId,RecipeChangeType.DELETE,references(originalId),List.of(),
-                Instant.now(),Map.of(RecipeMigrationLink.PEER,targetId.toString()));
+        final var metadata=new LinkedHashMap<>(runtimeMetadata(originalId));
+        metadata.put(RecipeMigrationLink.PEER,targetId.toString());
+        final var removed=new RecipeChange(originalId,RecipeChangeType.DELETE,references(originalId),List.of(),Instant.now(),metadata);
         final var added=new RecipeChange(targetId,RecipeChangeType.CREATE,List.of(),List.of(valid),
                 Instant.now(),Map.of(RecipeMigrationLink.PEER,originalId.toString()));
         history.execute(new RecipeCommand() {
@@ -128,7 +183,20 @@ public final class RecipeEditorService {
         notifyChanged(second);
     }
     public synchronized void discardConflict(final ResourceLocation id) { conflicts.remove(id); notifyChanged(id); }
-    private List<OriginalRecipeReference> references(final ResourceLocation id) { return originals.findById(id).stream().map(OriginalRecipeReference::from).toList(); }
+    private List<OriginalRecipeReference> references(final ResourceLocation id) { return authoringBases.findById(id).stream().map(OriginalRecipeReference::from).toList(); }
+    private Map<String,String> runtimeMetadata(final ResourceLocation id) {
+        final var bases=authoringBases.findById(id);
+        if(bases.size()!=1||!new RuntimeRecipeBase().matches(bases.getFirst().source()))return Map.of();
+        final var recipe=bases.getFirst();
+        return Map.of("mre.runtime.originalSerializerJson",recipe.rawJson());
+    }
+    private boolean runtimeChange(final RecipeChange change) {
+        return change.originals().stream().anyMatch(reference->new RuntimeRecipeBase().matches(reference.source()));
+    }
+    private boolean matchesBase(final RecipeChange change) {
+        if(change.type()==RecipeChangeType.CREATE)return references(change.id()).isEmpty()&&!runtimeIds.contains(change.id());
+        return !incompatible.contains(change.id())&&new HashSet<>(references(change.id())).equals(new HashSet<>(change.originals()));
+    }
     private void requireNoConflict(final ResourceLocation id) { if(conflicts.containsKey(id)) throw new IllegalStateException("Saved change is blocked by a source conflict; review/discard it first"); }
     private void change(final ResourceLocation id,final RecipeChange replacement) {
         final var before=changes.get(id);
@@ -136,7 +204,8 @@ public final class RecipeEditorService {
             @Override public void execute() { apply(id,replacement); }
             @Override public void undo() { apply(id,before); }
             @Override public long retainedBytes() { return bytes(before)+bytes(replacement); }
-            private long bytes(final RecipeChange value) { return value==null?0:value.replacement().stream().mapToLong(r->2L*r.rawJson().length()).sum(); }
+            private long bytes(final RecipeChange value) { return value==null?0:value.replacement().stream().mapToLong(r->2L*r.rawJson().length()).sum()
+                    + value.metadata().values().stream().mapToLong(text->2L*text.length()).sum(); }
         });
     }
     private void apply(final ResourceLocation id,final RecipeChange change) {
@@ -158,7 +227,7 @@ public final class RecipeEditorService {
         for(final var change:saved.changes().values()) {
             if(change.type()!=RecipeChangeType.DELETE) validated(change.replacement().getFirst());
             final var current=references(change.id());
-            final boolean matching=change.type()==RecipeChangeType.CREATE?current.isEmpty():new HashSet<>(current).equals(new HashSet<>(change.originals()));
+            final boolean matching=matchesBase(change);
             if(!matching) blocked.put(change.id(),new SourceConflict(change.id(),"Original source/content changed or ID now collides; automatic application blocked",change,current));
             else accepted.put(change.id(),change);
         }

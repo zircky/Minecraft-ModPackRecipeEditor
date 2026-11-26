@@ -32,6 +32,13 @@ public final class ExportValidator {
     }
     public void verifySource(final OriginalRecipeReference reference,final ExportContext context) throws java.io.IOException {
         final var source=reference.source();final var root=context.modpack().selectedDirectory().toRealPath();final var container=SafeFiles.inside(root,source.archivePath());
+        if(source.type()==dev.recipeeditor.registry.SourceType.RUNTIME) {
+            if(!new RuntimeRecipeBase().matches(source)
+                    || !container.toRealPath().equals(context.modpack().gameDirectory().toRealPath()))
+                throw new java.io.IOException("Runtime recipe evidence does not match the imported instance");
+            // The caller checked the source identity and content hash against the currently bound snapshot.
+            return;
+        }
         final byte[] bytes;
         if(Files.isDirectory(container))bytes=SafeFiles.read(root,container.resolve(source.internalPath()),2*1024*1024);
         else {

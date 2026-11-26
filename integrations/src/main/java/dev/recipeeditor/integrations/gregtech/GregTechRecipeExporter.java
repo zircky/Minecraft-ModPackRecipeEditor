@@ -6,10 +6,11 @@ import java.util.*;
 /** Verified codec subset through the GT KubeJS schema factory; unknown fields fail closed. */
 public final class GregTechRecipeExporter implements IntegrationRecipeExporter<GregTechRecipeDefinition> {
     private final Set<String> machines = Set.of("gtceu:assembler", "gtceu:macerator", "gtceu:chemical_reactor");
+    public boolean supportsMachine(final String type) { return machines.contains(type); }
     public List<String> unsupported(final GregTechRecipeDefinition recipe) {
         final var errors = new ArrayList<String>();
         new GregTechRecipeValidator().validate(recipe).stream().filter(i -> i.severity() == ValidationIssue.Severity.ERROR).forEach(i -> errors.add(i.message()));
-        if (!machines.contains(recipe.recipeType().toString())) errors.add("Machine type has no verified export profile: " + recipe.recipeType());
+        if (!supportsMachine(recipe.recipeType().toString())) errors.add("Machine type has no verified export profile: " + recipe.recipeType());
         final String prefix=recipe.recipeType().path()+"/";
         if(recipe.id().namespace().equals("minecraft") || !recipe.id().path().startsWith(prefix) || recipe.id().path().length()==prefix.length()) errors.add("GT KubeJS requires exact ID namespace:"+prefix+"name (namespace must not be minecraft); arbitrary ID rewrite is forbidden");
         final var root = new GregTechRecipeMapper().object(recipe.rawJson());

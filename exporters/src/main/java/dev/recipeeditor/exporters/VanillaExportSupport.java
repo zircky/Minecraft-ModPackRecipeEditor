@@ -18,7 +18,8 @@ final class VanillaExportSupport {
         for(final var recipe:definitions) {
             final var type=recipe.type().location();
             if(type.isEmpty() || !type.get().namespace().equals("minecraft") || !types.contains(type.get().path())) return "No verified serializer/manager for "+recipe.type().rawId();
-            if(recipe.source().type()==dev.recipeeditor.registry.SourceType.RUNTIME)return "Normalized runtime state is not original serializer JSON; an explicit source adapter is required";
+            if(recipe.source().type()==dev.recipeeditor.registry.SourceType.RUNTIME && !new RuntimeRecipeBase().matches(recipe.source()))
+                return "Normalized runtime state requires a verified serializer projection";
             final JsonNode json;
             try{json=new ExportText().json(recipe.rawJson());}catch(RuntimeException invalid){return "Invalid JSON: "+invalid.getMessage();}
             if(!json.isObject() || !json.path("type").isTextual() || !json.path("type").asText().equals(recipe.type().rawId()))
