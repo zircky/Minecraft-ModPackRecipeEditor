@@ -17,7 +17,7 @@ public final class InstanceMetadataReader {
         final var root = detected.selectedDirectory();
         final var files = new LinkedHashSet<Path>();
         for (final var base : List.of(root, detected.gameDirectory())) {
-            for (final var name : List.of("mmc-pack.json", "minecraftinstance.json", "manifest.json", "version.json"))
+            for (final var name : List.of("mmc-pack.json", "minecraftinstance.json", "manifest.json", "modrinth.index.json", "version.json"))
                 if (Files.exists(base.resolve(name))) files.add(base.resolve(name));
         }
         // Version directories are not used as an active profile: installations often contain several versions.
@@ -43,6 +43,15 @@ public final class InstanceMetadataReader {
                         for (final var loader : json.path("minecraft").path("modLoaders"))
                             parseLoaderId(loaders, loader.path("id").asText(), source + "#minecraft.modLoaders");
                     }
+                    case "modrinth.index.json" -> {
+                        if (!json.path("game").asText().equals("minecraft")) break;
+                        final var dependencies = json.path("dependencies");
+                        addVersion(versions, dependencies.path("minecraft").asText(), source + "#dependencies.minecraft");
+                        for (final String loader : List.of("forge", "neoforge", "fabric-loader", "quilt-loader")) {
+                            final var declared = dependencies.path(loader);
+                            if (declared.isTextual()) addLoader(loaders, loader, declared.textValue(), source + "#dependencies." + loader);
+                        }
+                    }
                     case "minecraftinstance.json" -> {
                         addVersion(versions, json.path("gameVersion").asText(), source + "#gameVersion");
                         final var base = json.path("baseModLoader");
@@ -61,7 +70,15 @@ public final class InstanceMetadataReader {
                             final String[] parts = library.path("name").asText().split(":");
                             if (parts.length >= 3) {
                                 final int before = loaders.size();
-                                addLoader(loaders, parts[0] + ":" + parts[1], parts[2], source + "#libraries");
+                                final String coordinate = parts[0] + ":" + parts[1];
+                                final String minecraft = json.path("inheritsFrom").asText();
+                                String version = parts[2];
+                                // Forge profiles encode the game and the loader in the Maven version.
+                                if (coordinate.equals("net.minecraftforge:forge") && !minecraft.isBlank()) {
+                                    if (version.startsWith(minecraft + "-")) version = version.substring(minecraft.length() + 1);
+                                    if (version.endsWith("-" + minecraft)) version = version.substring(0, version.length() - minecraft.length() - 1);
+                                }
+                                addLoader(loaders, coordinate, version, source + "#libraries");
                                 found |= loaders.size() > before;
                             }
                         }
@@ -81,13 +98,18 @@ public final class InstanceMetadataReader {
         if (!version.isBlank()) out.add(new MetadataEvidence.VersionEvidence(version, source));
     }
     private void parseLoaderId(final List<MetadataEvidence.LoaderEvidence> out, final String id, final String source) {
-        final int separator = id.indexOf('-');
-        if (separator > 0) addLoader(out, id.substring(0, separator), id.substring(separator + 1), source);
+        final String lower = id.toLowerCase(Locale.ROOT);
+        for (final String prefix : List.of("fabric-loader", "quilt-loader", "neoforge", "forge", "fabric", "quilt")) {
+            if (lower.startsWith(prefix + "-")) {
+                addLoader(out, prefix, id.substring(prefix.length() + 1), source);
+                return;
+            }
+        }
     }
     private void addLoader(final List<MetadataEvidence.LoaderEvidence> out, final String uid, final String version, final String source) {
         final var type = switch (uid.toLowerCase(Locale.ROOT)) {
             case "forge", "net.minecraftforge", "net.minecraftforge:forge" -> ModLoaderType.FORGE;
-            case "neoforge", "net.neoforged", "net.neoforged:neoforge" -> ModLoaderType.NEOFORGE;
+            case "neoforge", "net.neoforged", "net.neoforged.neoforge", "net.neoforged:neoforge" -> ModLoaderType.NEOFORGE;
             case "fabric", "fabric-loader", "net.fabricmc.fabric-loader", "net.fabricmc:fabric-loader" -> ModLoaderType.FABRIC;
             case "quilt", "quilt-loader", "org.quiltmc.quilt-loader", "org.quiltmc:quilt-loader" -> ModLoaderType.QUILT;
             default -> ModLoaderType.UNKNOWN;

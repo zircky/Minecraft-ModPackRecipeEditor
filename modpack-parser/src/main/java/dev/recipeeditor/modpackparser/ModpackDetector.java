@@ -19,15 +19,19 @@ public final class ModpackDetector {
                 final var game = SafeFiles.inside(root, candidate);
                 final boolean instance = marker(root, "mmc-pack.json", diagnostics);
                 final boolean curse = marker(root, "minecraftinstance.json",diagnostics) | marker(root, "manifest.json",diagnostics);
+                final boolean modrinth = marker(root, "modrinth.index.json", diagnostics);
+                final boolean vanilla = marker(root, "version.json", diagnostics);
+                final boolean explicit = instance || curse || modrinth || vanilla;
                 final int signals = (dir(root, game, "config") ? 1 : 0) + (dir(root, game, "resourcepacks") ? 1 : 0)
                         + (dir(root, game, "saves") ? 1 : 0) + (fileAt(root, game.resolve("options.txt")) ? 1 : 0)
                         + (dir(root, game, "versions") ? 1 : 0);
-                if (candidate.equals(root) && (instance || curse) && !dir(root, game, "mods")
+                if (candidate.equals(root) && explicit && !dir(root, game, "mods")
                         && candidates.stream().skip(1).anyMatch(Files::isDirectory)) continue;
-                if (instance || curse || signals >= 2 || (signals >= 1 && dir(root, game, "mods"))) {
-                    final String structure = instance ? "MultiMC / Prism Launcher" : curse ? "CurseForge" : "Minecraft directory";
+                if (explicit || signals >= 2 || (signals >= 1 && dir(root, game, "mods"))) {
+                    final String structure = instance ? "MultiMC / Prism Launcher" : curse ? "CurseForge"
+                            : modrinth ? "Modrinth" : "Minecraft directory";
                     return new DetectionResult(root, game, structure,
-                            instance || curse ? DetectionResult.Confidence.HIGH : DetectionResult.Confidence.MEDIUM, diagnostics);
+                            explicit ? DetectionResult.Confidence.HIGH : DetectionResult.Confidence.MEDIUM, diagnostics);
                 }
             } catch (IOException error) {
                 diagnostics.add(new ImportDiagnostic(ScanStatus.WARNING, candidate.toString(), error.getMessage()));
@@ -52,6 +56,10 @@ public final class ModpackDetector {
                 case "minecraftinstance.json" -> !json.path("gameVersion").asText().isBlank()
                         || !json.path("baseModLoader").path("minecraftVersion").asText().isBlank();
                 case "manifest.json" -> !json.path("minecraft").path("version").asText().isBlank();
+                case "modrinth.index.json" -> json.path("game").asText().equals("minecraft")
+                        && !json.path("dependencies").path("minecraft").asText().isBlank();
+                case "version.json" -> !json.path("inheritsFrom").asText().isBlank()
+                        || (json.has("assetIndex") && json.has("mainClass") && !json.path("id").asText().isBlank());
                 default -> false;
             };
             if (!recognized) diagnostics.add(new ImportDiagnostic(ScanStatus.WARNING,path.toString(),"Unrecognized instance metadata structure"));
