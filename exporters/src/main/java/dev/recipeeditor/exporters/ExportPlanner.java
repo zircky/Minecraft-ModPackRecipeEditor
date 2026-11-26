@@ -5,6 +5,7 @@ import dev.recipeeditor.core.io.SafeFiles;
 import dev.recipeeditor.recipeengine.editor.OriginalRecipeReference;
 import dev.recipeeditor.recipeengine.editor.RecipeChange;
 import dev.recipeeditor.recipeengine.editor.RecipeChangeType;
+import dev.recipeeditor.recipeengine.editor.RecipeMigrationLink;
 
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -54,6 +55,10 @@ public final class ExportPlanner {
     }
     if (!context.modpack().minecraftVersion().value().equals(context.profile().minecraftVersion()) || !context.modpack().loader().type().name().equals(context.profile().loader()))
       diagnostics.add(error(ExportDiagnostic.Code.EXPORT_VERSION_MISMATCH, "Profile version/loader does not match imported instance", context));
+    if (changes.values().stream().anyMatch(change -> !RecipeMigrationLink.valid(change,changes))) {
+      diagnostics.add(error(ExportDiagnostic.Code.EXPORT_INVALID_RECIPE, "Select both changes in the machine replacement together",context));
+      return new ExportPlan(request,planned,Map.of(),Map.of(),Set.of(),diagnostics);
+    }
     for (final var change : changes.values()) {
       SafeFiles.checkCancelled();
       diagnostics.addAll(validator.check(change, context, copies.contains(change.id())));
@@ -88,6 +93,13 @@ public final class ExportPlanner {
     if (changes.size() > 10000 || changes.values().stream().flatMap(c -> c.replacement().stream()).mapToLong(r -> r.rawJson().getBytes(java.nio.charset.StandardCharsets.UTF_8).length).sum() > 16L * 1024 * 1024) {
       diagnostics.add(error(ExportDiagnostic.Code.EXPORT_INVALID_RECIPE, "Export input batch exceeds 10000 recipes / 16 MiB JSON; use a smaller profile selection", context));
       return new ExportPlan(request, planned, Map.of(), Map.of(), Set.of(), diagnostics);
+    }
+    if (planned.stream().filter(row -> row.change().metadata().containsKey(RecipeMigrationLink.PEER))
+            .anyMatch(row -> row.format()!=ExportFormat.KUBEJS || !row.capability().supported()
+                    || !row.exportMode().equals(KubeJsRecipePlan.Mechanism.KUBEJS_JAVASCRIPT.name()))) {
+      diagnostics.add(error(ExportDiagnostic.Code.EXPORT_INVALID_RECIPE,
+              "Both changes in a machine replacement require the verified KubeJS JavaScript exporter",context));
+      return new ExportPlan(request,planned,Map.of(),Map.of(),Set.of(),diagnostics);
     }
     for (final var exporter : exporters) {
       final var batch = planned.stream().filter(p -> p.format() == exporter.format() && p.capability().supported()).map(PlannedRecipe::change).toList();
