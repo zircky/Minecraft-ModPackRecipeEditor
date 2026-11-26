@@ -109,10 +109,9 @@ public final class RecipeEditorDialog extends Dialog<Void> {
         renderAdvancedFields(value);
     }
     private void renderAdvancedFields(final RecipeEditPreview value) {
-        final String type=value.type();
-        final var fields=new ArrayList<>(List.of("group"));
-        if(Set.of("minecraft:smelting","minecraft:blasting","minecraft:smoking","minecraft:campfire_cooking").contains(type)) fields.addAll(List.of("experience","cookingtime"));
-        for(final var name:fields) advancedField(name,value.fields().getOrDefault(name,name.equals("group")?"\"\"":name.equals("experience")?"0":type.equals("minecraft:smelting")?"200":type.equals("minecraft:campfire_cooking")?"600":"100"));
+        final var schema=new VanillaRecipeSchema().fields(value.type());
+        final var fields=schema.stream().map(VanillaRecipeSchema.Field::key).collect(java.util.stream.Collectors.toSet());
+        for(final var field:schema) advancedField(field,value.fields().getOrDefault(field.key(),field.defaultJson()));
         advanced.getChildren().add(new Label("Other / unknown properties are preserved. Use Raw JSON for explicit changes:"));
         value.fields().forEach((name,json)->{ if(!fields.contains(name)) { final var label=new Label(name+": "+brief(json)); label.setWrapText(true); label.setMaxWidth(850); advanced.getChildren().add(label); } });
     }
@@ -156,11 +155,58 @@ public final class RecipeEditorDialog extends Dialog<Void> {
     private void pickIngredient(final String initial,final java.util.function.Consumer<String> selected) {
         new IngredientPicker(getDialogPane().getScene().getWindow(),discovery,ResourceKind.ITEM,true,false,initial).showAndWait().ifPresent(value->selected.accept(value.json()));
     }
-    private void advancedField(final String name,final String value) {
-        final var input=new TextField(pendingAdvanced.getOrDefault(name,value));
-        input.textProperty().addListener((o,a,b)->{pendingAdvanced.put(name,b);state.setText("Unapplied Advanced fields: "+pendingAdvanced.keySet());getDialogPane().lookupButton(save).setDisable(true);}); input.setPrefWidth(380); final var error=new Label(preview==null?"":preview.validation().issues().stream().filter(issue->issue.message().toLowerCase(java.util.Locale.ROOT).contains(name)).map(ValidationIssue::message).collect(java.util.stream.Collectors.joining("\n"))); error.getStyleClass().add("validation-error");
-        final var apply=new Button("Apply"); apply.setOnAction(e->{ final String valueText=input.getText(); final String current=raw.getText(); final long revision=session.revision();
-            tasks.submit(()->forms.patch(current,name,valueText),changed->{ if(!alive || revision!=session.revision()) return; if(Objects.equals(pendingAdvanced.get(name),valueText)) pendingAdvanced.remove(name); raw.setText(changed); },failure->{ if(alive) {error.setText(failure.getMessage());issues.setText(failure.getMessage());} }); }); advanced.getChildren().add(new VBox(4,new HBox(10,new Label(name+" (JSON value)"),input,apply),error));
+    private void advancedField(final VanillaRecipeSchema.Field field,final String value) {
+        final String name=field.key();
+        final var pending=new javafx.beans.property.SimpleStringProperty(pendingAdvanced.getOrDefault(name,value));
+        final var input=fieldControl(field,pending);
+        input.setAccessibleText(name);
+        pending.addListener((o,a,b)->{pendingAdvanced.put(name,b);state.setText("Unapplied Advanced fields: "+pendingAdvanced.keySet());getDialogPane().lookupButton(save).setDisable(true);});
+        final var error=new Label(preview==null?"":preview.validation().issues().stream().filter(issue->issue.message().toLowerCase(java.util.Locale.ROOT).contains(name)).map(ValidationIssue::message).collect(java.util.stream.Collectors.joining("\n"))); error.getStyleClass().add("validation-error");
+        final var apply=new Button("Apply"); apply.setOnAction(e->{
+            try {
+                if(input instanceof Spinner<?> spinner) spinner.commitValue();
+            } catch(RuntimeException invalid) { error.setText("Enter a valid value for "+name);return; }
+            final String valueText=pending.get(); final String current=raw.getText(); final long revision=session.revision();
+            tasks.submit(()->forms.patch(current,name,valueText),changed->{ if(!alive || revision!=session.revision()) return; if(Objects.equals(pendingAdvanced.get(name),valueText)) pendingAdvanced.remove(name); raw.setText(changed); },failure->{ if(alive) {error.setText(failure.getMessage());issues.setText(failure.getMessage());} }); }); advanced.getChildren().add(new VBox(4,new HBox(10,new Label(name),input,apply),error));
+    }
+
+    private Control fieldControl(final VanillaRecipeSchema.Field field,final javafx.beans.property.StringProperty value) {
+        try {
+            final var parsed=com.google.gson.JsonParser.parseString(value.get());
+            if (field.kind()==VanillaRecipeSchema.Kind.BOOLEAN && parsed.isJsonPrimitive() && parsed.getAsJsonPrimitive().isBoolean()) {
+                final var check=new CheckBox();
+                check.setSelected(parsed.getAsBoolean());
+                check.selectedProperty().addListener((o,a,b)->value.set(Boolean.toString(b)));
+                return check;
+            }
+            if (field.kind()==VanillaRecipeSchema.Kind.ENUM && parsed.isJsonPrimitive()
+                    && field.choices().contains(parsed.getAsString())) {
+                final var choices=new ComboBox<String>(javafx.collections.FXCollections.observableArrayList(field.choices()));
+                choices.setValue(parsed.getAsString());
+                choices.valueProperty().addListener((o,a,b)->value.set(new com.google.gson.JsonPrimitive(b).toString()));
+                return choices;
+            }
+            if (field.kind()==VanillaRecipeSchema.Kind.STRING && parsed.isJsonPrimitive() && parsed.getAsJsonPrimitive().isString()) {
+                final var text=new TextField(parsed.getAsString());
+                text.textProperty().addListener((o,a,b)->value.set(new com.google.gson.JsonPrimitive(b).toString()));
+                return text;
+            }
+            if (field.kind()==VanillaRecipeSchema.Kind.INTEGER && parsed.isJsonPrimitive() && parsed.getAsJsonPrimitive().isNumber()) {
+                final int number=parsed.getAsBigDecimal().intValueExact();
+                if(number>0) {
+                    final var spinner=new Spinner<Integer>(1,Integer.MAX_VALUE,number);
+                    spinner.setEditable(true);
+                    spinner.getEditor().textProperty().addListener((o,a,b)->value.set(b));
+                    spinner.valueProperty().addListener((o,a,b)->value.set(b.toString()));
+                    return spinner;
+                }
+            }
+        } catch (RuntimeException malformed) {
+            // Keep invalid or unrecognized input visible so the user can repair it.
+        }
+        final var text=new TextField(value.get());
+        text.textProperty().bindBidirectional(value);
+        return text;
     }
     private String brief(final String value) {return value.length()>180?value.substring(0,180)+"... (full value in Raw JSON)":value;}
     private void patch(final java.util.function.UnaryOperator<String> work) {

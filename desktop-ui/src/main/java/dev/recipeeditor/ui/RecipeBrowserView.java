@@ -135,7 +135,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   public void runtime(final dev.recipeeditor.companionclient.RecipeMergeService.Result merge) {
     if (staticCenter == null) staticCenter = getCenter();
     runtimeIds = merge.entries().stream().filter(e -> e.runtime() != null).map(e -> e.id()).collect(java.util.stream.Collectors.toSet());
-    runtimeView = new RuntimeRecipeBrowserView(merge.entries(), this::copyRuntime);
+    runtimeView = new RuntimeRecipeBrowserView(merge.entries(), this::copyRuntime, this::canCopyRuntime);
     sourceFilter.setValue("All");
     showSource();
   }
@@ -341,13 +341,32 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       }
     });
     dialog.setResultConverter(button -> button == ButtonType.OK ? types.getEditor().getText() : null);
-    dialog.showAndWait().ifPresent(type -> {
-      final var source = new RecipeSource(SourceType.LOCAL_RESOURCE, List.of(), java.nio.file.Path.of("unsaved-project.json"), "changes/" + id.get(), "Unsaved project overlay (logical path)");
-      tasks.submit(() -> new RecipeFormService().template(type), raw -> new RecipeEditorDialog(getScene().getWindow(), result, editor, tasks, new RecipeEditSession(id.get(), source, raw), true, integration).showAndWait(), this::error);
-    });
+    dialog.showAndWait().ifPresent(type -> openNewRecipe(id.orElseThrow(),type));
+  }
+
+  void createFromRuntime(final String serializer) {
+    if (!new RecipeFormService().types().contains(serializer)) return;
+    newId("Create Recipe · " + serializer).ifPresent(id -> openNewRecipe(id,serializer));
+  }
+
+  private void openNewRecipe(final ResourceLocation id, final String type) {
+    final var source = new RecipeSource(SourceType.LOCAL_RESOURCE, List.of(), java.nio.file.Path.of("unsaved-project.json"),
+            "changes/" + id, "Unsaved project overlay (logical path)");
+    tasks.submit(() -> new RecipeFormService().template(type), raw -> new RecipeEditorDialog(getScene().getWindow(),
+            result, editor, tasks, new RecipeEditSession(id, source, raw), true, integration).showAndWait(), this::error);
   }
 
   private void copyRuntime(final dev.recipeeditor.companionprotocol.RuntimeData.Recipe recipe) {
+    final var vanilla = new dev.recipeeditor.companionclient.VanillaRuntimeDraft();
+    if (vanilla.supports(recipe)) {
+      newId("Copy loaded Vanilla recipe to a new ID").ifPresent(id -> {
+        final var source = new RecipeSource(SourceType.LOCAL_RESOURCE, List.of(), java.nio.file.Path.of("unsaved-project.json"),
+                "changes/" + id, "New project recipe copied from normalized Vanilla state " + recipe.id());
+        tasks.submit(() -> vanilla.copy(recipe), raw -> new RecipeEditorDialog(getScene().getWindow(), result,
+                editor, tasks, new RecipeEditSession(id, source, raw), true, integration).showAndWait(), this::error);
+      });
+      return;
+    }
     if (!new dev.recipeeditor.integrations.gregtech.GregTechIntegration().capabilities(integration).enabled("Visual Editing")) {
       error(new IllegalArgumentException("GT version is not edit-verified"));
       return;
@@ -356,6 +375,17 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       final var source = new RecipeSource(SourceType.LOCAL_RESOURCE, List.of("gtceu"), java.nio.file.Path.of("unsaved-project.json"), "changes/" + id, "Explicit new-ID copy of normalized runtime state; original source UNKNOWN");
       tasks.submit(() -> new dev.recipeeditor.integrations.gregtech.GregTechRuntimeDraft().copy(recipe), raw -> new RecipeEditorDialog(getScene().getWindow(), result, editor, tasks, new RecipeEditSession(id, source, raw), true, integration).showAndWait(), this::error);
     });
+  }
+
+  private boolean canCopyRuntime(final dev.recipeeditor.companionprotocol.RuntimeData.Recipe recipe) {
+    if (new dev.recipeeditor.companionclient.VanillaRuntimeDraft().supports(recipe)) return true;
+    if (!recipe.adapter().equals("gtceu-7.1.4")
+            || !new dev.recipeeditor.integrations.gregtech.GregTechIntegration().capabilities(integration).enabled("Visual Editing"))
+      return false;
+    try {
+      new dev.recipeeditor.integrations.gregtech.GregTechRuntimeDraft().copy(recipe);
+      return true;
+    } catch (RuntimeException unsupported) { return false; }
   }
 
   private String capabilityStatus(final dev.recipeeditor.integrations.api.RecipeTypeCapabilities caps,final dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature feature){return caps.supports(feature)?"SUPPORTED":"UNSUPPORTED";}
