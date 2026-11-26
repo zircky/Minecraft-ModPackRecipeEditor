@@ -294,6 +294,7 @@ public final class MainWindow {
 
   private void analyze() {
     if (imported == null) return;
+    if (recipes != null && !recipes.allowLeaveDraft()) return;
     textures.clear();
     final RecipeChangeSet restoreChanges = editor == null ? null : editor.persistentSnapshot();
     final RecipeChangeSet persistedChanges = editor == null ? null : editor.persistedSnapshot();
@@ -470,6 +471,7 @@ public final class MainWindow {
   }
 
   private void confirmLeave(final Runnable continuation) {
+    if (recipes != null && !recipes.allowLeaveDraft()) return;
     if (editor == null || !editor.dirty()) {
       continuation.run();
       return;
@@ -550,7 +552,8 @@ public final class MainWindow {
     }
   }
 
-  private record RuntimeMerge(RegistryMergeService.Result registry, RecipeMergeService.Result recipes) {
+  private record RuntimeMerge(RegistryMergeService.Result registry, RecipeMergeService.Result recipes,
+          List<dev.recipeeditor.integrations.gregtech.GregTechMachineCatalog.Machine> machines) {
   }
 
   private void applyRuntime(final RuntimeData.Snapshot snapshot, final Path file) {
@@ -560,6 +563,10 @@ public final class MainWindow {
     }
     if (imported == null || editor == null || discovered == null) {
       runtime.addDiagnostic("Snapshot retained. Import/open its matching Minecraft instance before merging with a project.");
+      return;
+    }
+    if (recipes != null && !recipes.allowLeaveDraft()) {
+      runtime.addDiagnostic("Snapshot retained. Finish the open draft before applying it to the project.");
       return;
     }
     final var pack = imported.modpack();
@@ -582,7 +589,8 @@ public final class MainWindow {
       final var registry = new RegistryMergeService().merge(source.registry(), snapshot, file);
       final var recipes = new RecipeMergeService().merge(current.originals(), snapshot);
       current.applyRuntimeEvidence(registry.preferred(), registry.runtimeTags(), recipes.changedOrMissing(), snapshot.recipes().stream().map(r -> ResourceLocation.parse(r.id())).collect(java.util.stream.Collectors.toSet()), snapshot.environment().sourceInstance() + " @ " + snapshot.environment().collectedAt());
-      return new RuntimeMerge(registry, recipes);
+      return new RuntimeMerge(registry, recipes,
+              new dev.recipeeditor.integrations.gregtech.GregTechMachineCatalog().load(snapshot));
     }, merged -> {
       setBusy(false);
       if (closed || request != generation || editor != current) return;
@@ -591,7 +599,7 @@ public final class MainWindow {
       if (materials != null) materials.deactivate();
       resources = createResources(unified);
       materials = new MaterialsBrowserView(unified, textures, this::forForm);
-      recipes.runtime(merged.recipes());
+      recipes.runtime(merged.recipes(),unified,merged.machines());
       runtime.enableRecipeCreation(snapshot, serializer -> {
         if (!busy && editor == current && recipes != null) {
           select(NavigationSection.RECIPES);

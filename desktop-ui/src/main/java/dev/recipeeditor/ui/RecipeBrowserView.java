@@ -20,6 +20,8 @@ import java.util.*;
 public final class RecipeBrowserView extends BorderPane implements AutoCloseable {
   private final java.util.function.BiConsumer<RecipeDefinition, dev.recipeeditor.exporters.ExportFormat> exportRecipe;
   private final DiscoveryResult result;
+  private DiscoveryResult editorDiscovery;
+  private List<dev.recipeeditor.integrations.gregtech.GregTechMachineCatalog.Machine> machines=List.of();
   private java.util.function.BiConsumer<dev.recipeeditor.registry.ResourceKind,ResourceLocation> resourceNavigation=(kind,id)->{};
   public void resourceNavigation(final java.util.function.BiConsumer<dev.recipeeditor.registry.ResourceKind,ResourceLocation> action){resourceNavigation=Objects.requireNonNull(action);}
   private final dev.recipeeditor.registry.TextureResourceService textures=new dev.recipeeditor.registry.TextureResourceService();
@@ -53,6 +55,8 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   private final ComboBox<String> sourceFilter = new ComboBox<>();
   private javafx.scene.Node staticCenter;
   private RuntimeRecipeBrowserView runtimeView;
+  private RecipeEditorSidebar staticDraft;
+  private boolean restoringSelection;
   private ToolBar editActions;
   private java.nio.file.Path projectFile;
 
@@ -64,6 +68,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     this.integration = integration;
     this.exportRecipe = exportRecipe;
     this.result = result;
+    editorDiscovery = result;
     displayNames=new RecipeDisplayNameResolver(result.registry(),typeNames);
     this.editor = editor;
     this.tasks = tasks;
@@ -109,7 +114,19 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       return row;
     });
     table.setContextMenu(contextMenu());
-    table.getSelectionModel().selectedItemProperty().addListener((o, a, b) -> select(b));
+    table.getSelectionModel().selectedItemProperty().addListener((o, a, b) -> {
+      if (restoringSelection) return;
+      if (staticDraft != null && b != null && a != b) {
+        if (!staticDraft.allowClose()) {
+          restoringSelection = true;
+          try { table.getSelectionModel().select(a); }
+          finally { restoringSelection = false; }
+          return;
+        }
+        closeStaticDraft();
+      }
+      select(b);
+    });
     viewer.setPadding(new Insets(16));
     final var scroll = new ScrollPane(viewer);
     scroll.setFitToWidth(true);
@@ -132,12 +149,65 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     all();
   }
 
-  public void runtime(final dev.recipeeditor.companionclient.RecipeMergeService.Result merge) {
+  public void runtime(final dev.recipeeditor.companionclient.RecipeMergeService.Result merge,
+          final DiscoveryResult unified,
+          final List<dev.recipeeditor.integrations.gregtech.GregTechMachineCatalog.Machine> machines) {
+    editorDiscovery = unified;
+    this.machines = List.copyOf(machines);
     if (staticCenter == null) staticCenter = getCenter();
     runtimeIds = merge.entries().stream().filter(e -> e.runtime() != null).map(e -> e.id()).collect(java.util.stream.Collectors.toSet());
-    runtimeView = new RuntimeRecipeBrowserView(merge.entries(), this::copyRuntime, this::canCopyRuntime);
+    if (runtimeView != null) runtimeView.close();
+    runtimeView = new RuntimeRecipeBrowserView(merge.entries(), this::copyRuntime, this::canCopyRuntime,
+            entry -> editableSource(entry, merge).ifPresent(this::edit),
+            entry -> editableSource(entry, merge).isPresent());
+    runtimeView.machines(this.machines);
     sourceFilter.setValue("All");
     showSource();
+  }
+
+  boolean allowLeaveDraft() {
+    return (staticDraft == null || staticDraft.allowClose()) && (runtimeView == null || runtimeView.allowLeave());
+  }
+
+  private Optional<RecipeDefinition> editableSource(final dev.recipeeditor.companionclient.RecipeMergeService.Entry row,
+          final dev.recipeeditor.companionclient.RecipeMergeService.Result merge) {
+    if (row.staticDefinitions().size() != 1 || merge.changedOrMissing().contains(row.id())
+            || editor.hasConflict(row.id())) return Optional.empty();
+    if (row.runtime()!=null && row.runtime().properties().has("runtimeVariants")) return Optional.empty();
+    final var current = editor.effective().findById(row.id());
+    return current.size() == 1 && current.getFirst().status() == RecipeParseStatus.PARSED
+            && !readOnlyModRecipe(current.getFirst()) ? Optional.of(current.getFirst()) : Optional.empty();
+  }
+
+  private void closeStaticDraft() {
+    if (staticDraft == null) return;
+    staticDraft.close();
+    staticDraft = null;
+    ((SplitPane)staticCenter).getItems().set(1, detailTabs);
+  }
+
+  private void showDraft(final RecipeEditSession session, final boolean creating, final Runnable deleteAction) {
+    if (closed || !allowLeaveDraft()) return;
+    final var next = new RecipeEditorSidebar(editorDiscovery, editor, tasks, session, creating, integration);
+    next.machines(machines);
+    final var origins=editor.originals().findById(session.id()).stream()
+            .flatMap(recipe->recipe.source().sourceModIds().stream()).distinct().sorted().toList();
+    next.sourceMod(origins.isEmpty()?"UNKNOWN":String.join(", ",origins));
+    if (deleteAction != null) {
+      final var remove = new Button("Delete recipe");
+      remove.setOnAction(event -> { if(next.allowClose()) deleteAction.run(); });
+      next.action(remove);
+    }
+    if (runtimeView != null && getCenter() == runtimeView) {
+      runtimeView.openDraft(next);
+      return;
+    }
+    closeStaticDraft();
+    staticDraft = next;
+    final var close = new Button("Close sidebar");
+    close.setOnAction(event -> { if(next.allowClose()) closeStaticDraft(); });
+    next.action(close);
+    ((SplitPane)staticCenter).getItems().set(1, next);
   }
 
   private void showSource() {
@@ -352,8 +422,8 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   private void openNewRecipe(final ResourceLocation id, final String type) {
     final var source = new RecipeSource(SourceType.LOCAL_RESOURCE, List.of(), java.nio.file.Path.of("unsaved-project.json"),
             "changes/" + id, "Unsaved project overlay (logical path)");
-    tasks.submit(() -> new RecipeFormService().template(type), raw -> new RecipeEditorDialog(getScene().getWindow(),
-            result, editor, tasks, new RecipeEditSession(id, source, raw), true, integration).showAndWait(), this::error);
+    tasks.submit(() -> new RecipeFormService().template(type),
+            raw -> showDraft(new RecipeEditSession(id, source, raw), true, null), this::error);
   }
 
   private void copyRuntime(final dev.recipeeditor.companionprotocol.RuntimeData.Recipe recipe) {
@@ -362,8 +432,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       newId("Copy loaded Vanilla recipe to a new ID").ifPresent(id -> {
         final var source = new RecipeSource(SourceType.LOCAL_RESOURCE, List.of(), java.nio.file.Path.of("unsaved-project.json"),
                 "changes/" + id, "New project recipe copied from normalized Vanilla state " + recipe.id());
-        tasks.submit(() -> vanilla.copy(recipe), raw -> new RecipeEditorDialog(getScene().getWindow(), result,
-                editor, tasks, new RecipeEditSession(id, source, raw), true, integration).showAndWait(), this::error);
+        tasks.submit(() -> vanilla.copy(recipe), raw -> showDraft(new RecipeEditSession(id, source, raw), true, null), this::error);
       });
       return;
     }
@@ -373,7 +442,8 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     }
     newId("Copy loaded GT state: use namespace:" + ResourceLocation.parse(recipe.type()).path() + "/name (new ID)").ifPresent(id -> {
       final var source = new RecipeSource(SourceType.LOCAL_RESOURCE, List.of("gtceu"), java.nio.file.Path.of("unsaved-project.json"), "changes/" + id, "Explicit new-ID copy of normalized runtime state; original source UNKNOWN");
-      tasks.submit(() -> new dev.recipeeditor.integrations.gregtech.GregTechRuntimeDraft().copy(recipe), raw -> new RecipeEditorDialog(getScene().getWindow(), result, editor, tasks, new RecipeEditSession(id, source, raw), true, integration).showAndWait(), this::error);
+      tasks.submit(() -> new dev.recipeeditor.integrations.gregtech.GregTechRuntimeDraft().copy(recipe),
+              raw -> showDraft(new RecipeEditSession(id, source, raw), true, null), this::error);
     });
   }
 
@@ -409,7 +479,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       return;
     final String baseline = bases.isEmpty() ? recipe.rawJson() : bases.stream().filter(base -> base.source().equals(recipe.source())).findFirst().orElse(bases.getFirst()).rawJson();
     final var source = new RecipeSource(SourceType.LOCAL_RESOURCE, List.of(), java.nio.file.Path.of("unsaved-project.json"), "changes/" + recipe.id(), "Unsaved project overlay (logical path)");
-    new RecipeEditorDialog(getScene().getWindow(), result, editor, tasks, new RecipeEditSession(recipe.id(), source, recipe.rawJson(), baseline), false, integration).showAndWait();
+    showDraft(new RecipeEditSession(recipe.id(), source, recipe.rawJson(), baseline), false, () -> delete(recipe));
   }
 
   private void duplicate(final RecipeDefinition recipe) {
@@ -490,6 +560,8 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
 
   @Override
   public void close() {
+    closeStaticDraft();
+    if (runtimeView != null) runtimeView.close();
     closed = true;
     textures.close();displayCache.clear();
     editor.removeListener(listener);
