@@ -23,9 +23,21 @@ public final class RecipeEditorService {
     /** Reuses source conflict quarantine without changing the persistent project change records. */
     public synchronized void applyRuntimeEvidence(final dev.recipeeditor.registry.RegistryIndex registry,final dev.recipeeditor.registry.TagIndex tags,final Set<ResourceLocation> incompatible,final Set<ResourceLocation> runtimeIds,final String environment) {
         this.runtimeIds=Set.copyOf(runtimeIds);validator.updateRegistry(registry);effective.updateTags(tags);final var affected=new ArrayList<ResourceLocation>();
-        for(final var change:List.copyOf(changes.values())) {
+        final var blockedIds=new HashSet<ResourceLocation>();
+        for(final var change:changes.values()) {
             final boolean blocked=change.type()==RecipeChangeType.CREATE?runtimeIds.contains(change.id()):incompatible.contains(change.id());
-            if(!blocked)continue;changes.remove(change.id());effective.apply(change.id(),null);conflicts.put(change.id(),new SourceConflict(change.id(),"Runtime evidence conflicts with project base in "+environment+". Static original references are retained; review before applying/exporting.",change,references(change.id())));affected.add(change.id());
+            if(blocked) {
+                blockedIds.add(change.id());
+                final String peer=change.metadata().get(RecipeMigrationLink.PEER);
+                if(peer!=null&&RecipeMigrationLink.valid(change,changes))blockedIds.add(ResourceLocation.parse(peer));
+            }
+        }
+        for(final var id:blockedIds) {
+            final var change=changes.remove(id);
+            if(change==null)continue;
+            effective.apply(id,null);
+            conflicts.put(id,new SourceConflict(id,"Runtime evidence conflicts with project base in "+environment+". Static original references are retained; review before applying/exporting.",change,references(id)));
+            affected.add(id);
         }
         if(!affected.isEmpty())history.clear();affected.forEach(this::notifyChanged);
     }
@@ -54,6 +66,7 @@ public final class RecipeEditorService {
     }
     public synchronized void update(final ResourceLocation id,final RecipeDefinition definition) {
         requireNoConflict(id);
+        requireUnlinked(id);
         if(!id.equals(definition.id())) throw new IllegalArgumentException("Editing cannot rename an ID; use Duplicate");
         if(effective.findById(id).isEmpty()) throw new IllegalArgumentException("Recipe is deleted or missing");
         final var valid=validated(definition); final var old=changes.get(id);
@@ -68,6 +81,7 @@ public final class RecipeEditorService {
     }
     public synchronized void delete(final ResourceLocation id) {
         requireNoConflict(id);
+        requireUnlinked(id);
         if(effective.findById(id).isEmpty()) throw new IllegalArgumentException("Recipe is already deleted or missing");
         final var old=changes.get(id);
         if(old!=null && old.type()==RecipeChangeType.CREATE) change(id,null);
@@ -78,7 +92,41 @@ public final class RecipeEditorService {
         final var clone=new RecipeDefinition(target,source.type(),source.inputs(),source.outputs(),source.layout(),source.properties(),source.source(),source.rawJson(),source.status(),source.diagnostics());
         create(clone); return effective.findById(target).getFirst();
     }
-    public synchronized void reset(final ResourceLocation id) { requireNoConflict(id); if(changes.containsKey(id)) change(id,null); }
+    public synchronized void reset(final ResourceLocation id) { requireNoConflict(id);requireUnlinked(id);if(changes.containsKey(id)) change(id,null); }
+
+    public synchronized void migrate(final ResourceLocation originalId,final RecipeDefinition target) {
+        requireNoConflict(originalId);
+        final var targetId=target.id();
+        if(originalId.equals(targetId))throw new IllegalArgumentException("This migration requires an explicit new ID");
+        if(originals.findById(originalId).size()!=1 || changes.containsKey(originalId))
+            throw new IllegalArgumentException("Machine replacement needs one unchanged original project definition");
+        if(runtimeIds.contains(targetId)||!originals.findById(targetId).isEmpty()||changes.containsKey(targetId)||conflicts.containsKey(targetId))
+            throw new IllegalArgumentException("Target recipe ID already exists");
+        final var valid=validated(target);
+        final var removed=new RecipeChange(originalId,RecipeChangeType.DELETE,references(originalId),List.of(),
+                Instant.now(),Map.of(RecipeMigrationLink.PEER,targetId.toString()));
+        final var added=new RecipeChange(targetId,RecipeChangeType.CREATE,List.of(),List.of(valid),
+                Instant.now(),Map.of(RecipeMigrationLink.PEER,originalId.toString()));
+        history.execute(new RecipeCommand() {
+            @Override public void execute() { applyPair(originalId,removed,targetId,added); }
+            @Override public void undo() { applyPair(originalId,null,targetId,null); }
+            @Override public long retainedBytes() { return 2L*valid.rawJson().length(); }
+        });
+    }
+
+    private void requireUnlinked(final ResourceLocation id) {
+        final var existing=changes.get(id);
+        if(existing!=null&&existing.metadata().containsKey(RecipeMigrationLink.PEER))
+            throw new IllegalStateException("A linked replacement must stay intact. Undo the migration before editing either entry.");
+    }
+
+    private void applyPair(final ResourceLocation first,final RecipeChange before,final ResourceLocation second,
+            final RecipeChange after) {
+        applyWithoutNotification(first,before);
+        applyWithoutNotification(second,after);
+        notifyChanged(first);
+        notifyChanged(second);
+    }
     public synchronized void discardConflict(final ResourceLocation id) { conflicts.remove(id); notifyChanged(id); }
     private List<OriginalRecipeReference> references(final ResourceLocation id) { return originals.findById(id).stream().map(OriginalRecipeReference::from).toList(); }
     private void requireNoConflict(final ResourceLocation id) { if(conflicts.containsKey(id)) throw new IllegalStateException("Saved change is blocked by a source conflict; review/discard it first"); }
@@ -92,9 +140,12 @@ public final class RecipeEditorService {
         });
     }
     private void apply(final ResourceLocation id,final RecipeChange change) {
+        applyWithoutNotification(id,change);
+        notifyChanged(id);
+    }
+    private void applyWithoutNotification(final ResourceLocation id,final RecipeChange change) {
         effective.apply(id,change);
         if(change==null) changes.remove(id); else changes.put(id,change);
-        notifyChanged(id);
     }
     private void notifyChanged(final ResourceLocation id) { for(final var listener:List.copyOf(listeners)) listener.accept(id); }
     public synchronized boolean canUndo() { return history.canUndo(); }
@@ -110,6 +161,10 @@ public final class RecipeEditorService {
             final boolean matching=change.type()==RecipeChangeType.CREATE?current.isEmpty():new HashSet<>(current).equals(new HashSet<>(change.originals()));
             if(!matching) blocked.put(change.id(),new SourceConflict(change.id(),"Original source/content changed or ID now collides; automatic application blocked",change,current));
             else accepted.put(change.id(),change);
+        }
+        for(final var change:List.copyOf(accepted.values()))if(!RecipeMigrationLink.valid(change,accepted)) {
+            accepted.remove(change.id());
+            blocked.put(change.id(),new SourceConflict(change.id(),"The linked recipe replacement is missing or conflicted",change,references(change.id())));
         }
         final var affected=new HashSet<>(changes.keySet()); affected.addAll(accepted.keySet());
         changes.keySet().stream().toList().forEach(id->effective.apply(id,null)); changes.clear(); conflicts.clear(); conflicts.putAll(blocked);
