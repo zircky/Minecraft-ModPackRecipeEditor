@@ -82,3 +82,8 @@
 
 - [Аудит, матрица форматов и результаты](PHASE23_REPORT.md)
 - [Изменённые файлы](PHASE23_FILES.txt)
+
+## Phase 24 — Universal Runtime Recipe Editor
+
+- [Аудит, возможности и проверка](PHASE24_REPORT.md)
+- [Изменённые файлы](PHASE24_FILES.txt)
