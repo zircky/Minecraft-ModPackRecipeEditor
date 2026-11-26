@@ -150,10 +150,12 @@ public final class InventoryPreviewProvider implements AutoCloseable {
     private ItemPreviewCache.Image texture(final PendingKey key)throws Exception{final var entries=key.registry().find(key.id()).stream().filter(e->e.kind()==key.kind()).toList();if(entries.size()!=1)return missing("Ambiguous fluid resource");final var result=frames.previewAsync(entries.getFirst().visual(),key.root()).get(5,TimeUnit.SECONDS);return new ItemPreviewCache.Image(result.png(),"STATIC_TEXTURE",result.explanation());}
     private void poll(){if(closed)return;try{
         final var active=client;final String token=active!=null&&active.itemPreviewsAvailable()?active.previewContext():"offline";
-        boolean changed=!token.equals(liveContext);liveContext=token;
-        if(active!=null&&active.itemPreviewsAvailable()&&System.nanoTime()-refreshed>TimeUnit.SECONDS.toNanos(10)){changed=true;refreshed=System.nanoTime();}
-        for(final var context:contexts.values())if(context.changed())changed=true;
-        if(changed){epoch.incrementAndGet();cache.clear();frames.clear();notifyViews();}
+        boolean runtimeChanged=!token.equals(liveContext);liveContext=token;
+        if(active!=null&&active.itemPreviewsAvailable()&&System.nanoTime()-refreshed>TimeUnit.SECONDS.toNanos(10)){runtimeChanged=true;refreshed=System.nanoTime();}
+        boolean filesChanged=false;
+        for(final var context:contexts.values())if(context.changed())filesChanged=true;
+        if(runtimeChanged)epoch.incrementAndGet();
+        if(runtimeChanged||filesChanged){cache.clear();frames.clear();notifyViews();}
     }catch(Exception ignored){cache.clear();}}
     private void notifyViews(){try{Platform.runLater(()->revision.set(revision.get()+1));}catch(IllegalStateException notStarted){/* No mounted previews before FX startup. */}}
     private ItemPreviewCache.Image missing(final String message){return new ItemPreviewCache.Image(new byte[0],"PLACEHOLDER",message);}
