@@ -60,7 +60,7 @@ public final class InventoryPreviewProvider implements AutoCloseable {
         client=value;observed=value instanceof dev.recipeeditor.companionclient.CompanionConnectionService service?service:null;
         if(observed!=null)observed.addListener(connectionListener);connectionChanged();
     }
-    private void connectionChanged(){epoch.incrementAndGet();liveContext=runtimeContext();refreshed=System.nanoTime();invalidate();}
+    private void connectionChanged(){epoch.incrementAndGet();liveContext=runtimeContext();refreshed=System.nanoTime();cache.clearSession();notifyViews();}
     private String runtimeContext(){final var active=client;return active!=null&&active.itemPreviewsAvailable()?active.previewContext():"offline";}
     public String clientStatus(){final var active=client;return active==null?"CLIENT_DISCONNECTED: connect the Minecraft client in Runtime":active.previewUnavailableReason();}
     /** Native-only diagnostic request, using the same connection/limits as catalog previews. No static success substitute. */
@@ -98,6 +98,15 @@ public final class InventoryPreviewProvider implements AutoCloseable {
     private Context context(final RegistryIndex index){Context result=contexts.get(index);if(result==null){result=new Context(index);contexts.put(index,result);while(contexts.size()>2)contexts.pollFirstEntry();frames.clear();}if(result.changed()){cache.clear();frames.clear();notifyViews();}return result;}
     private ItemPreviewCache.Key nativeCacheKey(final ItemPreviewRequest request,final String context){return new ItemPreviewCache.Key(request.resourceId(),ResourceKind.ITEM,request.variant(),digest(request.nbt()),"1.20.1","native-client-session:"+context,request.size(),"inventory-renderer-1");}
     private ItemPreviewCache.Key cacheKey(final PendingKey key,final Context context,final String runtime){return new ItemPreviewCache.Key(key.id().toString(),key.kind(),key.variant(),digest(key.nbt()),"1.20.1",context.id+":"+context.original+":"+context.materialKeys.getOrDefault(key.id(),"")+":"+runtime,key.size(),"inventory-renderer-1");}
+    private Optional<ItemPreviewCache.Key> capturedKey(final PendingKey key,final Context context) {
+        final var sources=context.registry.find(key.id()).stream().filter(entry->entry.kind()==key.kind())
+                .flatMap(entry->entry.sources().stream()).filter(source->source.type()==SourceType.RUNTIME
+                        && source.internalPath().startsWith("snapshot/")).distinct().toList();
+        if(sources.size()!=1)return Optional.empty();
+        final var source=sources.getFirst();
+        return Optional.of(new ItemPreviewCache.Key(key.id().toString(),key.kind(),key.variant(),digest(key.nbt()),"1.20.1",
+                "snapshot-preview:"+source.container()+":"+source.internalPath()+":"+context.original,key.size(),"inventory-renderer-1"));
+    }
     private void process(final List<Pending> batch){
         final var runtime=new ArrayList<Pending>();final var requests=new ArrayList<ItemPreviewRequest>();final var active=client;
         for(final var item:batch){
@@ -107,6 +116,10 @@ public final class InventoryPreviewProvider implements AutoCloseable {
                 final var context=context(item.key.registry());if(context.dirty){item.future.complete(missing("Resource files changed; re-index before showing cached icons"));continue;}
                 if(item.key.kind()==ResourceKind.FLUID){item.future.complete(texture(item.key));continue;}
                 final String token=active!=null&&active.itemPreviewsAvailable()?active.previewContext():"offline";
+                if(token.equals("offline")) {
+                    final var captured=capturedKey(item.key,context).flatMap(cache::get);
+                    if(captured.isPresent()){item.future.complete(captured.get());continue;}
+                }
                 final var cached=cache.get(cacheKey(item.key,context,token));if(cached.isPresent()){item.future.complete(cached.get());continue;}
                 if(active!=null&&active.itemPreviewsAvailable()){final var request=new ItemPreviewRequest(context.item(item.key).toString(),item.key.size(),item.key.variant(),item.key.nbt());runtime.add(item);requests.add(request);}
                 else completeStatic(item,context,clientStatus());
@@ -118,7 +131,7 @@ public final class InventoryPreviewProvider implements AutoCloseable {
             for(int i=0;i<runtime.size();i++){
                 final var item=runtime.get(i);final var response=responses.get(i);if(!response.request().equals(requests.get(i)))throw new IllegalArgumentException("Runtime preview identity mismatch");final var context=context(item.key.registry());
                 if(active!=client||item.key.epoch()!=epoch.get()||context.dirty){item.future.complete(missing("Preview context changed; retry after synchronization"));continue;}
-                if(response.status().equals("READY")){final var result=new ItemPreviewCache.Image(response.png(),response.source(),response.diagnostic());cache.put(cacheKey(item.key,context,response.context()),result);item.future.complete(result);}
+                if(response.status().equals("READY")){final var result=new ItemPreviewCache.Image(response.png(),response.source(),response.diagnostic());cache.put(cacheKey(item.key,context,response.context()),result);capturedKey(item.key,context).ifPresent(key->cache.put(key,result));item.future.complete(result);}
                 else completeStatic(item,context,response.diagnostic());
             }
         }catch(Exception unavailable){for(final var item:runtime)if(!item.future.isDone())try{completeStatic(item,context(item.key.registry()),"Client preview failed: "+message(unavailable));}catch(Exception failure){item.future.complete(missing(message(failure)));}}
@@ -155,7 +168,7 @@ public final class InventoryPreviewProvider implements AutoCloseable {
         boolean filesChanged=false;
         for(final var context:contexts.values())if(context.changed())filesChanged=true;
         if(runtimeChanged)epoch.incrementAndGet();
-        if(runtimeChanged||filesChanged){cache.clear();frames.clear();notifyViews();}
+        if(runtimeChanged||filesChanged){if(filesChanged)cache.clear();else cache.clearSession();frames.clear();notifyViews();}
     }catch(Exception ignored){cache.clear();}}
     private void notifyViews(){try{Platform.runLater(()->revision.set(revision.get()+1));}catch(IllegalStateException notStarted){/* No mounted previews before FX startup. */}}
     private ItemPreviewCache.Image missing(final String message){return new ItemPreviewCache.Image(new byte[0],"PLACEHOLDER",message);}
