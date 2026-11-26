@@ -41,6 +41,7 @@ final class RecipeEditorSidebar extends BorderPane implements AutoCloseable {
     private final TextField migrationId=new TextField();
     private long validationSequence;
     private boolean migrationSaved;
+    private String language=Locale.getDefault().getLanguage().equals("ru")?"ru_ru":"en_us";
     RecipeEditorSidebar(final DiscoveryResult discovery,final RecipeEditorService editor,final EditorTasks tasks,final RecipeEditSession session,final boolean creating, final dev.recipeeditor.integrations.api.IntegrationContext integration) {
         this.integration=integration;
         this.discovery=discovery; this.editor=editor; this.tasks=tasks; this.session=session; this.creating=creating;
@@ -83,6 +84,10 @@ final class RecipeEditorSidebar extends BorderPane implements AutoCloseable {
         validateDraft();
     }
     boolean allowClose() { return !saving && (!(session.dirty() || !pendingAdvanced.isEmpty()) || confirmDiscard()); }
+    void language(final String value) {
+        language=Objects.requireNonNull(value);
+        if(preview!=null)render(preview);
+    }
     @Override public void close() { alive=false; debounce.stop();textures.close(); }
     void action(final Button button) {
         final var header=(VBox)getTop();
@@ -122,6 +127,11 @@ final class RecipeEditorSidebar extends BorderPane implements AutoCloseable {
             final List<GregTechMachineCatalog.Machine> catalog) {
         try {
             final String original=forms.type(session.originalJson()), changed=forms.type(text);
+            if(original.equals(changed) && changed.startsWith("gtceu:") && (creating ||
+                    editor.authoringBases().findById(session.id()).stream().anyMatch(base->new RuntimeRecipeBase().matches(base.source())))) {
+                final var issues=new GregTechRecipeExporter().unsupported(new GregTechRecipeMapper().map(session.id(),text,false));
+                return new Migration(session.id(),issues);
+            }
             if(original.equals(changed) || (!original.startsWith("gtceu:") && catalog.stream().noneMatch(m->m.id().toString().equals(original))))
                 return new Migration(session.id(),List.of());
             final var machine=catalog.stream().filter(row->row.id().toString().equals(changed)).findFirst();
@@ -140,7 +150,7 @@ final class RecipeEditorSidebar extends BorderPane implements AutoCloseable {
         if(value.validation().recipe()==null){visual.getChildren().add(new Label("Repair the recipe using Raw JSON; validation details are shown below."));return;}
         if(!canAuthor(value.validation().recipe())) {
             visual.getChildren().add(new Label("Read-only mod adapter: authoring/export require a separately verified implementation."));
-            layoutResolver.resolve(value.validation().recipe()).ifPresent(model->visual.getChildren().add(new RecipeLayoutRenderer(model,discovery,textures,slotSize,Locale.getDefault().getLanguage().equals("ru")?"ru_ru":"en_us",RecipeLayoutRenderer.Mode.VIEWER,null)));
+            layoutResolver.resolve(value.validation().recipe()).ifPresent(model->visual.getChildren().add(new RecipeLayoutRenderer(model,discovery,textures,slotSize,language,RecipeLayoutRenderer.Mode.VIEWER,null)));
             return;
         }
         if(modEditor.supports(value.validation().recipe(),integration)) {
@@ -170,7 +180,7 @@ final class RecipeEditorSidebar extends BorderPane implements AutoCloseable {
         if(shared.isPresent()) {
             final var actions=new RecipeLayoutRenderer.Actions(this::chooseInput,this::clearInput,this::chooseOutput);
             visual.setAlignment(javafx.geometry.Pos.TOP_CENTER);
-            visual.getChildren().add(new RecipeLayoutRenderer(shared.get(),discovery,textures,slotSize,Locale.getDefault().getLanguage().equals("ru")?"ru_ru":"en_us",creating?RecipeLayoutRenderer.Mode.CREATOR:RecipeLayoutRenderer.Mode.EDITOR,actions));
+            visual.getChildren().add(new RecipeLayoutRenderer(shared.get(),discovery,textures,slotSize,language,creating?RecipeLayoutRenderer.Mode.CREATOR:RecipeLayoutRenderer.Mode.EDITOR,actions));
             final var scale=new Spinner<Integer>(40,80,(int)slotSize,8);scale.setPrefWidth(100);scale.setAccessibleText("Recipe slot size in pixels");scale.valueProperty().addListener((o,a,b)->{slotSize=b;render(value);});
             final var sizing=new HBox(8,new Label("Slot size"),scale);sizing.setAlignment(javafx.geometry.Pos.CENTER);visual.getChildren().add(sizing);
             renderAdvancedFields(value);return;
@@ -215,7 +225,7 @@ final class RecipeEditorSidebar extends BorderPane implements AutoCloseable {
         if(type.equals("minecraft:stonecutting")&&output.id()!=null)initial="{\"item\":\""+output.id()+"\",\"count\":"+fields.getOrDefault("count","1")+"}";
         final boolean cooking=new CookingRecipeLayoutProvider().find(type).isPresent();
         final boolean objectOutput=initial.stripLeading().startsWith("{");
-        new IngredientPicker(getScene().getWindow(),discovery,ResourceKind.ITEM,false,!cooking||objectOutput,initial).showAndWait().ifPresent(value->patch(text->forms.result(text,value.id(),value.amount())));
+        new IngredientPicker(getScene().getWindow(),discovery,ResourceKind.ITEM,false,!cooking||objectOutput,initial,language).showAndWait().ifPresent(value->patch(text->forms.result(text,value.id(),value.amount())));
     }
     private void restoreDraft(final Deque<String> from,final Deque<String> to) {
         if(saving||from.isEmpty())return;
@@ -223,7 +233,7 @@ final class RecipeEditorSidebar extends BorderPane implements AutoCloseable {
         to.addFirst(raw.getText());restoringDraft=true;try{raw.setText(from.removeFirst());}finally{restoringDraft=false;}
     }
     private void pickIngredient(final String initial,final java.util.function.Consumer<String> selected) {
-        new IngredientPicker(getScene().getWindow(),discovery,ResourceKind.ITEM,true,false,initial).showAndWait().ifPresent(value->selected.accept(value.json()));
+        new IngredientPicker(getScene().getWindow(),discovery,ResourceKind.ITEM,true,false,initial,language).showAndWait().ifPresent(value->selected.accept(value.json()));
     }
     private void advancedField(final VanillaRecipeSchema.Field field,final String value) {
         final String name=field.key();
@@ -319,14 +329,14 @@ final class RecipeEditorSidebar extends BorderPane implements AutoCloseable {
                 final int index=i;
                 final String initial=i<count?editing.flat(entries.get(i).path("content"),capability):"";
                 final var slot=new Button();
-                if(!initial.isEmpty())slot.setGraphic(new RecipeSlotView(RecipeSlotContent.parse(initial),discovery,textures,40));
+                if(!initial.isEmpty())slot.setGraphic(new RecipeSlotView(RecipeSlotContent.parse(initial),discovery,textures,40,language));
                 else slot.setText(i<count?"Complex":"＋");
                 slot.setAccessibleText(role+" "+capability+" slot "+(i+1));
                 slot.setDisable(migrationSaved || i>count || i>=max || (i<count && initial.isBlank()));
                 slot.setOnAction(event->{
                     if(!pendingAdvanced.isEmpty()){issues.setText("Apply or reset pending fields first.");return;}
                     final var kind=capability.equals("fluid")?ResourceKind.FLUID:ResourceKind.ITEM;
-                    new IngredientPicker(getScene().getWindow(),discovery,kind,true,true,initial)
+                    new IngredientPicker(getScene().getWindow(),discovery,kind,true,true,initial,language)
                             .showAndWait().ifPresent(pick->patch(text->editing.replace(text,role,capability,index,max,pick.json(),pick.amount())));
                 });
                 final var cell=new VBox(2,slot);

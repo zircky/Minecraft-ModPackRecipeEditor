@@ -4,6 +4,7 @@ import dev.recipeeditor.companionclient.*;
 import dev.recipeeditor.companionprotocol.RuntimeData;
 import dev.recipeeditor.core.ApplicationDirectories;
 import dev.recipeeditor.core.importing.ModpackDefinition;
+import dev.recipeeditor.ui.rendering.InventoryPreviewProvider;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
@@ -18,6 +19,9 @@ import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 
 public final class RuntimeIntegrationView extends BorderPane implements AutoCloseable {
+    private java.util.function.BooleanSupplier openRecipes=()->false;
+
+    void openRecipes(final java.util.function.BooleanSupplier action){openRecipes=Objects.requireNonNull(action);}
     private final CompanionConnectionService connection;
     private final RuntimeSnapshotService snapshots;
     private final ExecutorService storage=Executors.newSingleThreadExecutor(Thread.ofVirtual().name("runtime-storage",0).factory());
@@ -39,6 +43,10 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
     private java.util.function.Consumer<CompanionConnectionStatus> previewListener;
     private RuntimeData.Snapshot snapshot;private Path snapshotFile;private boolean busy,closed;
     public RuntimeIntegrationView(final CompanionConnectionService connection,final RuntimeSnapshotService snapshots,final BiConsumer<RuntimeData.Snapshot,Path> apply) {
+        this(connection,snapshots,apply,InventoryPreviewProvider.shared());
+    }
+    RuntimeIntegrationView(final CompanionConnectionService connection,final RuntimeSnapshotService snapshots,
+            final BiConsumer<RuntimeData.Snapshot,Path> apply,final InventoryPreviewProvider previews) {
         this.connection=connection;this.snapshots=snapshots;this.apply=apply;getStyleClass().add("workspace-view");session.setPromptText("Minecraft config/mre_companion/session.json — token is read privately, never displayed");HBox.setHgrow(session,Priority.ALWAYS);
         final var browse=new Button("Session File…");browse.setOnAction(e->{final var chooser=new FileChooser();chooser.setTitle("Select Companion session.json in the chosen Minecraft instance");final var file=chooser.showOpenDialog(getScene().getWindow());if(file!=null)session.setText(file.toString());});
         connect.setOnAction(e->{try{busy(true);connection.connect(Path.of(session.getText())).whenComplete((done,error)->Platform.runLater(()->{busy(false);if(error!=null)error(error);}));}catch(RuntimeException failure){busy(false);error(failure);}});
@@ -55,10 +63,10 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
         final var registryDetails=new TextArea();registryDetails.setEditable(false);registries.getSelectionModel().selectedItemProperty().addListener((o,a,b)->registryDetails.setText(b==null?"":b.metadata()+"\nBlockState property descriptors: "+b.stateProperties()+"\nConfirmed only in snapshot "+snapshot.snapshotId()+" @ "+snapshot.environment().collectedAt()));
         final var registryTab=new Tab("Runtime Registry",new SplitPane(registries,registryDetails));registryTab.setClosable(false);final var diagnosticTab=new Tab("Diagnostics",diagnostics);diagnosticTab.setClosable(false);
         final var typeTab=new Tab("Recipe Types",recipeTypes);typeTab.setClosable(false);
-        setCenter(new TabPane(registryTab,typeTab,clientPreviewTab(),diagnosticTab));
+        setCenter(new TabPane(registryTab,typeTab,clientPreviewTab(previews),diagnosticTab));
         connection.addListener(value->Platform.runLater(()->{if(!closed){if(snapshot==null&&value==CompanionConnectionStatus.CONNECTED)environment.setText("Companion "+connection.companionVersion()+" authenticated. Open a world and synchronize for environment details.");status.setText(value+" — "+(snapshot==null?"no snapshot":"snapshot is historical evidence from "+snapshot.environment().collectedAt()));buttons();}}));buttons();
     }
-    private Tab clientPreviewTab(){
+    private Tab clientPreviewTab(final InventoryPreviewProvider previews){
         final var item=new TextField("gtceu:aluminium_block");item.setId("client-preview-item-id");
         final var request=new Button("Request client preview");request.setId("request-client-preview");
         final var image=new javafx.scene.image.ImageView();image.setId("client-preview-image");image.setFitWidth(128);image.setFitHeight(128);image.setPreserveRatio(true);image.setSmooth(false);
@@ -76,7 +84,7 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
             trace.setText("Registry: "+(confirmed?"REGISTRY_CONFIRMED":"UNKNOWN (no matching snapshot entry)")+"\n"+connection.previewUnavailableReason()+"\nPREVIEW_REQUESTED: "+id);
             request.setDisable(true);
             try{
-                final var future=dev.recipeeditor.ui.rendering.InventoryPreviewProvider.shared().requestClientPreview(id,128);previewRequest=future;
+                final var future=previews.requestClientPreview(id,128);previewRequest=future;
                 future.whenComplete((result,error)->Platform.runLater(()->{
                     if(closed||previewRequest!=future)return;request.setDisable(false);
                     if(error!=null){trace.setText("PREVIEW_FAILED: "+error.getClass().getSimpleName());return;}
@@ -205,11 +213,7 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
         diagnostics.appendText(text.toString());
     }
     private void showSnapshot(){
-        final var data=snapshot;busy(true);
-        CompletableFuture.supplyAsync(()->new RecipeMergeService().merge(new dev.recipeeditor.recipeengine.RecipeIndex(List.of(),new dev.recipeeditor.registry.TagIndex(List.of())),data),storage).whenComplete((merged,failure)->Platform.runLater(()->{
-            busy(false);if(closed)return;if(failure!=null){error(failure);return;}
-            final var dialog=new Dialog<Void>();dialog.initOwner(getScene().getWindow());new UiTheme().apply(dialog.getDialogPane());dialog.setTitle("Runtime Snapshot — normalized read-only recipes");dialog.getDialogPane().setContent(new RuntimeRecipeBrowserView(merged.entries()));dialog.getDialogPane().setPrefSize(1100,720);dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);dialog.show();
-        }));
+        if(!openRecipes.getAsBoolean())addDiagnostic("Open the matching project and wait for its snapshot to finish merging to browse recipes.");
     }
     private void busy(final boolean value){busy=value;buttons();}
     private void buttons(){previewAvailability.setText("Item preview: "+connection.previewUnavailableReason());view.setDisable(busy||snapshot==null);final var s=connection.status();connect.setDisable(busy||s==CompanionConnectionStatus.CONNECTING||s==CompanionConnectionStatus.SYNCHRONIZING);disconnect.setDisable(s==CompanionConnectionStatus.DISCONNECTED);sync.setDisable(busy||s!=CompanionConnectionStatus.CONNECTED);cancel.setDisable(s!=CompanionConnectionStatus.SYNCHRONIZING);load.setDisable(busy);offline.setDisable(busy||pack==null);session.setDisable(busy);}

@@ -73,6 +73,11 @@ public final class MainWindow {
 
   public MainWindow(final ApplicationInfo info, final ModpackImportService importer, final StaticAnalysisService analyzer, final TextureResourceService textures, final ProjectPersistence persistence, final java.util.function.BiFunction<DiscoveryResult, RecipeFormatAdapter, RecipeEditorService> editorFactory, final RecipeExportService exports, final java.util.function.Consumer<Path> openDirectory, final CompanionConnectionService connection, final RuntimeSnapshotService snapshots) {
     this.runtime = new RuntimeIntegrationView(connection, snapshots, this::applyRuntime);
+    this.runtime.openRecipes(()->{
+      if(busy || recipes==null || !recipes.showRuntime())return false;
+      select(NavigationSection.RECIPES);
+      return true;
+    });
     this.exports = Objects.requireNonNull(exports);
     this.openDirectory = Objects.requireNonNull(openDirectory);
     this.info = Objects.requireNonNull(info);
@@ -552,7 +557,7 @@ public final class MainWindow {
     }
   }
 
-  private record RuntimeMerge(RegistryMergeService.Result registry, RecipeMergeService.Result recipes,
+  private record RuntimeMerge(RegistryMergeService.Result registry, RecipeMergeService.Result recipes, RuntimeRecipeCatalog.Catalog catalog,
           List<dev.recipeeditor.integrations.gregtech.GregTechMachineCatalog.Machine> machines) {
   }
 
@@ -588,8 +593,11 @@ public final class MainWindow {
       }
       final var registry = new RegistryMergeService().merge(source.registry(), snapshot, file);
       final var recipes = new RecipeMergeService().merge(current.originals(), snapshot);
-      current.applyRuntimeEvidence(registry.preferred(), registry.runtimeTags(), recipes.changedOrMissing(), snapshot.recipes().stream().map(r -> ResourceLocation.parse(r.id())).collect(java.util.stream.Collectors.toSet()), snapshot.environment().sourceInstance() + " @ " + snapshot.environment().collectedAt());
-      return new RuntimeMerge(registry, recipes,
+      final var catalog=new RuntimeRecipeCatalog().prepare(recipes,snapshot,registry.runtimeTags(),current.validator(),
+          dev.recipeeditor.integrations.api.IntegrationContext.from(pack));
+      current.applyRuntimeCatalog(registry.preferred(),catalog.visible(),catalog.authorable(),catalog.incompatible(),catalog.evidence().keySet(),
+          snapshot.environment().sourceInstance()+" @ "+snapshot.environment().collectedAt());
+      return new RuntimeMerge(registry, recipes, catalog,
               new dev.recipeeditor.integrations.gregtech.GregTechMachineCatalog().load(snapshot));
     }, merged -> {
       setBusy(false);
@@ -599,7 +607,7 @@ public final class MainWindow {
       if (materials != null) materials.deactivate();
       resources = createResources(unified);
       materials = new MaterialsBrowserView(unified, textures, this::forForm);
-      recipes.runtime(merged.recipes(),unified,merged.machines());
+      recipes.runtime(merged.catalog(),unified,merged.machines());
       runtime.enableRecipeCreation(snapshot, serializer -> {
         if (!busy && editor == current && recipes != null) {
           select(NavigationSection.RECIPES);
@@ -610,7 +618,7 @@ public final class MainWindow {
       runtime.addDiagnostics(merged.registry().diagnostics());
       runtime.addDiagnostics(merged.recipes().diagnostics().stream().filter(message -> message.contains("differ") || message.contains("absent")).toList());
       updateProjectState();
-      status.setText("Runtime snapshot merged: " + snapshot.recipes().size() + " recipes; normalized runtime recipes are read only.");
+      status.setText("Runtime snapshot merged: " + snapshot.recipes().size() + " recipes. Supported recipes use project drafts.");
     }, failure -> {
       setBusy(false);
       runtime.addDiagnostic("Merge blocked: " + rootMessage(failure) + ". Snapshot remains available in Runtime.");
@@ -655,7 +663,7 @@ public final class MainWindow {
           copies.add(originals.getFirst());
         }
         final var blocked = current.conflicts().stream().map(SourceConflict::recipeId).collect(java.util.stream.Collectors.toSet());
-        new ExportWizard(stage, exports, pack, current.originals(), saved, file, blocked, (ExportWorkspace) loaded[1], selected == null ? Set.of() : Set.of(selected.id()), format, copies, openDirectory).show();
+        new ExportWizard(stage, exports, pack, current.authoringBases(), saved, file, blocked, (ExportWorkspace) loaded[1], selected == null ? Set.of() : Set.of(selected.id()), format, copies, openDirectory).show();
         status.setText("Export uses the project snapshot saved on disk. Unsaved edits are excluded.");
       }, failure -> {
         setBusy(false);

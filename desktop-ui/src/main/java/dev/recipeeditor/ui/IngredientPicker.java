@@ -18,10 +18,14 @@ public final class IngredientPicker extends Dialog<IngredientPicker.Selection> {
         this(owner,result,kind,allowTag,allowAmount,"");
     }
     public IngredientPicker(final Window owner,final DiscoveryResult result,final ResourceKind kind,final boolean allowTag,final boolean allowAmount,final String initialJson) {
+        this(owner,result,kind,allowTag,allowAmount,initialJson,Locale.getDefault().getLanguage().equals("ru")?"ru_ru":"en_us");
+    }
+    IngredientPicker(final Window owner,final DiscoveryResult result,final ResourceKind kind,final boolean allowTag,final boolean allowAmount,final String initialJson,final String language) {
         initOwner(owner); new UiTheme().apply(getDialogPane()); setTitle(kind==ResourceKind.FLUID?"Pick fluid reference":"Pick ingredient"); setResizable(true);
         final var search=new TextField(); search.setPromptText("Search name / ID");
         final var mods=new ComboBox<String>(); mods.getItems().add("All mods"); result.registry().entries(kind).stream().flatMap(e->e.sources().stream()).flatMap(s->s.modIds().stream()).distinct().sorted().forEach(mods.getItems()::add); mods.getSelectionModel().selectFirst();
         final var textures=new TextureResourceService();
+        final var resourceNames=new ResourceBrowserViewModel(result.registry());
         addEventHandler(javafx.scene.control.DialogEvent.DIALOG_HIDDEN,event->textures.close());
         final var entries=new ArrayList<RegistryEntry>();
         final var list=new PaginationView();list.setPrefHeight(420);
@@ -47,10 +51,9 @@ public final class IngredientPicker extends Dialog<IngredientPicker.Selection> {
             final var grid=new TilePane(8,8);grid.setPrefColumns(3);
             for(int index=number*30;index<Math.min(entries.size(),number*30+30);index++) {
                 final var entry=entries.get(index);final var button=new Button();button.setPrefSize(150,115);
-                final String language=Locale.getDefault().getLanguage().equals("ru")?"ru_ru":"en_us";
-                final var name=new Label(new ResourceBrowserViewModel(result.registry()).displayName(entry,language));name.setMaxWidth(125);name.setTextOverrun(OverrunStyle.ELLIPSIS);
+                final var name=new Label(resourceNames.displayName(entry,language));name.setMaxWidth(125);name.setTextOverrun(OverrunStyle.ELLIPSIS);
                 button.setGraphic(new VBox(5,new ResourcePreview(entry,result,textures,40,()->button.getScene()!=null,preview->{}),name,new Label(entry.confidence()==DiscoveryConfidence.CONFIRMED_BY_RUNTIME?"Runtime confirmed":"Static candidate")));
-                button.setTooltip(new Tooltip(new ResourceBrowserViewModel(result.registry()).tooltip(entry,language)));button.setOnAction(event->{id.setText(entry.id().toString());mode.setValue("Exact Item");});grid.getChildren().add(button);
+                button.setTooltip(new Tooltip(resourceNames.tooltip(entry,language)));button.setOnAction(event->{id.setText(entry.id().toString());mode.setValue("Exact Item");});grid.getChildren().add(button);
             }
             final var scroll=new ScrollPane(grid);scroll.setFitToWidth(true);return scroll;
         };
