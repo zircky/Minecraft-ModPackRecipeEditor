@@ -11,7 +11,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 final class ModLoaderDetectorTest {
     @TempDir Path root;
-    @ParameterizedTest @CsvSource({"forge,FORGE","neoforge,NEOFORGE","fabric,FABRIC","quilt,QUILT"})
+    @ParameterizedTest @CsvSource({"forge,FORGE","neoforge,NEOFORGE","fabric,FABRIC","quilt,QUILT",
+            "fabric-loader,FABRIC","quilt-loader,QUILT"})
     void detectsManifestLoaders(final String id, final ModLoaderType type) throws Exception {
         TestFixtures.write(root,"manifest.json","{\"minecraft\":{\"modLoaders\":[{\"id\":\""+id+"-1.2.3\"}]}}");
         final var loader = new ModLoaderDetector().detect(TestFixtures.evidence(root),new ArrayList<>());
@@ -30,5 +31,24 @@ final class ModLoaderDetectorTest {
         final var diagnostics = new ArrayList<ImportDiagnostic>();
         assertEquals(ModLoaderType.UNKNOWN,new ModLoaderDetector().detect(TestFixtures.evidence(root),diagnostics).type());
         assertFalse(diagnostics.isEmpty());
+    }
+    @Test void separatesMinecraftAndForgeVersionsInInheritedVanillaProfile() throws Exception {
+        TestFixtures.write(root, "version.json", """
+                {"inheritsFrom":"1.12.2","libraries":[{"name":"net.minecraftforge:forge:1.12.2-14.23.5.2860-1.12.2"}]}
+                """);
+        final var evidence = TestFixtures.evidence(root);
+        final var loader = new ModLoaderDetector().detect(evidence, new ArrayList<>());
+        assertEquals("1.12.2", new MinecraftVersionDetector().detect(evidence, new ArrayList<>()).value());
+        assertEquals(ModLoaderType.FORGE, loader.type());
+        assertEquals("14.23.5.2860", loader.version());
+    }
+
+    @Test void readsNeoForgeVersionFromModrinthDependencies() throws Exception {
+        TestFixtures.write(root, "modrinth.index.json", """
+                {"game":"minecraft","dependencies":{"minecraft":"1.21.1","neoforge":"21.1.172"}}
+                """);
+        final var loader = new ModLoaderDetector().detect(TestFixtures.evidence(root), new ArrayList<>());
+        assertEquals(ModLoaderType.NEOFORGE, loader.type());
+        assertEquals("21.1.172", loader.version());
     }
 }
