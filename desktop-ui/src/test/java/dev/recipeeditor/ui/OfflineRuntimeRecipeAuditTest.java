@@ -81,7 +81,7 @@ final class OfflineRuntimeRecipeAuditTest {
         final var modpack=new ModpackDefinition(pack,pack,"ISG",new MinecraftVersion("1.20.1",List.of("snapshot")),
                 new ModLoaderDefinition(ModLoaderType.FORGE,captured.environment().loaderVersion(),List.of("snapshot")),List.of());
         final var context=new ExportContext(modpack,editor.authoringBases(),editor.snapshot(),output.resolve("project.json"),
-                new ExportProfile("audit","ISG",output,ExportFormat.DATAPACK,OverwritePolicy.REFUSE,true,"1.20.1","FORGE"),
+                new ExportProfile("isgdeshaudit","ISG",output,ExportFormat.DATAPACK,OverwritePolicy.REFUSE,true,"1.20.1","FORGE"),
                 List.of(),Set.of(),false);
         final var plan=new ExportPlanner(List.of(new DatapackRecipeExporter()),new ExportValidator(validator))
                 .plan(new ExportRequest(context,Set.of(desh),Map.of(),List.of()));
