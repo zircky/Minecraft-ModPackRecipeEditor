@@ -22,16 +22,17 @@ final class RuntimePreviewProbeViewTest {
         final var fixture=new InventorySurfaceTestSupport.Client();
         final var previews=new ItemPreviewProvider(){public boolean available(){return true;}public String context(){return fixture.previewContext();}public CompletableFuture<List<ItemPreviewResponse>> capture(List<ItemPreviewRequest> items,java.util.function.BooleanSupplier cancelled){return fixture.itemPreviews(items);}};
         final var stage=new AtomicReference<Stage>();final var view=new AtomicReference<RuntimeIntegrationView>();
-        try(final var server=new ReadOnlyCompanionServer(snapshots(),previews);final var client=new CompanionConnectionService()){
-            server.start();InventoryPreviewProvider.shared().client(client);
-            FxLayoutTestSupport.run(()->{javafx.application.Platform.setImplicitExit(false);final var pane=new RuntimeIntegrationView(client,new RuntimeSnapshotService(),(data,file)->{});view.set(pane);final var window=new Stage();stage.set(window);window.setScene(new Scene(pane,1100,750));window.show();assertEquals("gtceu:aluminium_block",((TextField)pane.lookup("#client-preview-item-id")).getText());((Button)pane.lookup("#request-client-preview")).fire();});
+        try(final var server=new ReadOnlyCompanionServer(snapshots(),previews);final var client=new CompanionConnectionService();
+                final var inventory=new InventoryPreviewProvider()){
+            server.start();inventory.client(client);
+            FxLayoutTestSupport.run(()->{javafx.application.Platform.setImplicitExit(false);final var pane=new RuntimeIntegrationView(client,new RuntimeSnapshotService(),(data,file)->{},inventory);view.set(pane);final var window=new Stage();stage.set(window);window.setScene(new Scene(pane,1100,750));window.show();assertEquals("gtceu:aluminium_block",((TextField)pane.lookup("#client-preview-item-id")).getText());((Button)pane.lookup("#request-client-preview")).fire();});
             final long end=System.nanoTime()+TimeUnit.SECONDS.toNanos(3);final var unavailable=new AtomicBoolean();do{FxLayoutTestSupport.run(()->unavailable.set(((Label)view.get().lookup("#client-preview-trace")).getText().contains("CLIENT_DISCONNECTED")));if(!unavailable.get())Thread.sleep(10);}while(!unavailable.get()&&System.nanoTime()<end);assertTrue(unavailable.get());
             client.connect(server.credentials()).get(5,TimeUnit.SECONDS);FxLayoutTestSupport.run(()->((Button)view.get().lookup("#request-client-preview")).fire());
             final long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(5);final var available=new AtomicBoolean();do{FxLayoutTestSupport.run(()->available.set(((ImageView)view.get().lookup("#client-preview-image")).getImage()!=null&&((Label)view.get().lookup("#client-preview-trace")).getText().contains("PREVIEW_AVAILABLE")));if(!available.get())Thread.sleep(10);}while(!available.get()&&System.nanoTime()<deadline);
             assertTrue(available.get());assertEquals("gtceu:aluminium_block",fixture.requests.getFirst().resourceId());assertTrue(client.previewStatistics().contains("sent=1"));assertTrue(client.previewStatistics().contains("PNG transferred=1"));
             client.disconnect();
             FxLayoutTestSupport.run(()->{assertNull(((ImageView)view.get().lookup("#client-preview-image")).getImage());assertTrue(((Label)view.get().lookup("#client-preview-trace")).getText().contains("CLIENT_DISCONNECTED"));});
-        }finally{FxLayoutTestSupport.run(()->{if(view.get()!=null)view.get().close();if(stage.get()!=null)stage.get().close();});InventoryPreviewProvider.shared().client(null);}
+        }finally{FxLayoutTestSupport.run(()->{if(view.get()!=null)view.get().close();if(stage.get()!=null)stage.get().close();});}
     }
     @Test void authenticatedServerWithoutClientCapabilityCannotBeReportedAsRendered()throws Exception{
         try(final var server=new ReadOnlyCompanionServer(snapshots());final var client=new CompanionConnectionService()){

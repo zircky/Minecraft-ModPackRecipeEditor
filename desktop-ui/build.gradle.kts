@@ -14,3 +14,10 @@ dependencies {
 }
 
 dependencies { testImplementation(project(":companion-server")) }
+
+tasks.test {
+    providers.gradleProperty("runtimeSnapshotFile").orNull?.let { file ->
+        systemProperty("runtimeSnapshotFile", file)
+        maxHeapSize = "1536m"
+    }
+}
