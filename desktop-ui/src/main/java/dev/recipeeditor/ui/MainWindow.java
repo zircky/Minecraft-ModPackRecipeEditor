@@ -1,6 +1,7 @@
 package dev.recipeeditor.ui;
 
 import dev.recipeeditor.companionclient.CompanionConnectionService;
+import dev.recipeeditor.companionclient.ModpackFingerprint;
 import dev.recipeeditor.companionclient.RecipeMergeService;
 import dev.recipeeditor.companionclient.RegistryMergeService;
 import dev.recipeeditor.companionclient.RuntimeSnapshotService;
@@ -558,7 +559,7 @@ public final class MainWindow {
   }
 
   private record RuntimeMerge(RegistryMergeService.Result registry, RecipeMergeService.Result recipes, RuntimeRecipeCatalog.Catalog catalog,
-          List<dev.recipeeditor.integrations.gregtech.GregTechMachineCatalog.Machine> machines) {
+          List<dev.recipeeditor.integrations.gregtech.GregTechMachineCatalog.Machine> machines, String fingerprint) {
   }
 
   private void applyRuntime(final RuntimeData.Snapshot snapshot, final Path file) {
@@ -595,13 +596,16 @@ public final class MainWindow {
       final var recipes = new RecipeMergeService().merge(current.originals(), snapshot);
       final var catalog=new RuntimeRecipeCatalog().prepare(recipes,snapshot,registry.runtimeTags(),current.validator(),
           dev.recipeeditor.integrations.api.IntegrationContext.from(pack));
+      final String fingerprint=previewFingerprint(pack,file);
       current.applyRuntimeCatalog(registry.preferred(),catalog.visible(),catalog.authorable(),catalog.incompatible(),catalog.evidence().keySet(),
           snapshot.environment().sourceInstance()+" @ "+snapshot.environment().collectedAt());
       return new RuntimeMerge(registry, recipes, catalog,
-              new dev.recipeeditor.integrations.gregtech.GregTechMachineCatalog().load(snapshot));
+              new dev.recipeeditor.integrations.gregtech.GregTechMachineCatalog().load(snapshot),
+              fingerprint);
     }, merged -> {
       setBusy(false);
       if (closed || request != generation || editor != current) return;
+      dev.recipeeditor.ui.rendering.InventoryPreviewProvider.shared().bindSnapshot(merged.registry().preferred(),snapshot,merged.fingerprint());
       final var unified = new DiscoveryResult(source.selectedRoot(), merged.registry().preferred(), new RecipeIndex(source.recipes().recipes(), merged.registry().runtimeTags()), source.diagnostics(), source.elapsedMillis());
       if (resources != null) resources.deactivate();
       if (materials != null) materials.deactivate();
@@ -623,6 +627,15 @@ public final class MainWindow {
       setBusy(false);
       runtime.addDiagnostic("Merge blocked: " + rootMessage(failure) + ". Snapshot remains available in Runtime.");
     });
+  }
+
+  private String previewFingerprint(final ModpackDefinition pack,final Path file) {
+    if(file.getFileName().toString().equals("snapshot.db")&&file.getParent()!=null){
+      final String directory=file.getParent().getFileName().toString();
+      if(directory.matches("[0-9a-f]{64}"))return directory;
+    }
+    try{return ModpackFingerprint.calculate(pack).value();}
+    catch(java.io.IOException failure){throw new java.io.UncheckedIOException("Cannot fingerprint preview cache",failure);}
   }
 
   private void openExport(final RecipeDefinition selected, final ExportFormat format) {

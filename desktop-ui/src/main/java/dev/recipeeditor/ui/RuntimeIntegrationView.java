@@ -20,6 +20,10 @@ import javafx.stage.FileChooser;
 
 public final class RuntimeIntegrationView extends BorderPane implements AutoCloseable {
     private java.util.function.BooleanSupplier openRecipes=()->false;
+    private final InventoryPreviewProvider previews;
+    private volatile boolean collectionPaused,collectionCancelled;
+    private boolean collecting;
+    private final java.util.List<Button> collectors=new ArrayList<>();
 
     void openRecipes(final java.util.function.BooleanSupplier action){openRecipes=Objects.requireNonNull(action);}
     private final CompanionConnectionService connection;
@@ -47,7 +51,7 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
     }
     RuntimeIntegrationView(final CompanionConnectionService connection,final RuntimeSnapshotService snapshots,
             final BiConsumer<RuntimeData.Snapshot,Path> apply,final InventoryPreviewProvider previews) {
-        this.connection=connection;this.snapshots=snapshots;this.apply=apply;getStyleClass().add("workspace-view");session.setPromptText("Minecraft config/mre_companion/session.json — token is read privately, never displayed");HBox.setHgrow(session,Priority.ALWAYS);
+        this.connection=connection;this.snapshots=snapshots;this.apply=apply;this.previews=previews;getStyleClass().add("workspace-view");session.setPromptText("Minecraft config/mre_companion/session.json — token is read privately, never displayed");HBox.setHgrow(session,Priority.ALWAYS);
         final var browse=new Button("Session File…");browse.setOnAction(e->{final var chooser=new FileChooser();chooser.setTitle("Select Companion session.json in the chosen Minecraft instance");final var file=chooser.showOpenDialog(getScene().getWindow());if(file!=null)session.setText(file.toString());});
         connect.setOnAction(e->{try{busy(true);connection.connect(Path.of(session.getText())).whenComplete((done,error)->Platform.runLater(()->{busy(false);if(error!=null)error(error);}));}catch(RuntimeException failure){busy(false);error(failure);}});
         disconnect.setOnAction(e->connection.disconnect());cancel.setOnAction(e->connection.cancelSynchronization());sync.setOnAction(e->synchronize());view.setDisable(true);view.setOnAction(e->showSnapshot());
@@ -63,8 +67,49 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
         final var registryDetails=new TextArea();registryDetails.setEditable(false);registries.getSelectionModel().selectedItemProperty().addListener((o,a,b)->registryDetails.setText(b==null?"":b.metadata()+"\nBlockState property descriptors: "+b.stateProperties()+"\nConfirmed only in snapshot "+snapshot.snapshotId()+" @ "+snapshot.environment().collectedAt()));
         final var registryTab=new Tab("Runtime Registry",new SplitPane(registries,registryDetails));registryTab.setClosable(false);final var diagnosticTab=new Tab("Diagnostics",diagnostics);diagnosticTab.setClosable(false);
         final var typeTab=new Tab("Recipe Types",recipeTypes);typeTab.setClosable(false);
-        setCenter(new TabPane(registryTab,typeTab,clientPreviewTab(previews),diagnosticTab));
+        setCenter(new TabPane(registryTab,typeTab,clientPreviewTab(previews),previewCollectionTab(),diagnosticTab));
+        previews.revisionProperty().addListener((javafx.beans.WeakInvalidationListener)new javafx.beans.WeakInvalidationListener(previewRevision));
         connection.addListener(value->Platform.runLater(()->{if(!closed){if(snapshot==null&&value==CompanionConnectionStatus.CONNECTED)environment.setText("Companion "+connection.companionVersion()+" authenticated. Open a world and synchronize for environment details.");status.setText(value+" — "+(snapshot==null?"no snapshot":"snapshot is historical evidence from "+snapshot.environment().collectedAt()));buttons();}}));buttons();
+    }
+    private final javafx.beans.InvalidationListener previewRevision=ignored->{if(!closed)buttons();};
+    private Tab previewCollectionTab(){
+        final var progress=new ProgressBar(0);
+        final var status=new Label("Merge a Runtime Snapshot to collect registered default item stacks at 64 px.");
+        status.setWrapText(true);
+        final var pause=new Button("Pause");
+        final var resume=new Button("Resume");
+        final var stop=new Button("Cancel");
+        final var actions=new FlowPane(8,8);
+        final var names=List.of("Collect Missing Previews","Refresh Failed Previews","Full Preview Rebuild");
+        for(final var mode:InventoryPreviewProvider.CollectionMode.values()){
+            final var button=new Button(names.get(mode.ordinal()));
+            collectors.add(button);actions.getChildren().add(button);
+            button.setOnAction(event->{
+                if(collecting)return;
+                collecting=true;collectionPaused=false;collectionCancelled=false;buttons();
+                status.setText("Checking persisted previews…");
+                CompletableFuture.runAsync(()->{
+                    try{previews.collect(mode,()->collectionPaused,()->collectionCancelled,report->Platform.runLater(()->{
+                        if(closed)return;
+                        progress.setProgress(report.registered()==0?1:(double)report.processed()/report.registered());
+                        status.setText("Registered: "+report.registered()+" · Cached: "+report.cached()+" · Missing: "+report.missing()
+                                +" · Failed: "+report.failed()+" · Corrupted: "+report.corrupted()+" · Stale: "+report.stale()
+                                +" · Progress: "+Math.round(progress.getProgress()*100)+"%");
+                    }));}catch(Exception failure){throw new CompletionException(failure);}
+                }).whenComplete((done,failure)->Platform.runLater(()->{
+                    collecting=false;if(closed)return;
+                    if(failure!=null)status.setText("Collection stopped: "+failure.getCause().getMessage());
+                    if(collectionCancelled)status.setText(status.getText()+" · Cancelled");
+                    buttons();
+                }));
+            });
+        }
+        pause.setOnAction(event->collectionPaused=true);
+        resume.setOnAction(event->collectionPaused=false);
+        stop.setOnAction(event->{collectionCancelled=true;collectionPaused=false;});
+        actions.getChildren().addAll(pause,resume,stop);
+        final var tab=new Tab("Preview Cache",new VBox(12,actions,progress,status));tab.setClosable(false);
+        return tab;
     }
     private Tab clientPreviewTab(final InventoryPreviewProvider previews){
         final var item=new TextField("gtceu:aluminium_block");item.setId("client-preview-item-id");
@@ -101,6 +146,7 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
         final var tab=new Tab("Client Item Preview",scroll);tab.setClosable(false);return tab;
     }
     void selectModpack(final ModpackDefinition selected) {
+        collectionCancelled=true;previews.clearSnapshot();
         pack=selected;
         recipeTypes.createWith(null);
         buttons();
@@ -216,8 +262,8 @@ public final class RuntimeIntegrationView extends BorderPane implements AutoClos
         if(!openRecipes.getAsBoolean())addDiagnostic("Open the matching project and wait for its snapshot to finish merging to browse recipes.");
     }
     private void busy(final boolean value){busy=value;buttons();}
-    private void buttons(){previewAvailability.setText("Item preview: "+connection.previewUnavailableReason());view.setDisable(busy||snapshot==null);final var s=connection.status();connect.setDisable(busy||s==CompanionConnectionStatus.CONNECTING||s==CompanionConnectionStatus.SYNCHRONIZING);disconnect.setDisable(s==CompanionConnectionStatus.DISCONNECTED);sync.setDisable(busy||s!=CompanionConnectionStatus.CONNECTED);cancel.setDisable(s!=CompanionConnectionStatus.SYNCHRONIZING);load.setDisable(busy);offline.setDisable(busy||pack==null);session.setDisable(busy);}
+    private void buttons(){collectors.forEach(button->button.setDisable(collecting||busy||!previews.canCollect()));previewAvailability.setText("Item preview: "+connection.previewUnavailableReason());view.setDisable(busy||snapshot==null);final var s=connection.status();connect.setDisable(busy||s==CompanionConnectionStatus.CONNECTING||s==CompanionConnectionStatus.SYNCHRONIZING);disconnect.setDisable(s==CompanionConnectionStatus.DISCONNECTED);sync.setDisable(busy||collecting||s!=CompanionConnectionStatus.CONNECTED);cancel.setDisable(s!=CompanionConnectionStatus.SYNCHRONIZING);load.setDisable(busy);offline.setDisable(busy||pack==null);session.setDisable(busy);}
     private void error(final Throwable failure){Throwable cause=failure;while(cause.getCause()!=null)cause=cause.getCause();diagnostics.appendText("\n"+cause.getClass().getSimpleName()+": "+cause.getMessage());status.setText(connection.status()+" — synchronization failed/cancelled; previous complete snapshot retained");}
     private TableColumn<RuntimeData.Registry,String> column(final String name,final java.util.function.Function<RuntimeData.Registry,String> text,final int width){final var c=new TableColumn<RuntimeData.Registry,String>(name);c.setCellValueFactory(v->new ReadOnlyStringWrapper(text.apply(v.getValue())));c.setPrefWidth(width);return c;}
-    @Override public void close(){closed=true;connection.removeListener(previewListener);if(previewRequest!=null)previewRequest.cancel(false);connection.disconnect();storage.shutdown();}
+    @Override public void close(){closed=true;collectionCancelled=true;connection.removeListener(previewListener);if(previewRequest!=null)previewRequest.cancel(false);connection.disconnect();storage.shutdown();}
 }
