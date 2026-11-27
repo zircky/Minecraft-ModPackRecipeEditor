@@ -87,7 +87,7 @@ public final class MaterialsBrowserView extends BorderPane {
         setGraphic(null);
         setTooltip(null);
         if (empty || material == null) return;
-        final var image = new ResourcePreview(representative(material), result.selectedRoot(), textures, 48, () -> active, preview -> {
+        final var image = materialPreview(material,48, () -> active, preview -> {
         });
         final var box = new VBox(4, image, line(model.displayName(material, language.getValue())), line(material.id().toString()), line("Namespace: " + material.id().namespace()), line("Runtime confirmed · " + material.forms().size() + " registered forms"));
         setGraphic(box);
@@ -107,9 +107,13 @@ public final class MaterialsBrowserView extends BorderPane {
     return label;
   }
 
-  private ResourceVisual representative(final MaterialDefinition material) {
-    return material.forms().stream().map(model::form).flatMap(Optional::stream).map(RegistryEntry::visual).filter(visual -> !visual.layers().isEmpty()).findFirst()
-        .orElse(ResourceVisual.unavailable(ResourceVisual.Status.RUNTIME_TEXTURE_REQUIRED, "No preview for confirmed forms"));
+  private ResourcePreview materialPreview(final MaterialDefinition material,final int size,
+          final java.util.function.BooleanSupplier current,final java.util.function.Consumer<TextureResourceService.Preview> completed) {
+    return material.forms().stream().sorted(java.util.Comparator.comparing(form->!form.prefix().equals("ingot")))
+        .map(model::form).flatMap(Optional::stream).findFirst()
+        .map(entry->new ResourcePreview(entry,result,textures,size,current,completed))
+        .orElseGet(()->new ResourcePreview(ResourceVisual.unavailable(ResourceVisual.Status.RUNTIME_TEXTURE_REQUIRED,
+            "No preview for confirmed forms"),result.selectedRoot(),textures,size,current,completed));
   }
 
   private void select(final MaterialDefinition material) {
@@ -121,7 +125,7 @@ public final class MaterialsBrowserView extends BorderPane {
     }
     final var previewStatus = new Label("Image is a sample of a registered form.");
     previewStatus.setWrapText(true);
-    details.getChildren().addAll(new ResourcePreview(representative(material), result.selectedRoot(), textures, 96, () -> active && generation == request,
+    details.getChildren().addAll(materialPreview(material,96, () -> active && generation == request,
         preview -> previewStatus.setText(preview.status() + ": " + preview.explanation())), previewStatus);
     final var text = new TextArea(model.displayName(material, language.getValue()) + "\nMaterial ID: " + material.id() + "\nLocalization key: " + material.localizationKey()
         + "\nRuntime-reported name (may include game fallback): " + material.name() + "\nProperties: " + material.properties() + "\nFlags: " + material.flags()

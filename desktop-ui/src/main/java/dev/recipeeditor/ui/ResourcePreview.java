@@ -39,7 +39,7 @@ final class ResourcePreview extends StackPane {
                 final byte[] png=image==null?new byte[0]:image.png();final String diagnostic=image==null?"Inventory preview timed out or was cancelled":image.source()+": "+image.diagnostic();
                 final var decoded=png.length==0?null:new Image(new ByteArrayInputStream(png),size,size,true,false);
                 getProperties().put("inventory.preview.status",decoded!=null&&!decoded.isError()?"PREVIEW_AVAILABLE":"PREVIEW_FAILED");
-                if(decoded!=null&&!decoded.isError())getChildren().setAll(new ImageView(decoded));else getChildren().setAll(new Label("?"));
+                if(decoded!=null&&!decoded.isError())getChildren().setAll(view(decoded,size));else getChildren().setAll(new Label("?"));
                 Tooltip.install(this,new Tooltip(diagnostic));completed.accept(new TextureResourceService.Preview(png,png.length==0?ResourceVisual.Status.RENDERING_UNSUPPORTED:ResourceVisual.Status.READY,diagnostic));
             }));
         };
@@ -58,9 +58,15 @@ final class ResourcePreview extends StackPane {
             Platform.runLater(()->{
                 if(!current.getAsBoolean())return;
                 Tooltip.install(this,new Tooltip(preview.status()+"\n"+preview.explanation()));
-                if(image!=null&&!image.isError())getChildren().setAll(new ImageView(image));
+                if(image!=null&&!image.isError())getChildren().setAll(view(image,size));
                 completed.accept(preview);
             });
         });
+    }
+    private ImageView view(final Image image,final int size){
+        final var node=new ImageView(image);
+        node.setFitWidth(size);node.setFitHeight(size);
+        node.setPreserveRatio(true);node.setSmooth(false);
+        return node;
     }
 }

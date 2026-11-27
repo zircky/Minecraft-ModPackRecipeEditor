@@ -13,7 +13,10 @@ public final class EffectiveRecipeIndex {
     private final Map<ResourceLocation,Set<ResourceLocation>> inputs=new HashMap<>(),outputs=new HashMap<>(),types=new HashMap<>(),tags=new HashMap<>();
     public EffectiveRecipeIndex(final RecipeIndex original) { this.original=Objects.requireNonNull(original); }
     synchronized void updateTags(final TagIndex runtimeTags) {
-        original=new RecipeIndex(original.recipes(),runtimeTags);inputs.clear();outputs.clear();types.clear();tags.clear();replacements.values().forEach(recipe->index(recipe,true));
+        replaceBase(new RecipeIndex(original.recipes(),runtimeTags));
+    }
+    synchronized void replaceBase(final RecipeIndex base) {
+        original=base;inputs.clear();outputs.clear();types.clear();tags.clear();replacements.values().forEach(recipe->index(recipe,true));
     }
     synchronized void apply(final ResourceLocation id,final RecipeChange change) {
         final var previous=replacements.remove(id); if(previous!=null) index(previous,false);

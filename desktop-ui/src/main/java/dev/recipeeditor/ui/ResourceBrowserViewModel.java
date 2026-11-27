@@ -27,10 +27,13 @@ public final class ResourceBrowserViewModel {
     };}
     public List<String> unifiedFilterValues(final FilterMode mode){return java.util.stream.Stream.concat(index.entries(ResourceKind.ITEM).stream(),index.entries(ResourceKind.BLOCK).stream()).flatMap(e->mode==FilterMode.NAMESPACE?java.util.stream.Stream.of(e.id().namespace()):e.sources().stream().flatMap(s->s.modIds().stream())).distinct().sorted().toList();}
     public String displayName(final RegistryEntry entry,final String language) {
-        return entry.localizedNames().getOrDefault(language,entry.localizedNames().getOrDefault("en_us",entry.id().toString()));
+        return entry.localizedNames().getOrDefault(language,entry.localizedNames().getOrDefault("en_us",
+                entry.confidence()==DiscoveryConfidence.CONFIRMED_BY_RUNTIME&&entry.localizedNames().size()==1
+                        ?entry.localizedNames().values().iterator().next():entry.id().toString()));
     }
     public String displayName(final MaterialDefinition material,final String language) {
-        return material.localizedNames().getOrDefault(language,material.localizedNames().getOrDefault("en_us",material.id().toString()));
+        return material.localizedNames().getOrDefault(language,material.localizedNames().getOrDefault("en_us",
+                material.localizedNames().size()==1?material.localizedNames().values().iterator().next():material.id().toString()));
     }
     public String secondaryId(final RegistryEntry entry,final String language) {
         return displayName(entry,language).equals(entry.id().toString())?"":entry.id().toString();

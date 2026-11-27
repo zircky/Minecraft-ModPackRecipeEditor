@@ -87,3 +87,6 @@
 
 - [Аудит, возможности и проверка](PHASE24_REPORT.md)
 - [Изменённые файлы](PHASE24_FILES.txt)
+- [Правая панель и смена типа машины GregTech](PHASE24_SIDEBAR_REPORT.md)
+- [Единый статический и Runtime-каталог](PHASE24_UNIFIED_REPORT.md)
+- [Рендеринг предметов и постоянный кэш](PHASE24_RENDERING_REPORT.md)

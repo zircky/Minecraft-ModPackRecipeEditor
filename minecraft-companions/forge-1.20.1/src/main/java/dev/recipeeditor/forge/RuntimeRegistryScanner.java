@@ -22,6 +22,13 @@ public final class RuntimeRegistryScanner {
         metadata(ForgeRegistries.RECIPE_TYPES,RuntimeData.Kind.RECIPE_TYPE,jobs,output);metadata(ForgeRegistries.RECIPE_SERIALIZERS,RuntimeData.Kind.RECIPE_SERIALIZER,jobs,output);return jobs;
     }
     private <T> void metadata(final IForgeRegistry<T> registry,final RuntimeData.Kind kind,final List<Runnable> jobs,final Consumer<RuntimeData.Registry> output) {
-        registry.forEach(value->jobs.add(()->{final var id=registry.getKey(value);output.accept(new RuntimeData.Registry(kind,id.toString(),id.toString(),value.getClass().getName(),Map.of("namespace",id.getNamespace()),Map.of()));}));
+        final var machines=new GregTechMachineMetadata();
+        registry.forEach(value->jobs.add(()->{
+            final var id=registry.getKey(value);
+            final var properties=new TreeMap<String,String>();
+            properties.put("namespace",id.getNamespace());
+            if(kind==RuntimeData.Kind.RECIPE_TYPE)properties.putAll(machines.read(value));
+            output.accept(new RuntimeData.Registry(kind,id.toString(),id.toString(),value.getClass().getName(),properties,Map.of()));
+        }));
     }
 }

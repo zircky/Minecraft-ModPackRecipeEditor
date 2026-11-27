@@ -22,9 +22,12 @@ public final class RecipeLayoutResolver {
             if(!adapter.get().capabilities(recipe).supports(dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_VIEW))return Optional.empty();
             return Optional.of(new RecipeLayoutModel(type,RecipeLayoutProvider.Kind.PROCESSING,List.of(),RecipeSlotContent.parse(""),false,Map.of(),Optional.of(adapter.get().layout(recipe))));
         }
-        final var layout=vanilla.find(type);if(layout.isEmpty())return Optional.empty();
+        final var layout=vanilla.find(type);if(layout.isEmpty())return new SemanticRecipeLayout().resolve(recipe);
+        if(recipe.source().type()==dev.recipeeditor.registry.SourceType.RUNTIME &&
+                !new dev.recipeeditor.recipeengine.editor.RuntimeRecipeBase().matches(recipe.source()))
+            return observedVanilla(recipe,layout.get().kind()).or(()->new SemanticRecipeLayout().resolve(recipe));
         final Map<String,String> fields;
-        try{fields=forms.fields(recipe.rawJson());}catch(IllegalArgumentException invalid){return Optional.empty();}
+        try{fields=forms.fields(recipe.rawJson());}catch(IllegalArgumentException invalid){return new SemanticRecipeLayout().resolve(recipe);}
         final var inputs=new ArrayList<RecipeLayoutModel.Input>();
         final var parameters=new LinkedHashMap<String,String>();
         if(layout.get().kind()==RecipeLayoutProvider.Kind.SHAPED) {final var values=forms.grid(recipe.rawJson());for(int i=0;i<9;i++)inputs.add(new RecipeLayoutModel.Input("grid",i,values.get(i)));}
@@ -39,5 +42,49 @@ public final class RecipeLayoutResolver {
             try{final long count=Long.parseLong(fields.getOrDefault("count","1"));output=new RecipeSlotContent(output.kind(),output.id(),count,List.of(),count>0?RecipeSlotState.FILLED:RecipeSlotState.INVALID);}catch(NumberFormatException ignored){output=new RecipeSlotContent(output.kind(),output.id(),1,List.of(),RecipeSlotState.INVALID);}
         }
         return Optional.of(new RecipeLayoutModel(type,layout.get().kind(),inputs,output,dynamic,parameters));
+    }
+
+    private Optional<RecipeLayoutModel> observedVanilla(final RecipeDefinition recipe,final RecipeLayoutProvider.Kind kind) {
+        if(recipe.source().type()!=dev.recipeeditor.registry.SourceType.RUNTIME)return Optional.empty();
+        try {
+            final var state=com.google.gson.JsonParser.parseString(recipe.rawJson()).getAsJsonObject();
+            if(!state.has("ingredients"))return Optional.empty();
+            final var ingredients=state.getAsJsonArray("ingredients");
+            final var inputs=new ArrayList<RecipeLayoutModel.Input>();
+            final var parameters=new LinkedHashMap<String,String>();
+            if(kind==RecipeLayoutProvider.Kind.SHAPED) {
+                final int width=state.get("width").getAsInt(),height=state.get("height").getAsInt();
+                if(width<1||width>3||height<1||height>3||ingredients.size()!=width*height)return Optional.empty();
+                for(int index=0;index<9;index++) {
+                    final int x=index%3,y=index/3;
+                    inputs.add(new RecipeLayoutModel.Input("grid",index,x<width&&y<height?ingredient(ingredients.get(y*width+x)):""));
+                }
+            } else if(kind==RecipeLayoutProvider.Kind.SHAPELESS) {
+                for(int index=0;index<9;index++)
+                    inputs.add(new RecipeLayoutModel.Input("shapeless",index,index<ingredients.size()?ingredient(ingredients.get(index)):""));
+            } else if(kind==RecipeLayoutProvider.Kind.SMITHING_TRANSFORM||kind==RecipeLayoutProvider.Kind.SMITHING_TRIM) {
+                for(final String role:List.of("template","base","addition")) {
+                    if(!state.has(role))return Optional.empty();
+                    inputs.add(new RecipeLayoutModel.Input(role,0,ingredient(state.get(role))));
+                }
+            } else {
+                if(ingredients.size()!=1)return Optional.empty();
+                inputs.add(new RecipeLayoutModel.Input("ingredient",0,ingredient(ingredients.get(0))));
+                if(state.has("cookingTime"))parameters.put("Cooking time (ticks)",state.get("cookingTime").toString());
+                if(state.has("experience"))parameters.put("Experience",state.get("experience").toString());
+            }
+            final var output=state.has("result")?state.getAsJsonObject("result").deepCopy():new com.google.gson.JsonObject();
+            if(output.has("nbtSnbt"))output.add("nbt",output.get("nbtSnbt"));
+            final boolean dynamic=state.has("dynamicResult")&&state.get("dynamicResult").getAsBoolean();
+            return Optional.of(new RecipeLayoutModel(recipe.type().displayId(),kind,inputs,
+                    RecipeSlotContent.parse(output.has("item")&&!output.get("item").getAsString().equals("minecraft:air")?output.toString():""),
+                    dynamic,parameters));
+        } catch(RuntimeException unavailable) {
+            return Optional.empty();
+        }
+    }
+
+    private String ingredient(final com.google.gson.JsonElement value) {
+        return value.isJsonArray()&&value.getAsJsonArray().isEmpty()?"":value.toString();
     }
 }

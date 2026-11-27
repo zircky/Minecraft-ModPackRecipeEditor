@@ -24,7 +24,8 @@ public final class CompanionConnectionService implements AutoCloseable,ItemPrevi
     private volatile Socket socket;
     private volatile CompanionConnectionStatus status=CompanionConnectionStatus.DISCONNECTED;
     private volatile boolean cancelled;
-    private SessionCredentials credentials;
+    private volatile SessionCredentials credentials;
+    private volatile Path previewInstance;
     private String companionVersion="";
     private boolean materialsSupported;
     private volatile boolean previewsSupported;
@@ -49,8 +50,15 @@ public final class CompanionConnectionService implements AutoCloseable,ItemPrevi
     public void addListener(final Consumer<CompanionConnectionStatus> listener){listeners.add(listener);}
     public void removeListener(final Consumer<CompanionConnectionStatus> listener){listeners.remove(listener);}
     private void state(final CompanionConnectionStatus value){status=value;listeners.forEach(listener->listener.accept(value));}
-    public CompletableFuture<Void> connect(final Path sessionFile){return CompletableFuture.runAsync(()->{try{open(SessionCredentials.load(sessionFile));}catch(Exception failure){fail(failure);}},worker);}
-    public CompletableFuture<Void> connect(final SessionCredentials session){return CompletableFuture.runAsync(()->{try{open(session);}catch(Exception failure){fail(failure);}},worker);}
+    public CompletableFuture<Void> connect(final Path sessionFile){return CompletableFuture.runAsync(()->{
+        try{
+            previewInstance=null;
+            final var file=sessionFile.toRealPath();
+            if(file.endsWith(Path.of("config","mre_companion","session.json")))previewInstance=file.getParent().getParent().getParent();
+            open(SessionCredentials.load(file));
+        }catch(Exception failure){previewInstance=null;fail(failure);}
+    },worker);}
+    public CompletableFuture<Void> connect(final SessionCredentials session){return CompletableFuture.runAsync(()->{try{previewInstance=null;open(session);}catch(Exception failure){fail(failure);}},worker);}
     private void open(final SessionCredentials session)throws IOException {
         closeSocket();pendingKeepalives.clear();cancelled=false;state(CompanionConnectionStatus.CONNECTING);credentials=Objects.requireNonNull(session);
         final var connected=new Socket();socket=connected;connected.connect(new InetSocketAddress(InetAddress.getByName("127.0.0.1"),session.port()),3000);connected.setSoTimeout(5000);
@@ -64,6 +72,13 @@ public final class CompanionConnectionService implements AutoCloseable,ItemPrevi
     }
     public boolean itemPreviewsAvailable(){return status==CompanionConnectionStatus.CONNECTED&&previewsSupported;}
     public String previewContext(){return previewContext;}
+    public boolean matchesPreviewSession(final String sessionId) {
+        final var current=credentials;
+        return itemPreviewsAvailable()&&current!=null&&current.sessionId().equals(sessionId);
+    }
+    public boolean matchesPreviewInstance(final Path instance){
+        return itemPreviewsAvailable()&&instance.equals(previewInstance);
+    }
     @Override public String previewUnavailableReason(){
         if(status==CompanionConnectionStatus.CONNECTED)return previewsSupported?"CLIENT_CONNECTED; item-previews-v1 available":"CLIENT_PREVIEW_CAPABILITY_MISSING: authenticated Companion has no client item renderer; update the client Companion (dedicated server cannot render)";
         if(status==CompanionConnectionStatus.SYNCHRONIZING)return "CLIENT_SYNCHRONIZING: previews resume after synchronization";

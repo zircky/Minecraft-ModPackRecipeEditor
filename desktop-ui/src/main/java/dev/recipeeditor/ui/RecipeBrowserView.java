@@ -19,14 +19,15 @@ import java.util.*;
 
 public final class RecipeBrowserView extends BorderPane implements AutoCloseable {
   private final java.util.function.BiConsumer<RecipeDefinition, dev.recipeeditor.exporters.ExportFormat> exportRecipe;
-  private final DiscoveryResult result;
+  private DiscoveryResult editorDiscovery;
+  private List<dev.recipeeditor.integrations.gregtech.GregTechMachineCatalog.Machine> machines=List.of();
   private java.util.function.BiConsumer<dev.recipeeditor.registry.ResourceKind,ResourceLocation> resourceNavigation=(kind,id)->{};
   public void resourceNavigation(final java.util.function.BiConsumer<dev.recipeeditor.registry.ResourceKind,ResourceLocation> action){resourceNavigation=Objects.requireNonNull(action);}
   private final dev.recipeeditor.registry.TextureResourceService textures=new dev.recipeeditor.registry.TextureResourceService();
   private final dev.recipeeditor.integrations.api.IntegrationContext integration;
   private final dev.recipeeditor.integrations.api.ModdedRecipeAdapterRegistry moddedAdapters=new dev.recipeeditor.integrations.ProjectRecipeAdapters().registry();
   private final RecipeTypeDisplayNameResolver typeNames=new RecipeTypeDisplayNameResolver();
-  private final RecipeDisplayNameResolver displayNames;
+  private RecipeDisplayNameResolver displayNames;
   private final Map<RecipeDefinition,RecipeDisplayNameResolver.Display> displayCache=new IdentityHashMap<>();
   private final ComboBox<String> language=new ComboBox<>();
   private Set<ResourceLocation> runtimeIds = Set.of();
@@ -36,6 +37,8 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   private final TableView<RecipeDefinition> table = new TableView<>();
   private final VBox viewer = new VBox(10);
   private final TextArea json = area(), source = area(), diagnostics = area();
+  private final ComboBox<String> jsonVersion=new ComboBox<>();
+  private final Map<String,String> jsonPayloads=new LinkedHashMap<>();
   private final Label scope = new Label();
   private final RecipeEditorService editor;
   private final EditorTasks tasks;
@@ -43,17 +46,27 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   private final javafx.collections.transformation.FilteredList<RecipeDefinition> filtered = new javafx.collections.transformation.FilteredList<>(rows);
   private final ComboBox<String> modification = new ComboBox<>();
   private final Label tracking = new Label();
-  private final Label provenance = new Label("STATIC / PROJECT RECIPES — runtime state has not been merged");
   private final java.util.function.Consumer<ResourceLocation> listener;
   private final java.util.List<Button> historyButtons = new ArrayList<>();
+  private final Button editButton=new Button("Edit"), duplicateButton=new Button("Duplicate"), deleteButton=new Button("Delete"),
+      resetButton=new Button("Reset changes");
   private ResourceLocation scopeItem;
   private dev.recipeeditor.registry.ResourceKind scopeKind = dev.recipeeditor.registry.ResourceKind.ITEM;
   private boolean scopeUses, closed;
   private TabPane detailTabs;
   private final ComboBox<String> sourceFilter = new ComboBox<>();
-  private javafx.scene.Node staticCenter;
-  private RuntimeRecipeBrowserView runtimeView;
-  private ToolBar editActions;
+  private SplitPane split;
+  private RuntimeRecipeCatalog.Catalog runtime;
+  private RecipeEditorSidebar staticDraft;
+  private boolean restoringSelection;
+  private ResourceLocation selectionAnchor;
+  private long filterRevision;
+  private RecipeDisplayNameResolver indexedNames;
+  private String indexedLanguage;
+  private final Map<RecipeDefinition,String> searchIndex=new IdentityHashMap<>();
+  private java.util.concurrent.Future<?> pendingFilter;
+  private final java.util.concurrent.ExecutorService filterWorker = java.util.concurrent.Executors.newSingleThreadExecutor(
+      Thread.ofVirtual().name("recipe-catalog-filter").factory());
   private java.nio.file.Path projectFile;
 
   public void projectFile(final java.nio.file.Path file) {
@@ -63,13 +76,12 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   public RecipeBrowserView(final DiscoveryResult result, final RecipeEditorService editor, final EditorTasks tasks, final java.util.function.BiConsumer<RecipeDefinition, dev.recipeeditor.exporters.ExportFormat> exportRecipe, final dev.recipeeditor.integrations.api.IntegrationContext integration) {
     this.integration = integration;
     this.exportRecipe = exportRecipe;
-    this.result = result;
+    editorDiscovery = result;
     displayNames=new RecipeDisplayNameResolver(result.registry(),typeNames);
     this.editor = editor;
     this.tasks = tasks;
     getStyleClass().add("workspace-view");
-    rows.setAll(editor.effective().recipes());
-    editor.snapshot().changes().values().stream().filter(change -> change.type() == RecipeChangeType.DELETE).forEach(change -> rows.addAll(editor.originals().findById(change.id())));
+    rows.setAll(catalogRows("All"));
     listener = id -> Platform.runLater(() -> refresh(id));
     editor.addListener(listener);
     search.setPromptText("Search result name, Recipe ID, type, machine or source");
@@ -85,16 +97,17 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     reset.setOnAction(e -> all());
     modification.getItems().addAll("All changes", "UNCHANGED", "CREATED", "MODIFIED", "DELETED", "Conflicts");
     modification.getSelectionModel().selectFirst();
-    editActions = actions();
-    sourceFilter.getItems().addAll("All", "Static", "Runtime");
-    sourceFilter.setValue("Static");
+    final var editActions = actions();
+    sourceFilter.setId("recipe-source-filter");
+    sourceFilter.getItems().addAll("All", "Static", "Runtime", "Project", "Effective");
+    sourceFilter.setValue("All");
     final var filters=new FlowPane(search,modMode,mod,type,modification,language,reset);filters.getStyleClass().add("filter-row");
-    final var header = new VBox(new HBox(10, new Label("Source:"), sourceFilter), editActions, tracking, provenance, scope, filters);
+    final var header = new VBox(new HBox(10, new Label("Source:"), sourceFilter), editActions, tracking, scope, filters);
     header.getStyleClass().add("view-header");
     setTop(header);
     table.setId("recipe-table");table.getColumns().add(resultColumn());
     table.getColumns().add(column("Type", r -> display(r).type(), 125));
-    table.getColumns().add(column("Parse", r -> r.status().name(), 90));
+    table.getColumns().add(column("Status", this::parseStatus, 90));
     table.getColumns().add(column("Change", r -> editor.hasConflict(r.id()) ? "SOURCE CONFLICT" : editor.status(r.id()).name(), 105));
     table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
     final var sorted = new javafx.collections.transformation.SortedList<>(filtered);
@@ -109,13 +122,36 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       return row;
     });
     table.setContextMenu(contextMenu());
-    table.getSelectionModel().selectedItemProperty().addListener((o, a, b) -> select(b));
+    table.getSelectionModel().selectedItemProperty().addListener((o, a, b) -> {
+      if (restoringSelection) return;
+      if (staticDraft != null && b != null && a != b) {
+        if (!staticDraft.allowClose()) {
+          restoringSelection = true;
+          try { table.getSelectionModel().select(a); }
+          finally { restoringSelection = false; }
+          return;
+        }
+        closeStaticDraft();
+      }
+      if(b!=null)selectionAnchor=b.id();
+      if(b!=null)detailTabs.getSelectionModel().selectFirst();
+      select(b);
+    });
     viewer.setPadding(new Insets(16));
     final var scroll = new ScrollPane(viewer);
     scroll.setFitToWidth(true);
-    final var tabs = new TabPane(tab("Recipe", scroll), tab("Raw JSON", json), tab("Source", source), tab("Diagnostics", diagnostics));
+    final var copyJson = new Button("Copy JSON");
+    copyJson.setOnAction(event -> copy(json.getSelectedText().isEmpty() ? json.getText() : json.getSelectedText()));
+    copyJson.disableProperty().bind(json.textProperty().isEmpty());
+    jsonVersion.valueProperty().addListener((o,a,b)->{
+      json.setText(b==null?"":pretty(jsonPayloads.get(b)));
+      json.positionCaret(0);
+    });
+    final var tabs = new TabPane(tab("Recipe", scroll), tab("Raw JSON", new BorderPane(json,new HBox(8,jsonVersion,copyJson),null,null,null)),
+        tab("Source", source), tab("Diagnostics", diagnostics));
+    tabs.setId("recipe-details");
     detailTabs = tabs;
-    final var split = new SplitPane(table, tabs);
+    split = new SplitPane(table, tabs);
     split.setDividerPositions(0.48);
     setCenter(split);
     search.textProperty().addListener((o, a, b) -> filter());
@@ -126,34 +162,101 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       filter();
     });
     modification.valueProperty().addListener((o, a, b) -> filter());
-    staticCenter = getCenter();
-    sourceFilter.valueProperty().addListener((o, a, b) -> showSource());
-    language.valueProperty().addListener((o,a,b)->{displayCache.clear();table.refresh();filter();select(table.getSelectionModel().getSelectedItem());});
+    sourceFilter.valueProperty().addListener((o, a, b) -> {
+      if(restoringSelection || b==null) return;
+      if(!allowLeaveDraft()) {
+        restoringSelection=true;
+        try { sourceFilter.setValue(a); } finally { restoringSelection=false; }
+        return;
+      }
+      closeStaticDraft();
+      showSource();
+    });
+    language.valueProperty().addListener((o,a,b)->{
+      if(staticDraft!=null)staticDraft.language(b);
+      displayCache.clear();table.refresh();filter();select(table.getSelectionModel().getSelectedItem());
+    });
     all();
   }
 
-  public void runtime(final dev.recipeeditor.companionclient.RecipeMergeService.Result merge) {
-    if (staticCenter == null) staticCenter = getCenter();
-    runtimeIds = merge.entries().stream().filter(e -> e.runtime() != null).map(e -> e.id()).collect(java.util.stream.Collectors.toSet());
-    runtimeView = new RuntimeRecipeBrowserView(merge.entries(), this::copyRuntime, this::canCopyRuntime);
-    sourceFilter.setValue("All");
+  void runtime(final RuntimeRecipeCatalog.Catalog catalog,
+          final DiscoveryResult unified,
+          final List<dev.recipeeditor.integrations.gregtech.GregTechMachineCatalog.Machine> machines) {
+    closeStaticDraft();
+    runtime = catalog;
+    editorDiscovery = unified;
+    displayNames = new RecipeDisplayNameResolver(unified.registry(),typeNames,machines.stream()
+        .collect(java.util.stream.Collectors.toUnmodifiableMap(machine->machine.id().toString(),machine->machine.label())));
+    displayCache.clear();
+    this.machines = List.copyOf(machines);
+    runtimeIds = catalog.evidence().keySet();
     showSource();
   }
 
+  boolean allowLeaveDraft() {
+    return staticDraft == null || staticDraft.allowClose();
+  }
+
+  boolean showRuntime() {
+    if(runtime==null)return false;
+    sourceFilter.setValue("Runtime");
+    return sourceFilter.getValue().equals("Runtime");
+  }
+
+  private void closeStaticDraft() {
+    if (staticDraft == null) return;
+    staticDraft.close();
+    staticDraft = null;
+    split.getItems().set(1, detailTabs);
+  }
+
+  private void showDraft(final RecipeEditSession session, final boolean creating, final Runnable deleteAction) {
+    if (closed || !allowLeaveDraft()) return;
+    final var next = new RecipeEditorSidebar(editorDiscovery, editor, tasks, session, creating, integration);
+    next.machines(machines);
+    next.language(language.getValue());
+    final var origins=editor.authoringBases().findById(session.id()).stream()
+            .flatMap(recipe->recipe.source().sourceModIds().stream()).distinct().sorted().toList();
+    next.sourceMod(origins.isEmpty()?"UNKNOWN":String.join(", ",origins));
+    if (deleteAction != null) {
+      final var remove = new Button("Delete recipe");
+      remove.setOnAction(event -> deleteAction.run());
+      next.action(remove);
+    }
+    closeStaticDraft();
+    staticDraft = next;
+    final var close = new Button("Cancel / Back to recipe");
+    close.setOnAction(event -> { if(next.allowClose()) closeStaticDraft(); });
+    next.action(close);
+    split.getItems().set(1, next);
+  }
+
   private void showSource() {
-    final boolean original = sourceFilter.getValue().equals("Static") || (runtimeView == null && sourceFilter.getValue().equals("All"));
-    editActions.setDisable(!original);
-    provenance.setText(original ? "STATIC / PROJECT RECIPES — source files and project overlay" : "RUNTIME SNAPSHOT — actual collected state; normalized properties are read only");
-    if (original) {
-      setCenter(staticCenter);
-      return;
-    }
-    if (runtimeView == null) {
-      setCenter(new Label("No complete runtime snapshot. Use Runtime → Synchronize with Minecraft."));
-      return;
-    }
-    runtimeView.runtimeOnly(sourceFilter.getValue().equals("Runtime"));
-    setCenter(runtimeView);
+    restoringSelection=true;
+    try {
+      rows.setAll(catalogRows(sourceFilter.getValue()));
+      updateModOptions();
+      final String selectedType=type.getValue();
+      final var options=new ArrayList<String>();
+      options.add("All types");
+      rows.stream().map(r->r.type().displayId()).distinct().sorted().forEach(options::add);
+      type.getItems().setAll(options);
+      type.setValue(options.contains(selectedType)?selectedType:"All types");
+    } finally { restoringSelection=false; }
+    filter();
+  }
+
+  private List<RecipeDefinition> catalogRows(final String mode) {
+    if(mode.equals("Static")) return editor.originals().recipes();
+    if(mode.equals("Runtime")&&runtime==null) return List.of();
+    final var changes=editor.snapshot().changes();
+    if(mode.equals("Project")) return changes.keySet().stream().flatMap(id->editor.displayed(id).stream()).toList();
+    final var values=new ArrayList<>(editor.effective().recipes());
+    if(mode.equals("Runtime")) values.removeIf(recipe->!runtimeIds.contains(recipe.id()));
+    if(!mode.equals("Effective")) changes.values().stream().filter(change->change.type()==RecipeChangeType.DELETE)
+        .filter(change->!mode.equals("Runtime")||runtimeIds.contains(change.id()))
+        .forEach(change->values.addAll(editor.displayed(change.id())));
+    return values;
   }
 
   public void all() {
@@ -169,8 +272,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
 
   public void forResource(final dev.recipeeditor.registry.ResourceKind kind, final ResourceLocation item, final boolean uses) {
     scopeKind = kind;
-    sourceFilter.setValue("Static");
-    showSource();
+    sourceFilter.setValue("All");
     scopeItem = item;
     scopeUses = uses;
     search.clear();
@@ -181,19 +283,57 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   }
 
   private void filter() {
-    final String query = search.getText().toLowerCase(Locale.ROOT).strip();
-    final String selectedMod = mod.getSelectionModel().getSelectedIndex() <= 0 ? "" : mod.getValue();
-    final String selectedType = type.getSelectionModel().getSelectedIndex() == 0 ? "" : type.getValue();
-    final var scopeIds = scopeItem == null ? Set.<ResourceLocation>of() : (scopeUses ? editor.effective().findRecipesUsing(scopeKind, scopeItem) : editor.effective().findRecipesProducing(scopeKind, scopeItem)).stream().map(RecipeDefinition::id).collect(java.util.stream.Collectors.toSet());
-    filtered.setPredicate(recipe -> (scopeItem == null || scopeIds.contains(recipe.id())) && (selectedMod.isEmpty() || matchesModFilter(recipe, selectedMod))
-        && (selectedType.isEmpty() || recipe.type().displayId().equals(selectedType))
-        && matchesSearch(recipe,query)
-        && (modification.getSelectionModel().getSelectedIndex() == 0 || (modification.getValue().equals("Conflicts") ? editor.hasConflict(recipe.id()) : editor.status(recipe.id()).name().equals(modification.getValue()))));
-    if (!table.getItems().isEmpty() && table.getSelectionModel().getSelectedItem() == null)
-      table.getSelectionModel().selectFirst();
+    if(restoringSelection)return;
+    final long revision=++filterRevision;
+    if(pendingFilter!=null)pendingFilter.cancel(true);
+    final var state=new RecipeFilterState(search.getText(),modMode.getValue(),value(mod),value(type),value(modification),language.getValue());
+    final var item=scopeItem;
+    final var kind=scopeKind;
+    final boolean uses=scopeUses;
+    final var evidence=runtime==null?Map.<ResourceLocation,dev.recipeeditor.companionclient.RecipeMergeService.Entry>of():runtime.evidence();
+    final var names=displayNames;
+    final var candidates=List.copyOf(rows);
+    final Runnable evaluate=()->{
+      final boolean indexed=!Platform.isFxApplicationThread();
+      if(indexed && (indexedNames!=names||!Objects.equals(indexedLanguage,state.language()))) {
+        searchIndex.clear();indexedNames=names;indexedLanguage=state.language();
+      }
+      final var scopeIds = item == null ? Set.<ResourceLocation>of() : (uses ? editor.effective().findRecipesUsing(kind, item) : editor.effective().findRecipesProducing(kind, item))
+          .stream().map(RecipeDefinition::id).collect(java.util.stream.Collectors.toSet());
+      final var accepted=Collections.newSetFromMap(new IdentityHashMap<RecipeDefinition,Boolean>());
+      for(final var recipe:candidates) {
+        if(Thread.currentThread().isInterrupted())return;
+        final var observation=evidence.get(recipe.id());
+        if((item==null||scopeIds.contains(recipe.id())) && (state.type().isEmpty()||recipe.type().displayId().equals(state.type()))
+            && (state.mod().isEmpty()||matchesModFilter(recipe,state,observation))
+            && (state.change().isEmpty() || (state.change().equals("Conflicts") ? editor.hasConflict(recipe.id()) : editor.status(recipe.id()).name().equals(state.change())))
+            && (state.query().isEmpty()||searchTerms(recipe,names,state.language(),observation,indexed).contains(state.query()))) accepted.add(recipe);
+      }
+      final Runnable apply=()->{
+        if(closed||filterRevision!=revision)return;
+        final var previous=table.getSelectionModel().getSelectedItem();
+        restoringSelection=true;
+        try {
+          filtered.setPredicate(accepted::contains);
+          if(previous!=null && accepted.contains(previous)) table.getSelectionModel().select(previous);
+          else {
+            final var retained=table.getItems().stream().filter(row->row.id().equals(selectionAnchor)).findFirst();
+            if(retained.isPresent())table.getSelectionModel().select(retained.get());
+            else if(!table.getItems().isEmpty() && staticDraft==null) table.getSelectionModel().selectFirst();
+          }
+        } finally { restoringSelection=false; }
+        select(table.getSelectionModel().getSelectedItem());
+        updateButtons();
+      };
+      if(Platform.isFxApplicationThread())apply.run();else Platform.runLater(apply);
+    };
+    if(candidates.size()>2000) pendingFilter=filterWorker.submit(evaluate); else evaluate.run();
   }
 
+  private String value(final ComboBox<String> box) { return box.getSelectionModel().getSelectedIndex()<=0?"":box.getValue(); }
+
   private void updateModOptions() {
+    final String selected=mod.getValue();
     mod.getItems().clear();
     mod.getItems().add("All");
     if (modMode.getValue() == RecipeFilterMode.RECIPE_NAMESPACE)
@@ -202,24 +342,34 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       mod.getItems().add("UNKNOWN");
       java.util.stream.Stream.concat(editor.originals().recipes().stream(), rows.stream()).flatMap(r -> r.source().sourceModIds().stream()).distinct().sorted().forEach(mod.getItems()::add);
     }
-    mod.getSelectionModel().selectFirst();
+    if(mod.getItems().contains(selected))mod.setValue(selected);else mod.getSelectionModel().selectFirst();
   }
 
-  private boolean matchesModFilter(final RecipeDefinition recipe, final String value) {
-    if (modMode.getValue() == RecipeFilterMode.RECIPE_NAMESPACE)
-      return RecipeFilterMode.RECIPE_NAMESPACE.matches(recipe, value);
-    if (editor.status(recipe.id()) == RecipeModificationStatus.UNCHANGED || editor.status(recipe.id()) == RecipeModificationStatus.DELETED)
-      return RecipeFilterMode.SOURCE_MOD.matches(recipe, value);
-    final var sources = new ArrayList<>(editor.originals().findById(recipe.id()));
-    sources.add(recipe);
-    final var ids = sources.stream().flatMap(r -> r.source().sourceModIds().stream()).collect(java.util.stream.Collectors.toSet());
-    return ids.contains(value) || (value.equals("UNKNOWN") && ids.isEmpty());
+  private boolean matchesModFilter(final RecipeDefinition recipe, final RecipeFilterState state,
+          final dev.recipeeditor.companionclient.RecipeMergeService.Entry observed) {
+    if(state.modMode()==RecipeFilterMode.RECIPE_NAMESPACE)return recipe.id().namespace().equals(state.mod());
+    final var ids=sourceMods(recipe,observed);
+    return ids.contains(state.mod()) || (state.mod().equals("UNKNOWN")&&ids.isEmpty());
+  }
+
+  private Set<String> sourceMods(final RecipeDefinition recipe,final dev.recipeeditor.companionclient.RecipeMergeService.Entry observed) {
+    if(recipe.source().type()==SourceType.RUNTIME)return Set.of();
+    if(observed!=null && recipe.source().internalPath().startsWith("changes/"))return observed.provenance().sourceModIds();
+    if(!recipe.source().internalPath().startsWith("changes/"))return Set.copyOf(recipe.source().sourceModIds());
+    return editor.originals().provenance(recipe.id()).candidateSourceModIds();
   }
 
   private void refresh(final ResourceLocation id) {
     if (closed) return;
-    rows.removeIf(recipe -> {if(!recipe.id().equals(id))return false;displayCache.remove(recipe);return true;});
-    rows.addAll(editor.displayed(id));
+    final String mode=sourceFilter.getValue();
+    restoringSelection=true;
+    try {
+      rows.removeIf(recipe -> {if(!recipe.id().equals(id))return false;displayCache.remove(recipe);return true;});
+      if(mode.equals("Static")) rows.addAll(editor.originals().findById(id));
+      else if(mode.equals("Effective")) rows.addAll(editor.effective().findById(id));
+      else if((!mode.equals("Runtime")||runtimeIds.contains(id))
+          && (!mode.equals("Project")||editor.status(id)!=RecipeModificationStatus.UNCHANGED)) rows.addAll(editor.displayed(id));
+    } finally { restoringSelection=false; }
     editor.displayed(id).forEach(recipe -> {
       final String value = recipe.type().displayId();
       if (!type.getItems().contains(value)) type.getItems().add(value);
@@ -233,23 +383,20 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     final var values = editor.snapshot().changes().values();
     tracking.setText(values.stream().filter(c -> c.type() == RecipeChangeType.UPDATE).count() + " Modified | " + values.stream().filter(c -> c.type() == RecipeChangeType.CREATE).count() + " Created | " + values.stream().filter(c -> c.type() == RecipeChangeType.DELETE).count() + " Deleted | " + editor.conflicts().size() + " source conflicts | " + (editor.dirty() ? "Project changes not saved to disk" : "Project matches saved snapshot") + " | Export uses saved project changes");
     if (historyButtons.size() == 2) {
-      historyButtons.get(0).setDisable(!editor.canUndo());
-      historyButtons.get(1).setDisable(!editor.canRedo());
+      availability(historyButtons.get(0),editor.canUndo(),"No project change to undo");
+      availability(historyButtons.get(1),editor.canRedo(),"No project change to redo");
     }
+    updateButtons();
   }
 
   private ToolBar actions() {
     final var create = new Button("+ Create");
     create.setOnAction(e -> create());
-    final var edit = new Button("Edit");
-    edit.setOnAction(e -> selected().ifPresent(this::edit));
-    final var duplicate = new Button("Duplicate");
-    duplicate.setOnAction(e -> selected().ifPresent(this::duplicate));
-    final var delete = new Button("Delete");
-    delete.setOnAction(e -> selected().ifPresent(this::delete));
-    table.getSelectionModel().selectedItemProperty().addListener((o,a,b)->{final boolean readOnly=b!=null&&readOnlyModRecipe(b);edit.setDisable(b==null||readOnly);duplicate.setDisable(b==null||readOnly);delete.setDisable(b==null||readOnly);});
-    final var reset = new Button("Reset changes");
-    reset.setOnAction(e -> selected().ifPresent(this::reset));
+    editButton.setOnAction(e -> selected().ifPresent(this::edit));
+    duplicateButton.setOnAction(e -> selected().ifPresent(this::duplicate));
+    deleteButton.setOnAction(e -> selected().ifPresent(this::delete));
+    resetButton.setOnAction(e -> selected().ifPresent(this::reset));
+    table.getSelectionModel().selectedItemProperty().addListener((o,a,b)->updateButtons());
     final var undo = new Button("Undo");
     undo.setOnAction(e -> perform(() -> editor.undo()));
     final var redo = new Button("Redo");
@@ -277,7 +424,23 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       choice.setHeaderText("Review a saved change whose original source changed/disappeared");
       choice.showAndWait().ifPresent(this::reviewConflict);
     });
-    return new ToolBar(create, edit, duplicate, delete, reset, new Separator(), undo, redo, conflicts);
+    return new ToolBar(create, editButton, duplicateButton, deleteButton, resetButton, new Separator(), undo, redo, conflicts);
+  }
+
+  private void updateButtons() {
+    final var recipe=table.getSelectionModel().getSelectedItem();
+    final boolean edit=recipe!=null&&canEdit(recipe);
+    final String reason=recipe==null?"Select a recipe":"No verified editable base, or this change is blocked, deleted or linked";
+    availability(editButton,edit,reason);
+    availability(duplicateButton,recipe!=null&&canDuplicate(recipe),"Select a recipe with a verified copy adapter");
+    availability(deleteButton,edit&&canDelete(recipe),edit?"No verified removal strategy for this instance":reason);
+    availability(resetButton,recipe!=null&&editor.canReset(recipe.id()),"No independent change to reset");
+  }
+
+  private void availability(final Button button,final boolean enabled,final String reason) {
+    button.setDisable(!enabled);
+    button.setTooltip(enabled?null:new Tooltip(reason));
+    button.setAccessibleHelp(enabled?null:reason);
   }
 
   private Optional<RecipeDefinition> selected() {
@@ -285,6 +448,8 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   }
 
   private void perform(final Runnable work) {
+    if(!allowLeaveDraft())return;
+    closeStaticDraft();
     tasks.submit(() -> {
       work.run();
       return true;
@@ -307,7 +472,7 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     dialog.getDialogPane().lookupButton(ButtonType.OK).addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
       try {
         final var id = ResourceLocation.parse(dialog.getEditor().getText());
-        if (runtimeIds.contains(id) || !editor.originals().findById(id).isEmpty() || !editor.effective().findById(id).isEmpty())
+        if (runtimeIds.contains(id) || editor.hasConflict(id) || !editor.originals().findById(id).isEmpty() || !editor.effective().findById(id).isEmpty())
           throw new IllegalArgumentException("ID already exists");
       } catch (RuntimeException invalid) {
         error.setText(invalid.getMessage());
@@ -318,84 +483,68 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   }
 
   private void create() {
-    final var id = newId("Create New Recipe");
-    if (id.isEmpty()) return;
     final var types = new ComboBox<String>();
     types.getItems().addAll(new RecipeFormService().types());
-    types.setEditable(true);
+    if(new dev.recipeeditor.integrations.gregtech.GregTechIntegration().capabilities(integration).enabled("Visual Editing")
+        && "2001.6.4-build.120".equals(integration.mods().get("kubejs"))) {
+      final var exporter=new dev.recipeeditor.integrations.gregtech.GregTechRecipeExporter();
+      machines.stream().filter(machine->!machine.limits().isEmpty()&&exporter.supportsMachine(machine.id().toString()))
+          .map(machine->machine.id().toString()).forEach(types.getItems()::add);
+    }
     types.getSelectionModel().selectFirst();
     final var dialog = new Dialog<String>();
     dialog.initOwner(getScene().getWindow());
     new UiTheme().apply(dialog.getDialogPane());
     dialog.setTitle("Recipe type");
-    final var error = new Label();
-    dialog.getDialogPane().setContent(new VBox(10, new Label("Choose a known type or enter a custom Resource Location"), types, error));
+    dialog.getDialogPane().setContent(new VBox(10, new Label("Choose a type with a registered editor"), types));
     dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-    dialog.getDialogPane().lookupButton(ButtonType.OK).addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
-      try {
-        final var selectedType=ResourceLocation.parse(types.getEditor().getText());
-        if(moddedAdapters.supports(selectedType))throw new IllegalArgumentException("This mod adapter is read only; creation is not verified yet");
-      } catch (RuntimeException invalid) {
-        error.setText(invalid.getMessage());
-        event.consume();
-      }
-    });
-    dialog.setResultConverter(button -> button == ButtonType.OK ? types.getEditor().getText() : null);
-    dialog.showAndWait().ifPresent(type -> openNewRecipe(id.orElseThrow(),type));
+    dialog.setResultConverter(button -> button == ButtonType.OK ? types.getValue() : null);
+    dialog.showAndWait().ifPresent(this::createFromRuntime);
   }
 
   void createFromRuntime(final String serializer) {
-    if (!new RecipeFormService().types().contains(serializer)) return;
-    newId("Create Recipe · " + serializer).ifPresent(id -> openNewRecipe(id,serializer));
+    if (!new RecipeFormService().types().contains(serializer) &&
+        machines.stream().noneMatch(machine->machine.id().toString().equals(serializer))) return;
+    final String hint=serializer.startsWith("gtceu:")?" · ID namespace:"+ResourceLocation.parse(serializer).path()+"/name":"";
+    newId("Create Recipe · "+serializer+hint).ifPresent(id -> openNewRecipe(id,serializer));
   }
 
   private void openNewRecipe(final ResourceLocation id, final String type) {
     final var source = new RecipeSource(SourceType.LOCAL_RESOURCE, List.of(), java.nio.file.Path.of("unsaved-project.json"),
             "changes/" + id, "Unsaved project overlay (logical path)");
-    tasks.submit(() -> new RecipeFormService().template(type), raw -> new RecipeEditorDialog(getScene().getWindow(),
-            result, editor, tasks, new RecipeEditSession(id, source, raw), true, integration).showAndWait(), this::error);
+    tasks.submit(() -> type.startsWith("gtceu:") ? "{\"type\":\""+type+"\",\"duration\":1,\"inputs\":{},\"outputs\":{}}" : new RecipeFormService().template(type),
+            raw -> showDraft(new RecipeEditSession(id, source, raw), true, null), this::error);
   }
-
-  private void copyRuntime(final dev.recipeeditor.companionprotocol.RuntimeData.Recipe recipe) {
-    final var vanilla = new dev.recipeeditor.companionclient.VanillaRuntimeDraft();
-    if (vanilla.supports(recipe)) {
-      newId("Copy loaded Vanilla recipe to a new ID").ifPresent(id -> {
-        final var source = new RecipeSource(SourceType.LOCAL_RESOURCE, List.of(), java.nio.file.Path.of("unsaved-project.json"),
-                "changes/" + id, "New project recipe copied from normalized Vanilla state " + recipe.id());
-        tasks.submit(() -> vanilla.copy(recipe), raw -> new RecipeEditorDialog(getScene().getWindow(), result,
-                editor, tasks, new RecipeEditSession(id, source, raw), true, integration).showAndWait(), this::error);
-      });
-      return;
-    }
-    if (!new dev.recipeeditor.integrations.gregtech.GregTechIntegration().capabilities(integration).enabled("Visual Editing")) {
-      error(new IllegalArgumentException("GT version is not edit-verified"));
-      return;
-    }
-    newId("Copy loaded GT state: use namespace:" + ResourceLocation.parse(recipe.type()).path() + "/name (new ID)").ifPresent(id -> {
-      final var source = new RecipeSource(SourceType.LOCAL_RESOURCE, List.of("gtceu"), java.nio.file.Path.of("unsaved-project.json"), "changes/" + id, "Explicit new-ID copy of normalized runtime state; original source UNKNOWN");
-      tasks.submit(() -> new dev.recipeeditor.integrations.gregtech.GregTechRuntimeDraft().copy(recipe), raw -> new RecipeEditorDialog(getScene().getWindow(), result, editor, tasks, new RecipeEditSession(id, source, raw), true, integration).showAndWait(), this::error);
-    });
-  }
-
-  private boolean canCopyRuntime(final dev.recipeeditor.companionprotocol.RuntimeData.Recipe recipe) {
-    if (new dev.recipeeditor.companionclient.VanillaRuntimeDraft().supports(recipe)) return true;
-    if (!recipe.adapter().equals("gtceu-7.1.4")
-            || !new dev.recipeeditor.integrations.gregtech.GregTechIntegration().capabilities(integration).enabled("Visual Editing"))
-      return false;
-    try {
-      new dev.recipeeditor.integrations.gregtech.GregTechRuntimeDraft().copy(recipe);
-      return true;
-    } catch (RuntimeException unsupported) { return false; }
-  }
-
-  private String capabilityStatus(final dev.recipeeditor.integrations.api.RecipeTypeCapabilities caps,final dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature feature){return caps.supports(feature)?"SUPPORTED":"UNSUPPORTED";}
 
   private boolean readOnlyModRecipe(final RecipeDefinition recipe) {
+    if(recipe.type().displayId().startsWith("gtceu:") &&
+        !new dev.recipeeditor.integrations.gregtech.GregTechIntegration().capabilities(integration).enabled("Visual Editing"))return true;
     return recipe.type().location().flatMap(moddedAdapters::find).map(adapter->!adapter.capabilities(recipe).supports(dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_EDIT)).orElse(false);
   }
 
+  private boolean canEdit(final RecipeDefinition recipe) {
+    return editor.canChange(recipe.id()) && !readOnlyModRecipe(recipe);
+  }
+
+  private boolean canDuplicate(final RecipeDefinition recipe) {
+    if(readOnlyModRecipe(recipe)||editor.hasConflict(recipe.id())||editor.status(recipe.id())==RecipeModificationStatus.DELETED
+        ||recipe.status()==RecipeParseStatus.INVALID)return false;
+    return recipe.source().type()!=SourceType.RUNTIME || new RuntimeRecipeBase().matches(recipe.source());
+  }
+
+  private boolean canDelete(final RecipeDefinition recipe) {
+    if(!canEdit(recipe))return false;
+    final boolean runtimeBase=editor.authoringBases().findById(recipe.id()).stream().anyMatch(base->base.source().type()==SourceType.RUNTIME);
+    if(!runtimeBase)return true;
+    final String kubejs=integration.mods().getOrDefault("kubejs","");
+    return recipe.type().displayId().startsWith("gtceu:")?kubejs.equals("2001.6.4-build.120"):
+        Set.of("2001.6.4-build.120","2001.6.5-build.26").contains(kubejs);
+  }
+
   private void edit(final RecipeDefinition recipe) {
-    if(readOnlyModRecipe(recipe)){error(new IllegalStateException("This mod adapter supports read-only viewing; authoring/export are not yet verified"));return;}
+    if(!canEdit(recipe))return;
+    final var active=editor.effective().findById(recipe.id());
+    final var editable=active.stream().filter(definition->definition.equals(recipe)).findFirst().orElse(active.getFirst());
     if (editor.hasConflict(recipe.id())) {
       reviewConflict(recipe.id());
       return;
@@ -404,26 +553,31 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       error(new IllegalStateException("Recipe is deleted. Reset Changes restores it."));
       return;
     }
-    final var bases = editor.originals().findById(recipe.id());
+    final var bases = editor.authoringBases().findById(recipe.id());
     if (bases.size() > 1 && new UiTheme().apply(new Alert(Alert.AlertType.CONFIRMATION, "This ID has " + bases.size() + " original sources. Saving creates one project override for all candidates; the runtime winner is unknown. Continue?", ButtonType.YES, ButtonType.NO)).showAndWait().orElse(ButtonType.NO) != ButtonType.YES)
       return;
-    final String baseline = bases.isEmpty() ? recipe.rawJson() : bases.stream().filter(base -> base.source().equals(recipe.source())).findFirst().orElse(bases.getFirst()).rawJson();
+    final String baseline = bases.isEmpty() ? editable.rawJson() : bases.stream().filter(base -> base.source().equals(editable.source())).findFirst().orElse(bases.getFirst()).rawJson();
     final var source = new RecipeSource(SourceType.LOCAL_RESOURCE, List.of(), java.nio.file.Path.of("unsaved-project.json"), "changes/" + recipe.id(), "Unsaved project overlay (logical path)");
-    new RecipeEditorDialog(getScene().getWindow(), result, editor, tasks, new RecipeEditSession(recipe.id(), source, recipe.rawJson(), baseline), false, integration).showAndWait();
+    showDraft(new RecipeEditSession(recipe.id(), source, editable.rawJson(), baseline), false, canDelete(recipe)?()->delete(recipe):null);
   }
 
   private void duplicate(final RecipeDefinition recipe) {
-    if(readOnlyModRecipe(recipe)){error(new IllegalStateException("This mod adapter supports read-only viewing; authoring/export are not yet verified"));return;}
-    newId("Duplicate Recipe").ifPresent(id -> tasks.submit(() -> editor.duplicate(recipe, id), this::edit, this::error));
+    if(!canDuplicate(recipe))return;
+    newId("Duplicate Recipe").ifPresent(id -> {
+      final var source=new RecipeSource(SourceType.LOCAL_RESOURCE,List.of(),java.nio.file.Path.of("unsaved-project.json"),
+          "changes/"+id,"Project copy of "+recipe.id());
+      showDraft(new RecipeEditSession(id,source,recipe.rawJson()),true,null);
+    });
   }
 
   private void delete(final RecipeDefinition recipe) {
-    if(readOnlyModRecipe(recipe)){error(new IllegalStateException("This mod adapter supports read-only viewing; authoring/export are not yet verified"));return;}
+    if(!canDelete(recipe))return;
     if (new UiTheme().apply(new Alert(Alert.AlertType.CONFIRMATION, "Logically delete " + recipe.id() + " from the project? Original JAR files will not change.", ButtonType.YES, ButtonType.NO)).showAndWait().orElse(ButtonType.NO) == ButtonType.YES)
       perform(() -> editor.delete(recipe.id()));
   }
 
   private void reset(final RecipeDefinition recipe) {
+    if(!editor.canReset(recipe.id()))return;
     if (editor.hasConflict(recipe.id())) reviewConflict(recipe.id());
     else perform(() -> editor.reset(recipe.id()));
   }
@@ -461,15 +615,13 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       menu.getItems().forEach(action -> action.setDisable(unavailable));
       if (chosen.isPresent()) {
         final var id = chosen.get().id();
-        final boolean blocked = readOnlyModRecipe(chosen.get()) || editor.hasConflict(id) || editor.status(id) == RecipeModificationStatus.DELETED;
-        duplicate.setDisable(blocked);
-        duplicate.setText(blocked ? "Duplicate Recipe (reset deletion/review conflict first)" : "Duplicate Recipe");
-        delete.setDisable(blocked);
-        delete.setText(blocked ? "Delete Recipe (already deleted or source conflict)" : "Delete Recipe");
-        edit.setDisable(readOnlyModRecipe(chosen.get())||editor.status(id) == RecipeModificationStatus.DELETED);
-        export.setDisable(readOnlyModRecipe(chosen.get()));
+        duplicate.setDisable(!canDuplicate(chosen.get()));
+        delete.setDisable(!canDelete(chosen.get()));
+        edit.setDisable(!canEdit(chosen.get()));
+        export.setDisable(readOnlyModRecipe(chosen.get()) || editor.hasConflict(id)
+            || chosen.get().source().type()==SourceType.RUNTIME && !editor.snapshot().changes().containsKey(id));
         edit.setText(editor.status(id) == RecipeModificationStatus.DELETED ? "Edit Recipe (Reset Changes restores deleted recipe)" : "Edit Recipe");
-        reset.setDisable(!editor.hasConflict(id) && editor.status(id) == RecipeModificationStatus.UNCHANGED);
+        reset.setDisable(!editor.canReset(id));
         reset.setText(editor.status(id) == RecipeModificationStatus.UNCHANGED && !editor.hasConflict(id) ? "Reset Changes (no saved project change)" : "Reset Changes");
       }
     });
@@ -490,17 +642,44 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
 
   @Override
   public void close() {
+    closeStaticDraft();
     closed = true;
+    filterWorker.shutdownNow();
     textures.close();displayCache.clear();
     editor.removeListener(listener);
   }
 
   private RecipeDisplayNameResolver.Display display(final RecipeDefinition recipe){return displayCache.computeIfAbsent(recipe,r->displayNames.resolve(r,language.getValue()));}
 
-  private boolean matchesSearch(final RecipeDefinition recipe,final String query) {
-    final var value=display(recipe);
-    return java.util.stream.Stream.concat(java.util.stream.Stream.of(recipe.id().toString(),recipe.id().namespace(),recipe.type().displayId(),value.name(),value.type(),value.machine()),recipe.source().sourceModIds().stream())
-        .anyMatch(text->text.toLowerCase(Locale.ROOT).contains(query));
+  private String parseStatus(final RecipeDefinition recipe) {
+    final var observed=observation(recipe);
+    return observed!=null && (recipe.source().type()==SourceType.RUNTIME||sourceFilter.getValue().equals("Runtime"))
+        ?observed.runtime().status().name():recipe.status().name();
+  }
+
+  private dev.recipeeditor.companionclient.RecipeMergeService.Entry observation(final RecipeDefinition recipe) {
+    return runtime==null?null:runtime.evidence().get(recipe.id());
+  }
+
+  private String searchTerms(final RecipeDefinition recipe,final RecipeDisplayNameResolver names,final String locale,
+          final dev.recipeeditor.companionclient.RecipeMergeService.Entry observed,final boolean indexed) {
+    if(indexed) {
+      final var cached=searchIndex.get(recipe);
+      if(cached!=null)return cached;
+      if(searchIndex.size()>=150000)searchIndex.clear();
+    }
+    final var value=names.resolve(recipe,locale);
+    final var tokens=new ArrayList<>(List.of(recipe.id().toString(),recipe.type().displayId(),value.name(),value.type(),value.machine()));
+    if(observed!=null)tokens.addAll(List.of(observed.runtime().serializer(),observed.runtime().type()));
+    tokens.addAll(sourceMods(recipe,observed));
+    recipe.inputs().forEach(input->tokens.add(describe(input)));
+    for(final var output:recipe.outputs()) {
+      if(output instanceof RecipeOutput.Fixed fixed)tokens.add(fixed.id().toString());
+      if(output instanceof RecipeOutput.Capability capability)tokens.add(describe(capability.ingredient()));
+    }
+    final var terms=String.join("\n",tokens).toLowerCase(Locale.ROOT);
+    if(indexed)searchIndex.put(recipe,terms);
+    return terms;
   }
 
   private TableColumn<RecipeDefinition,RecipeDefinition> resultColumn() {
@@ -514,7 +693,9 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
         final var value=display(recipe);final var title=new Label(value.name()+(value.additionalOutputs()>0?" +"+value.additionalOutputs():""));title.getStyleClass().add("recipe-list-name");
         final var id=new Label(recipe.id().toString());id.getStyleClass().add("muted");id.setMaxWidth(240);id.setTextOverrun(OverrunStyle.ELLIPSIS);
         final var names=new VBox(4,title,id);final var row=new HBox(10,names);row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        value.previewOutput().flatMap(output->result.registry().find(output.id()).stream().filter(entry->entry.kind()==output.kind()).findFirst()).ifPresent(entry->row.getChildren().addFirst(new ResourcePreview(entry,result,textures,36,()->getItem()==recipe,preview->{})));
+        value.previewOutput().ifPresent(output->editorDiscovery.registry().find(output.id()).stream()
+            .filter(entry->entry.kind()==output.kind()).findFirst().ifPresent(entry->row.getChildren().addFirst(
+                new ResourcePreview(entry,editorDiscovery,textures,36,()->getItem()==recipe,preview->{},output.nbt()))));
         setGraphic(row);setTooltip(new Tooltip(value.name()+"\nRecipe ID: "+recipe.id()+"\nSerializer: "+recipe.type().displayId()+"\nMachine: "+value.machine()+(value.additionalOutputs()>0?"\nRepresentative output; additional outputs: "+value.additionalOutputs():"")));
       }
     });return column;
@@ -559,6 +740,8 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
   private void select(final RecipeDefinition recipe) {
     viewer.getChildren().clear();
     json.clear();
+    jsonVersion.getItems().clear();
+    jsonPayloads.clear();
     source.clear();
     diagnostics.clear();
     if (recipe == null) {
@@ -566,7 +749,11 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       return;
     }
     final var presentation=display(recipe);
+    final var observed=observation(recipe);
     viewer.getChildren().addAll(label(presentation.name()),label("Type: "+presentation.type()+" · "+presentation.machine()),label("Recipe ID: "+recipe.id()),label("Recipe status: "+editor.status(recipe.id())+(editor.hasConflict(recipe.id())?" · SOURCE CONFLICT":"")));
+    presentation.previewOutput().ifPresent(output->editorDiscovery.registry().find(output.id()).stream()
+        .filter(entry->entry.kind()==output.kind()).findFirst().ifPresent(entry->viewer.getChildren().addFirst(
+            new ResourcePreview(entry,editorDiscovery,textures,48,()->table.getSelectionModel().getSelectedItem()==recipe,preview->{},output.nbt()))));
     if (recipe.status() == RecipeParseStatus.UNSUPPORTED || recipe.status() == RecipeParseStatus.INVALID)
       viewer.getChildren().add(label("Semantic view unavailable. See Raw JSON and Diagnostics."));
     else {
@@ -574,30 +761,61 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
       if(layout.isPresent()) {
         final var drawing=new VBox();
         final var scale=new Spinner<Integer>(40,80,64,8);scale.setPrefWidth(100);scale.setAccessibleText("Recipe slot size in pixels");
-        final Runnable render=()->{final var view=new RecipeLayoutRenderer(layout.get(),result,textures,scale.getValue(),language.getValue(),RecipeLayoutRenderer.Mode.VIEWER,null);view.resourceNavigation(resourceNavigation);drawing.getChildren().setAll(view);};
+        final Runnable render=()->{final var view=new RecipeLayoutRenderer(layout.get(),editorDiscovery,textures,scale.getValue(),language.getValue(),RecipeLayoutRenderer.Mode.VIEWER,null);view.resourceNavigation(resourceNavigation);drawing.getChildren().setAll(view);};
         scale.valueProperty().addListener((o,a,b)->render.run());render.run();
         viewer.getChildren().addAll(drawing,new HBox(8,new Label("Slot size"),scale));
       } else {
         viewer.getChildren().add(label("No verified visual layout. Inspect Raw JSON for inputs and outputs."));
         recipe.properties().forEach(property->viewer.getChildren().add(label(property.name()+": "+property.rawValue())));
       }
-      final var editButton=new Button("Edit recipe");editButton.setDisable(readOnlyModRecipe(recipe));editButton.setOnAction(event->edit(recipe));
-      final var sourceButton=new Button("View Source");sourceButton.setOnAction(event->detailTabs.getSelectionModel().select(2));
-      viewer.getChildren().add(new HBox(8,editButton,sourceButton));
     }
-    recipe.type().location().flatMap(moddedAdapters::find).ifPresent(adapter->{final var caps=adapter.capabilities(recipe);viewer.getChildren().add(label("View: "+(caps.supports(dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_VIEW)?"SUPPORTED":"UNSUPPORTED")+" · Edit: "+capabilityStatus(caps,dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_EDIT)+" · Create: "+capabilityStatus(caps,dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_CREATE)+" · Export: "+capabilityStatus(caps,dev.recipeeditor.integrations.api.RecipeTypeCapabilities.Feature.CAN_EXPORT)));viewer.getChildren().add(label(caps.reason()));});
-    viewer.getChildren().add(label("Physical source: "+recipe.source().physicalSource()+" · "+recipe.source().confidence()));
-    json.setText(recipe.rawJson());
-    json.positionCaret(0);
-    final var savedChange = editor.persistentSnapshot().changes().get(recipe.id());
-    final var evidence = savedChange == null ? editor.originals().provenance(recipe.id()) : new dev.recipeeditor.exporters.ExportSourceMapping().resolve(savedChange, editor.originals(), projectFile, editor.hasConflict(recipe.id()));
-    source.setText(evidence.describe());
-    diagnostics.setText(recipe.diagnostics().stream().map(Object::toString).collect(java.util.stream.Collectors.joining("\n")));
+    final var machine=machines.stream().filter(row->row.id().toString().equals(recipe.type().displayId())).findFirst();
+    machine.ifPresent(row->viewer.getChildren().add(new GregTechMachineSelector(machines,row.id(),ignored->{},false)));
+    final var editAction=new Button("Edit recipe");availability(editAction,canEdit(recipe),"No verified editable base");
+    editAction.setOnAction(event->edit(recipe));
+    final var copyAction=new Button("Duplicate");availability(copyAction,canDuplicate(recipe),"No verified copy adapter");
+    copyAction.setOnAction(event->duplicate(recipe));
+    final var deleteAction=new Button("Delete");availability(deleteAction,canDelete(recipe),"No verified removal strategy");
+    deleteAction.setOnAction(event->delete(recipe));
+    viewer.getChildren().add(new HBox(8,editAction,copyAction,deleteAction));
+    final var currentChange = editor.persistentSnapshot().changes().get(recipe.id());
+    if(recipe.source().internalPath().startsWith("changes/"))
+      jsonPayloads.put("Current project JSON",recipe.rawJson());
+    if(observed!=null) {
+      jsonPayloads.put("Normalized runtime JSON",observed.runtime().properties().toString());
+      for(int i=0;i<observed.staticDefinitions().size();i++)
+        jsonPayloads.put("Original static JSON · candidate "+(i+1),observed.staticDefinitions().get(i).rawJson());
+    } else if(!recipe.source().internalPath().startsWith("changes/"))jsonPayloads.put("Original JSON",recipe.rawJson());
+    if(currentChange!=null&&currentChange.metadata().containsKey("mre.runtime.originalSerializerJson"))
+      jsonPayloads.put("Original verified serializer projection",currentChange.metadata().get("mre.runtime.originalSerializerJson"));
+    jsonVersion.getItems().setAll(jsonPayloads.keySet());
+    jsonVersion.getSelectionModel().selectFirst();
+    final var provenance = currentChange == null ? editor.originals().provenance(recipe.id()) : new dev.recipeeditor.exporters.ExportSourceMapping().resolve(currentChange, editor.authoringBases(), projectFile, editor.hasConflict(recipe.id()));
+    source.setText((observed==null?provenance.describe():"Minecraft: "+runtime.minecraftVersion()+"\n"+observed.provenance().describe()
+        +(currentChange==null?"":"\nProject overlay\n"+provenance.describe())));
+    final var messages=new ArrayList<String>();
+    messages.add("Parsing: "+parseStatus(recipe));
+    messages.add("Edit: "+canEdit(recipe)+" · Duplicate: "+canDuplicate(recipe)+" · Delete: "+canDelete(recipe));
+    messages.add("Generated export is validated for the chosen format in the Export Wizard.");
+    recipe.diagnostics().forEach(diagnostic->messages.add(diagnostic.message()));
+    if(observed!=null) {
+      messages.addAll(observed.diagnostics());
+      messages.addAll(observed.runtime().diagnostics());
+    }
+    diagnostics.setText(String.join("\n",messages));
+  }
+
+  private String pretty(final String raw) {
+    if(raw==null)return "";
+    try { return new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(com.google.gson.JsonParser.parseString(raw)); }
+    catch(com.google.gson.JsonParseException invalid) { return raw; }
   }
 
   private String describe(final IngredientDefinition value) {
     if (value instanceof IngredientDefinition.Item item) return item.id().toString();
     if (value instanceof IngredientDefinition.Tag tag) return "#" + tag.id();
+    if (value instanceof IngredientDefinition.Fluid fluid) return fluid.id().toString();
+    if (value instanceof IngredientDefinition.Sized sized) return describe(sized.ingredient());
     if (value instanceof IngredientDefinition.Alternatives alternatives)
       return alternatives.choices().stream().map(this::describe).collect(java.util.stream.Collectors.joining(" OR "));
     return "Unsupported ingredient (see JSON)";
