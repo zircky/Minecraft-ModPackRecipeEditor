@@ -693,7 +693,9 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
         final var value=display(recipe);final var title=new Label(value.name()+(value.additionalOutputs()>0?" +"+value.additionalOutputs():""));title.getStyleClass().add("recipe-list-name");
         final var id=new Label(recipe.id().toString());id.getStyleClass().add("muted");id.setMaxWidth(240);id.setTextOverrun(OverrunStyle.ELLIPSIS);
         final var names=new VBox(4,title,id);final var row=new HBox(10,names);row.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        value.previewOutput().flatMap(output->editorDiscovery.registry().find(output.id()).stream().filter(entry->entry.kind()==output.kind()).findFirst()).ifPresent(entry->row.getChildren().addFirst(new ResourcePreview(entry,editorDiscovery,textures,36,()->getItem()==recipe,preview->{})));
+        value.previewOutput().ifPresent(output->editorDiscovery.registry().find(output.id()).stream()
+            .filter(entry->entry.kind()==output.kind()).findFirst().ifPresent(entry->row.getChildren().addFirst(
+                new ResourcePreview(entry,editorDiscovery,textures,36,()->getItem()==recipe,preview->{},output.nbt()))));
         setGraphic(row);setTooltip(new Tooltip(value.name()+"\nRecipe ID: "+recipe.id()+"\nSerializer: "+recipe.type().displayId()+"\nMachine: "+value.machine()+(value.additionalOutputs()>0?"\nRepresentative output; additional outputs: "+value.additionalOutputs():"")));
       }
     });return column;
@@ -749,9 +751,9 @@ public final class RecipeBrowserView extends BorderPane implements AutoCloseable
     final var presentation=display(recipe);
     final var observed=observation(recipe);
     viewer.getChildren().addAll(label(presentation.name()),label("Type: "+presentation.type()+" · "+presentation.machine()),label("Recipe ID: "+recipe.id()),label("Recipe status: "+editor.status(recipe.id())+(editor.hasConflict(recipe.id())?" · SOURCE CONFLICT":"")));
-    presentation.previewOutput().flatMap(output->editorDiscovery.registry().find(output.id()).stream().filter(entry->entry.kind()==output.kind()).findFirst())
-        .ifPresent(entry->viewer.getChildren().addFirst(new ResourcePreview(entry,editorDiscovery,textures,48,
-            ()->table.getSelectionModel().getSelectedItem()==recipe,preview->{})));
+    presentation.previewOutput().ifPresent(output->editorDiscovery.registry().find(output.id()).stream()
+        .filter(entry->entry.kind()==output.kind()).findFirst().ifPresent(entry->viewer.getChildren().addFirst(
+            new ResourcePreview(entry,editorDiscovery,textures,48,()->table.getSelectionModel().getSelectedItem()==recipe,preview->{},output.nbt()))));
     if (recipe.status() == RecipeParseStatus.UNSUPPORTED || recipe.status() == RecipeParseStatus.INVALID)
       viewer.getChildren().add(label("Semantic view unavailable. See Raw JSON and Diagnostics."));
     else {

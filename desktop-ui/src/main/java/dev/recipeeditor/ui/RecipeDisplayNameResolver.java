@@ -7,7 +7,9 @@ import java.util.*;
 
 /** Presentation comes from declared domain outputs, never from spelling the Recipe ID. */
 public final class RecipeDisplayNameResolver {
-    public record Output(ResourceKind kind,ResourceLocation id,long amount) { }
+    public record Output(ResourceKind kind,ResourceLocation id,long amount,String nbt) {
+        public Output(final ResourceKind kind,final ResourceLocation id,final long amount){this(kind,id,amount,"");}
+    }
     public record Display(String name,String type,String machine,Optional<Output> previewOutput,int additionalOutputs) { }
     private final RegistryIndex registry;
     private final RecipeTypeDisplayNameResolver types;
@@ -30,13 +32,14 @@ public final class RecipeDisplayNameResolver {
         return new Display(name,types.name(type,language),machines.getOrDefault(type,types.machine(type,language)),output,Math.max(0,recipe.outputs().size()-1));
     }
     private String fallback(final RecipeDefinition recipe,final String language) {
-        if(recipe.source().type()==SourceType.RUNTIME)return types.name(recipe.type().displayId(),language);
+        if(recipe.source().type()==SourceType.RUNTIME||recipe.type().displayId().equals("bloodmagic:array"))return types.name(recipe.type().displayId(),language);
         final boolean ru=language.equals("ru_ru");
         return recipe.outputs().stream().anyMatch(RecipeOutput.Dynamic.class::isInstance)
                 ? ru?"Динамический результат":"Dynamic result" : ru?"Неизвестный результат":"Unknown result";
     }
     private Optional<Output> reference(final RecipeOutput value) {
-        if(value instanceof RecipeOutput.Fixed fixed)return Optional.of(new Output(ResourceKind.ITEM,fixed.id(),fixed.count()));
+        if(value instanceof RecipeOutput.Fixed fixed)return Optional.of(new Output(ResourceKind.ITEM,fixed.id(),fixed.count(),
+                fixed.rawDetails().contains("\"nbt")?RecipeSlotContent.parse(fixed.rawDetails()).nbt():""));
         if(value instanceof RecipeOutput.Capability capability) {
             final var kind=capability.capability().equals("item")?ResourceKind.ITEM:capability.capability().equals("fluid")?ResourceKind.FLUID:null;
             if(kind==null)return Optional.empty();

@@ -51,11 +51,28 @@ public final class RecipeSlotView extends ToggleButton {
         }
         if(content.kind()==RecipeSlotContent.Kind.ALTERNATIVES)tooltip.append("\nAlternatives: ").append(content.alternatives());
         setTooltip(new Tooltip(tooltip.toString()));selectedProperty().addListener((o,a,b)->refreshState());disabledProperty().addListener((o,a,b)->refreshState());refreshState();
+        if(content.kind()==RecipeSlotContent.Kind.TAG&&entry.isPresent()){
+            final var variants=discovery.recipes().tagIndex().members(ResourceKind.ITEM,content.id()).stream().sorted()
+                    .flatMap(id->discovery.registry().find(id).stream()).filter(value->value.kind()==ResourceKind.ITEM).toList();
+            if(variants.size()>1){
+                final var next=new MenuItem("Next tag preview");
+                final int[] selected={variants.indexOf(entry.get())};
+                final var names=new ResourceBrowserViewModel(discovery.registry());
+                next.setOnAction(event->{
+                    selected[0]=(selected[0]+1)%variants.size();
+                    final var value=variants.get(selected[0]);
+                    graphic.getChildren().set(0,new ResourcePreview(value,discovery,textures,(int)size-8,()->getScene()!=null,preview->{}));
+                    getTooltip().setText("Tag #"+content.id()+"\n"+names.displayName(value,language)+"\n"+value.id()
+                            +" · "+(selected[0]+1)+"/"+variants.size());
+                });
+                setContextMenu(new ContextMenu(next));
+            }
+        }
     }
     public RecipeSlotState slotState(){return isDisabled()?RecipeSlotState.DISABLED:isSelected()?RecipeSlotState.SELECTED:baseState;}
     private void refreshState(){for(final var state:RecipeSlotState.values())pseudoClassStateChanged(PseudoClass.getPseudoClass(state.name().toLowerCase(Locale.ROOT)),slotState()==state);}
     public void editable(final Runnable edit,final Runnable clear) {
         setOnAction(edit==null?null:event->edit.run());
-        if(clear!=null){final var action=new MenuItem("Clear slot");action.setOnAction(event->clear.run());setContextMenu(new ContextMenu(action));}
+        if(clear!=null){final var action=new MenuItem("Clear slot");action.setOnAction(event->clear.run());if(getContextMenu()==null)setContextMenu(new ContextMenu());getContextMenu().getItems().add(action);}
     }
 }

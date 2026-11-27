@@ -21,6 +21,8 @@ final class SemanticRecipeLayout {
                 final var value=new JsonObject();
                 value.addProperty("item",fixed.id().toString());
                 value.addProperty("count",fixed.count());
+                final String nbt=RecipeSlotContent.parse(fixed.rawDetails()).nbt();
+                if(!nbt.isBlank())value.addProperty("nbt",nbt);
                 outputs.add(new Slot(SlotKind.ITEM,"Result",value.toString()));
             } else if(output instanceof RecipeOutput.Capability capability) {
                 outputs.add(slot(capability.ingredient(),capability.capability()+" output"));

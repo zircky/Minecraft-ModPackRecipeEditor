@@ -24,7 +24,11 @@ public record RecipeSlotContent(Kind kind, ResourceLocation id, long amount, Lis
         if(node.isTextual())return new RecipeSlotContent(Kind.ITEM,ResourceLocation.parse(node.asText()),amount,List.of(),RecipeSlotState.FILLED);
         for(final var kind:List.of(Kind.ITEM,Kind.BLOCK,Kind.FLUID,Kind.CHEMICAL,Kind.TAG)) {
             final String key=kind.name().toLowerCase(Locale.ROOT);
-            if(node.path(key).isTextual())return new RecipeSlotContent(kind,ResourceLocation.parse(node.path(key).asText()),amount,List.of(),RecipeSlotState.FILLED,node.has("nbt")?(node.get("nbt").isTextual()?node.get("nbt").textValue():node.get("nbt").toString()):"");
+            if(node.path(key).isTextual()){
+                final var variant=node.has("nbt")?node.get("nbt"):node.get("nbtSnbt");
+                return new RecipeSlotContent(kind,ResourceLocation.parse(node.path(key).asText()),amount,List.of(),RecipeSlotState.FILLED,
+                        variant==null?"":variant.isTextual()?variant.textValue():variant.toString());
+            }
         }
         return new RecipeSlotContent(Kind.UNKNOWN,null,amount,List.of(),RecipeSlotState.UNKNOWN);
     }
