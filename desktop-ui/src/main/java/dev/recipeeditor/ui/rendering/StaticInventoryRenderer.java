@@ -26,6 +26,10 @@ public final class StaticInventoryRenderer {
         return render(model,images,Map.of(),size);
     }
     public CompletableFuture<Pixels> render(final InventoryItemModel model,final Map<ResourceSource,byte[]> images,final Map<String,byte[]> tinted,final int size){
+        if(model.kind()==InventoryItemModel.Kind.OBJ){
+            try{return CompletableFuture.completedFuture(new ObjInventoryRenderer().render(model,images.get(model.obj().texture()),size));}
+            catch(Exception invalid){return CompletableFuture.failedFuture(invalid);}
+        }
         final var result=new CompletableFuture<Pixels>();Platform.runLater(()->{
             try{
                 if(!Platform.isSupported(ConditionalFeature.SCENE3D))throw new IllegalStateException("SCENE3D unavailable");

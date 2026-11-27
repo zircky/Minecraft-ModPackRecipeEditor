@@ -297,7 +297,7 @@ public final class InventoryPreviewProvider implements AutoCloseable {
             if(model.kind()!=InventoryItemModel.Kind.GENERATED_2D||!model.gui().equals(GuiDisplayTransform.identity()))throw unavailable;
             final var result=new ItemPreviewCache.Image(textures.images().get(model.layers().layers().getFirst().source()),"STATIC_TEXTURE","Generated 2D item texture; 3D snapshot unavailable: "+message(unavailable));pending.future.complete(result);return;
         }
-        final var result=new ItemPreviewCache.Image(png,model.kind()==InventoryItemModel.Kind.GEOMETRY?"STATIC_ITEM_MODEL_3D":"STATIC_ITEM_MODEL_2D",diagnostic);
+        final var result=new ItemPreviewCache.Image(png,model.kind()==InventoryItemModel.Kind.GENERATED_2D?"STATIC_ITEM_MODEL_2D":"STATIC_ITEM_MODEL_3D",diagnostic);
         if(pending.key.epoch()!=epoch.get()){pending.future.complete(missing("CLIENT_CONTEXT_CHANGED"));return;}
         // Static fallback must never mask a later native response under the native cache key.
         cache.put(cacheKey(pending.key,context,"offline"),result);pending.future.complete(result);

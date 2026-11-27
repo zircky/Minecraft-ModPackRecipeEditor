@@ -33,7 +33,14 @@ final class InventoryModelTextures {
             if(entry.metadata().containsKey("textureHashes"))reader.read(entry.metadata().get("textureHashes")).fields().forEachRemaining(e->hashes.put(e.getKey(),e.getValue().asText()));
         }
         final var images=new HashMap<ResourceSource,byte[]>();final var tinted=new HashMap<String,byte[]>();boolean unknown=false;
-        if(model.kind()==InventoryItemModel.Kind.GENERATED_2D){
+        if(model.kind()==InventoryItemModel.Kind.OBJ){
+            final var source=model.obj().texture();
+            final var visual=new ResourceVisual(ResourceVisual.Status.READY,
+                    List.of(new ResourceVisual.Layer(source,null,hashes.getOrDefault(id(source),""))),"OBJ material texture");
+            final var result=frames.previewAsync(visual,root).get(5,TimeUnit.SECONDS);
+            if(result.png().length==0)throw new IOException(result.explanation());
+            images.put(source,result.png());
+        }else if(model.kind()==InventoryItemModel.Kind.GENERATED_2D){
             final var layers=new ArrayList<ResourceVisual.Layer>();int index=0;
             for(final var layer:model.layers().layers()){
                 final String id=id(layer.source());final var color=colors.getOrDefault(id+"#"+index++,Set.of());

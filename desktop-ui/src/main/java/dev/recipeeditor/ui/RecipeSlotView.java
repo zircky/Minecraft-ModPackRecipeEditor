@@ -28,7 +28,11 @@ public final class RecipeSlotView extends ToggleButton {
         if(sample.kind()==RecipeSlotContent.Kind.TAG) {
             final var members=discovery.recipes().tagIndex().members(ResourceKind.ITEM,sample.id());
             final var tagId=sample.id();
-            entry=members.stream().sorted(Comparator.comparing((dev.recipeeditor.core.ResourceLocation id)->!id.equals(tagId)).thenComparing(id->id))
+            entry=members.stream().sorted(Comparator.comparingInt((dev.recipeeditor.core.ResourceLocation id)->{
+                        if(id.equals(tagId))return 0;
+                        if(id.namespace().equals("minecraft"))return id.path().equals(tagId.path())?1:2;
+                        return 3;
+                    }).thenComparing(id->id))
                     .flatMap(id->discovery.registry().find(id).stream()).filter(value->value.kind()==ResourceKind.ITEM).findFirst();
         } else entry=entries.stream().findFirst();
         baseState=content.state()==RecipeSlotState.FILLED&&entry.isEmpty()&&content.kind()!=RecipeSlotContent.Kind.TAG&&content.kind()!=RecipeSlotContent.Kind.ALTERNATIVES?RecipeSlotState.UNKNOWN:content.state();
